@@ -503,6 +503,13 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
       </div>
 
       <div class="card">
+        <h3 style="margin-bottom:4px">Coleções (pokemontcg.io)</h3>
+        <p class="muted">Sem chave, o limite é de 1.000 requisições/dia — pode falhar em horários de pico. Cadastre grátis em <a href="https://dev.pokemontcg.io/" target="_blank" style="color:var(--gold-deep)">dev.pokemontcg.io</a> e cole a chave abaixo.</p>
+        <label>API Key</label><input id="e_pokemontcg_key" placeholder="Cole sua chave aqui (opcional)">
+        <footer class="actions"><button class="btn ghost" onclick="salvarPokemonKey()">Salvar chave</button></footer>
+      </div>
+
+      <div class="card">
         <h3 style="margin-bottom:4px">Conexão</h3>
         <p class="muted"><span class="status-dot" id="connDot"></span><span id="connTxt">Verificando…</span></p>
       </div>
@@ -578,7 +585,17 @@ async function carregarEmpresa(){
   const {data,error} = await db.from('empresa').select('*').eq('id',1).single();
   if(error){ toast('Erro ao carregar empresa: '+error.message); return; }
   EMPRESA = data;
+  POKEMONTCG_KEY = data.pokemontcg_key || '';
+  $('e_pokemontcg_key').value = POKEMONTCG_KEY;
   CAMPOS_EMPRESA.forEach(c=>{ $('e_'+c).value = data[c]||''; });
+}
+async function salvarPokemonKey(){
+  POKEMONTCG_KEY = $('e_pokemontcg_key').value.trim();
+  const {error} = await db.from('empresa').update({pokemontcg_key:POKEMONTCG_KEY}).eq('id',1);
+  error ? toast('Erro ao salvar chave: '+error.message) : toast('Chave salva');
+}
+function headersPokemonTCG(){
+  return POKEMONTCG_KEY ? {'X-Api-Key':POKEMONTCG_KEY} : {};
 }
 async function salvarEmpresa(){
   const payload = { id:1, atualizado_em: new Date().toISOString() };
@@ -1198,7 +1215,7 @@ function renderDash(){
 }
 
 /* ---------- Coleções (pokemontcg.io + câmbio) ---------- */
-let SETS_CARREGADOS = false, CAMBIO_USD_BRL = null, CARTAS_SET = [], SET_ATUAL_NOME = '';
+let SETS_CARREGADOS = false, CAMBIO_USD_BRL = null, CARTAS_SET = [], SET_ATUAL_NOME = '', POKEMONTCG_KEY = '';
 const ERA_ORDEM = ['me','sv','swsh','sm','xy','bw','hgss','dp','pl','ex','base'];
 async function buscarCambio(){
   if(CAMBIO_USD_BRL) return CAMBIO_USD_BRL;
@@ -1213,14 +1230,15 @@ async function carregarSets(){
   SETS_CARREGADOS = true;
   const sel = $('co_set_sel');
   try{
-    const r = await fetch('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate');
+    const r = await fetch('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate', {headers:headersPokemonTCG()});
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const j = await r.json();
     const sets = j.data||[];
     sel.innerHTML = '<option value="">Selecione uma coleção...</option>' +
       sets.map(s=>`<option value="${s.id}">${s.name} (${s.series}) — ${s.total} cartas</option>`).join('');
   }catch(e){
     sel.innerHTML = '<option value="">Erro ao carregar coleções — tente novamente</option>';
-    toast('Erro ao buscar coleções: '+e.message);
+    toast('Erro ao buscar coleções: '+(e.message==='Failed to fetch' ? 'sem conexão com pokemontcg.io (bloqueio de rede ou limite de requisições)' : e.message));
   }
   await buscarCambio();
   $('colCambioInfo').textContent = CAMBIO_USD_BRL ? `Câmbio de referência: US$ 1 = R$ ${CAMBIO_USD_BRL.toFixed(2)}` : '';
@@ -1233,13 +1251,16 @@ async function carregarCartasDoSet(){
   SET_ATUAL_NOME = $('co_set_sel').selectedOptions[0].textContent;
   grid.innerHTML = Array.from({length:10}).map(()=>`<div class="colecao-card"><div class="skeleton" style="aspect-ratio:5/7"></div></div>`).join('');
   try{
-    const r = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`);
+    const r = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`, {headers:headersPokemonTCG()});
+    if(!r.ok) throw new Error('HTTP '+r.status);
     const j = await r.json();
     CARTAS_SET = j.data||[];
     renderCartasSet();
   }catch(e){
     grid.innerHTML = '';
-    toast('Erro ao buscar cartas: '+e.message);
+    $('colecoesVazio').style.display='block';
+    $('colecoesVazio').textContent = 'Erro ao buscar cartas: '+(e.message==='Failed to fetch' ? 'sem conexão com pokemontcg.io (bloqueio de rede ou limite de requisições — configure uma API key em Configurações)' : e.message);
+    toast('Erro ao buscar cartas');
   }
 }
 function renderCartasSet(){
