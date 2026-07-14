@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rapadura TCG — Gestão</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Alegreya+Sans:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#FBF3E3; --card:#FFFDF7; --ink:#2A1708; --ink-soft:#6B4A2B;
@@ -158,6 +158,38 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
   #printArea th{background:#F6E9CE}
   #printArea .tot td{font-weight:800}
 }
+
+/* ---------- Visual renovado ---------- */
+:root{
+  --bg:#f7f5f1;--card:rgba(255,255,255,.88);--ink:#1e2430;--ink-soft:#687084;
+  --gold:#cf7a22;--gold-deep:#9e4b14;--line:#e8e9ed;--ok:#24935f;--warn:#d14c4c;
+  --shadow:0 10px 32px rgba(30,36,48,.08);
+}
+body{font-family:'Manrope',sans-serif;background:radial-gradient(circle at 92% -10%,#ffe6c8 0,transparent 27rem),radial-gradient(circle at -12% 24%,#e6f1e9 0,transparent 28rem),var(--bg);letter-spacing:-.01em}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.32;background-image:linear-gradient(rgba(30,36,48,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(30,36,48,.025) 1px,transparent 1px);background-size:28px 28px;mask-image:linear-gradient(to bottom,black,transparent 75%)}
+h1,h2,.brand{font-family:'Cinzel',serif}.brick{height:4px;background:linear-gradient(90deg,#f4b161,var(--gold),#9d4a15,#f4b161);background-size:220% 100%}
+input,textarea,select{border:1px solid #dde1e7;border-radius:11px;padding:11px 13px;background:#fff;transition:border .2s,box-shadow .2s,transform .2s}
+input:hover,textarea:hover,select:hover{border-color:#cbd0d9}input:focus,textarea:focus,select:focus{outline:0;border-color:var(--gold);box-shadow:0 0 0 4px rgba(207,122,34,.14)}
+label{font-size:11px;letter-spacing:.09em;color:#6f7788;margin:16px 0 6px}.btn{border-radius:10px;padding:11px 18px;background:linear-gradient(135deg,#db8b36,#b75d18);box-shadow:0 5px 14px rgba(183,93,24,.2);font-size:14px}.btn:hover{background:linear-gradient(135deg,#e69b4a,#a94d12);box-shadow:0 8px 18px rgba(183,93,24,.28)}.btn.ghost{background:rgba(255,255,255,.65);border-color:#d8dce4;color:#4d5565;box-shadow:none}.btn.ghost:hover{background:#fff;color:var(--gold-deep);border-color:#e8a661}
+#login{background:linear-gradient(135deg,#242a36 0%,#344454 60%,#c76d22 160%);position:relative;overflow:hidden}.login-card{position:relative;border:1px solid rgba(255,255,255,.55);border-radius:24px;padding:38px 34px;background:rgba(255,255,255,.94);box-shadow:0 24px 60px rgba(0,0,0,.22)}.login-card::before{content:'';position:absolute;inset:9px;border:1px solid #f0e2d3;border-radius:18px;pointer-events:none}.login-card>*{position:relative}.login-card h1{font-size:23px}.login-card p.sub{color:#757b87}
+header.top{background:rgba(255,255,255,.84);border-bottom:1px solid rgba(222,225,231,.9);backdrop-filter:blur(18px);box-shadow:0 3px 18px rgba(29,35,46,.04)}.top-inner{padding:13px 22px;max-width:1280px}.top-inner img{height:40px;filter:drop-shadow(0 3px 4px rgba(0,0,0,.08))}.top-inner .brand{font-size:16px;color:#2a303c}.top-inner .who{font-size:12px;background:#f3f5f8;border-radius:999px;padding:6px 10px;color:#667085}
+nav.tabs{max-width:1280px;gap:6px;padding:0 18px 10px}nav.tabs button{border:0!important;border-radius:9px;padding:9px 13px;font-size:13px;color:#717989;transition:background .2s,color .2s,transform .2s}nav.tabs button:hover{background:#f2f3f6;color:#343b48}nav.tabs button.on{background:#2c3442;color:#fff;box-shadow:0 4px 12px rgba(31,38,50,.18)}nav.tabs button::after{display:none}
+main{position:relative;max-width:1280px;padding:34px 22px 88px}.page h2{font-size:23px;color:#252c37;letter-spacing:.02em;margin-bottom:20px}.card{border:1px solid rgba(222,225,231,.9);border-radius:16px;padding:22px;background:var(--card);box-shadow:var(--shadow)}.card h3{font-size:15px;color:#343b48}.grid2{gap:20px}.muted{color:#727b8d}.pill,.tag{background:#fff0dc;color:#a95717;border:1px solid #f7d7b5}.toast{border-radius:12px;background:#272e3a;box-shadow:0 14px 35px rgba(28,34,44,.24)}
+.kpis{gap:16px;margin-bottom:22px}.kpi{position:relative;overflow:hidden;border:1px solid rgba(222,225,231,.9);border-radius:16px;padding:18px;background:linear-gradient(145deg,rgba(255,255,255,.98),rgba(247,248,250,.84));box-shadow:var(--shadow)}.kpi::after{content:'';position:absolute;width:74px;height:74px;border-radius:50%;right:-24px;top:-26px;background:linear-gradient(135deg,rgba(239,166,91,.24),rgba(207,122,34,.04))}.kpi .v{position:relative;font-size:25px;letter-spacing:-.05em;color:#242b37}.kpi .l{color:#7a8291;font-size:10px;letter-spacing:.1em}
+.tbl{font-size:14px}.tbl th{background:#f5f6f8;color:#7c8492;font-size:10px;padding:12px 14px}.tbl td{padding:13px 14px;border-top:1px solid #eef0f3}.tbl tbody tr{transition:background .18s}.tbl tbody tr:hover{background:#fafafa}.st{font-size:10px;padding:5px 9px;border-radius:999px}.overlay{background:rgba(24,29,39,.52);backdrop-filter:blur(5px);padding:48px 14px}.modal{border-radius:20px;padding:28px;box-shadow:0 22px 70px rgba(10,13,18,.3)}.colecao-card{border-color:#e4e7ec;border-radius:14px;box-shadow:0 8px 22px rgba(30,36,48,.07)}
+/* Tipografia: geométrica e contemporânea, com hierarquia mais nítida. */
+body{font-family:'DM Sans',sans-serif}
+h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
+.login-card h1{font-size:24px;letter-spacing:-.04em}
+.top-inner .brand{letter-spacing:-.02em}
+.page h2{display:flex;align-items:center;gap:10px;font-size:25px;letter-spacing:-.045em}
+.page h2::before{content:'';width:7px;height:26px;border-radius:99px;background:linear-gradient(#f1a654,#be611b);box-shadow:0 3px 10px rgba(190,97,27,.2)}
+.card h3,.kpi .v{font-family:'Space Grotesk',sans-serif}
+.kpi .v{font-weight:700;letter-spacing:-.075em}
+.stock-tabs{display:inline-flex;gap:5px;padding:5px;margin:0 0 16px;border:1px solid #e1e4e9;border-radius:13px;background:rgba(255,255,255,.7);box-shadow:0 5px 14px rgba(30,36,48,.05)}
+.stock-tabs button{border:0;border-radius:9px;padding:9px 12px;background:transparent;color:#6f7786;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;transition:background .2s,color .2s,box-shadow .2s}.stock-tabs button:hover{color:#3b4351;background:#f4f5f7}.stock-tabs button.on{background:#293240;color:#fff;box-shadow:0 3px 9px rgba(30,36,48,.18)}.stock-tabs span{display:inline-block;min-width:20px;margin-left:5px;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.16);font-size:11px}.stock-tabs button:not(.on) span{background:#eceef2;color:#697283}
+
+@media(max-width:640px){.top-inner{padding:11px 15px}.top-inner .brand{display:none}.top-inner .who{display:none}nav.tabs{padding:0 10px 9px}nav.tabs button{padding:8px 11px}main{padding:25px 14px 72px}.page h2{font-size:20px}.card{border-radius:14px;padding:17px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kpi{padding:14px}.kpi .v{font-size:20px}.grid2{gap:14px}.item-row{grid-template-columns:1fr 62px 92px 30px}.stock-tabs{display:flex;width:100%}.stock-tabs button{flex:1;padding:9px 8px;font-size:12px}}
 </style>
 </head>
 <body>
@@ -225,6 +257,11 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
         <button class="btn" onclick="abrirProduto()">Novo produto</button>
       </div>
 
+      <div class="stock-tabs" role="tablist" aria-label="Categoria de estoque">
+        <button class="on" data-estoque="lacrados" onclick="setCategoriaEstoque('lacrados')">Produtos lacrados <span id="countLacrados">0</span></button>
+        <button data-estoque="cartas" onclick="setCategoriaEstoque('cartas')">Cartas avulsas <span id="countCartas">0</span></button>
+      </div>
+
       <div class="card" style="padding:14px">
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <input id="f_busca" placeholder="Buscar por nome, SKU ou set…" style="flex:2;min-width:200px" oninput="renderEstoque()">
@@ -263,6 +300,10 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
       </div>
       <p class="muted" id="colCambioInfo"></p>
       <div id="colecoesGrid" class="col-grid"></div>
+      <div id="colecoesPaginacao" style="display:none;text-align:center;margin-top:18px">
+        <p class="muted" id="colecoesInfo" style="margin-bottom:10px"></p>
+        <button class="btn ghost" id="btnCarregarMaisCartas" onclick="carregarMaisCartas()">Carregar mais cartas</button>
+      </div>
       <div id="colecoesVazio" class="soon" style="display:none">Selecione uma coleção acima para ver as cartas.</div>
     </div>
 
@@ -514,6 +555,23 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
         <h3 style="margin-bottom:4px">Conexão</h3>
         <p class="muted"><span class="status-dot" id="connDot"></span><span id="connTxt">Verificando…</span></p>
       </div>
+
+      <div class="card" id="logsSistema">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px">
+          <div>
+            <h3 style="margin-bottom:4px">Logs do sistema</h3>
+            <p class="muted">Histórico das principais ações realizadas na plataforma.</p>
+          </div>
+          <button class="btn ghost" style="padding:8px 13px" onclick="carregarLogsSistema()">Atualizar</button>
+        </div>
+        <input id="f_logs" placeholder="Filtrar por ação, descrição ou usuário…" oninput="renderLogsSistema()" style="margin-bottom:14px">
+        <div style="overflow-x:auto">
+          <table class="tbl" id="tblLogsSistema">
+            <thead><tr><th>Data e hora</th><th>Ação</th><th>Descrição</th><th>Usuário</th></tr></thead>
+            <tbody><tr><td colspan="4" class="muted">Abra Configurações para carregar os logs.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
     </div>
   </main>
 </div>
@@ -530,6 +588,7 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const TABELAS = ['empresa','produtos','compras','clientes','pedidos','pedido_itens','log_eventos'];
 const $ = id => document.getElementById(id);
 let CURRENT_EMAIL = '';
+let LOGS_SISTEMA = [];
 
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 async function logEvento(tipo, descricao){
@@ -578,6 +637,35 @@ function go(p){
   if(p==='financeiro'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderFinanceiro); }
   if(p==='dash'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderDash); }
   if(p==='colecoes' && !SETS_CARREGADOS) carregarSets();
+  if(p==='config') carregarLogsSistema();
+}
+
+/* ---------- Logs do sistema ---------- */
+function dataDoLog(log){ return log.criado_em || log.created_at || log.data || log.atualizado_em || null; }
+function formatarTipoLog(tipo){ return String(tipo||'sistema').replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase()); }
+function escapeHtml(v){ return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+function renderLogsSistema(){
+  const tabela = $('tblLogsSistema');
+  if(!tabela) return;
+  const termo = ($('f_logs').value||'').trim().toLowerCase();
+  const logs = LOGS_SISTEMA.filter(l=> !termo || [l.tipo,l.descricao,l.usuario].some(v=>String(v||'').toLowerCase().includes(termo)));
+  tabela.querySelector('tbody').innerHTML = logs.map(l=>{
+    const data = dataDoLog(l);
+    const quando = data && !Number.isNaN(new Date(data).getTime()) ? new Date(data).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '—';
+    return `<tr><td class="muted">${quando}</td><td><span class="tag">${escapeHtml(formatarTipoLog(l.tipo))}</span></td><td>${escapeHtml(l.descricao||'—')}</td><td class="muted">${escapeHtml(l.usuario||'Sistema')}</td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">Nenhum log encontrado.</td></tr>';
+}
+async function carregarLogsSistema(){
+  const tabela = $('tblLogsSistema');
+  if(!tabela) return;
+  tabela.querySelector('tbody').innerHTML = '<tr><td colspan="4" class="muted" style="text-align:center;padding:24px">Carregando logs…</td></tr>';
+  const {data,error} = await db.from('log_eventos').select('*').limit(200);
+  if(error){
+    tabela.querySelector('tbody').innerHTML = `<tr><td colspan="4" class="msg-err">Não foi possível carregar os logs: ${escapeHtml(error.message)}</td></tr>`;
+    return;
+  }
+  LOGS_SISTEMA = (data||[]).sort((a,b)=>new Date(dataDoLog(b)||0)-new Date(dataDoLog(a)||0));
+  renderLogsSistema();
 }
 
 /* ---------- Empresa ---------- */
@@ -651,12 +739,25 @@ const TIPOS = {
   etb:'ETB', tpc:'TPC', mini_bb:'Mini booster box', carta:'Carta avulsa'
 };
 let PRODUTOS = [];
+let CATEGORIA_ESTOQUE = 'lacrados';
 const fmt = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 
 function popularSelectsTipos(){
   const opts = Object.entries(TIPOS).map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
   $('pr_tipo').innerHTML = opts;
-  $('f_tipo').innerHTML = '<option value="">Todos os tipos</option>'+opts;
+  atualizarFiltroTipos();
+}
+function atualizarFiltroTipos(){
+  const anterior = $('f_tipo').value;
+  const tipos = Object.entries(TIPOS).filter(([tipo])=> CATEGORIA_ESTOQUE==='cartas' ? tipo==='carta' : tipo!=='carta');
+  $('f_tipo').innerHTML = '<option value="">Todos os tipos</option>'+tipos.map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  if(tipos.some(([tipo])=>tipo===anterior)) $('f_tipo').value=anterior;
+}
+function setCategoriaEstoque(categoria){
+  CATEGORIA_ESTOQUE = categoria;
+  document.querySelectorAll('[data-estoque]').forEach(b=>b.classList.toggle('on',b.dataset.estoque===categoria));
+  atualizarFiltroTipos();
+  renderEstoque();
 }
 
 async function carregarEstoque(){
@@ -671,7 +772,13 @@ function renderEstoque(){
   const tipo = $('f_tipo').value;
   const soBaixo = $('f_baixo').checked;
   const tb = document.querySelector('#tblEstoque tbody');
+  const lacrados = PRODUTOS.filter(p=>p.ativo && p.tipo!=='carta');
+  const cartas = PRODUTOS.filter(p=>p.ativo && p.tipo==='carta');
+  $('countLacrados').textContent = lacrados.length;
+  $('countCartas').textContent = cartas.length;
   const lista = PRODUTOS.filter(p=>{
+    if(CATEGORIA_ESTOQUE==='cartas' && p.tipo!=='carta') return false;
+    if(CATEGORIA_ESTOQUE==='lacrados' && p.tipo==='carta') return false;
     if(tipo && p.tipo!==tipo) return false;
     if(soBaixo && !(p.qtd <= p.estoque_minimo)) return false;
     if(busca && !((p.nome+' '+p.sku+' '+p.set_nome).toLowerCase().includes(busca))) return false;
@@ -698,6 +805,9 @@ function renderEstoque(){
       </td></tr>`;
   }).join('');
   $('estoqueVazio').style.display = lista.length? 'none':'block';
+  $('estoqueVazio').innerHTML = CATEGORIA_ESTOQUE==='cartas'
+    ? 'Nenhuma carta avulsa encontrada. Use <b>Coleções</b> ou <b>Novo produto</b> para adicionar.'
+    : 'Nenhum produto lacrado encontrado. Clique em <b>Novo produto</b> para começar.';
   const totCusto = lista.reduce((s,p)=>s+p.qtd*p.custo_medio,0);
   const totVenda = lista.reduce((s,p)=>s+p.qtd*p.preco_venda,0);
   $('estoqueTotais').textContent = lista.length
@@ -1323,6 +1433,9 @@ function renderDash(){
 
 /* ---------- Coleções (pokemontcg.io + câmbio) ---------- */
 let SETS_CARREGADOS = false, CAMBIO_USD_BRL = null, CARTAS_SET = [], SET_ATUAL_NOME = '', POKEMONTCG_KEY = '';
+let SET_ATUAL_ID = '', PAGINA_CARTAS = 0, TOTAL_CARTAS_SET = 0, CARREGANDO_CARTAS = false;
+const TAMANHO_PAGINA_CARTAS = 48;
+const CACHE_CARTAS_SETS = new Map();
 const ERA_ORDEM = ['me','sv','swsh','sm','xy','bw','hgss','dp','pl','ex','base'];
 async function buscarCambio(){
   if(CAMBIO_USD_BRL) return CAMBIO_USD_BRL;
@@ -1353,21 +1466,71 @@ async function carregarSets(){
 async function carregarCartasDoSet(){
   const setId = $('co_set_sel').value;
   const grid = $('colecoesGrid');
-  if(!setId){ grid.innerHTML=''; $('colecoesVazio').style.display='block'; return; }
+  if(!setId){
+    SET_ATUAL_ID=''; CARTAS_SET=[]; TOTAL_CARTAS_SET=0;
+    grid.innerHTML=''; $('colecoesVazio').style.display='block'; $('colecoesPaginacao').style.display='none';
+    return;
+  }
+  SET_ATUAL_ID = setId;
   $('colecoesVazio').style.display='none';
   SET_ATUAL_NOME = $('co_set_sel').selectedOptions[0].textContent;
+  $('co_cartas_busca').value = '';
   grid.innerHTML = Array.from({length:10}).map(()=>`<div class="colecao-card"><div class="skeleton" style="aspect-ratio:5/7"></div></div>`).join('');
+  $('colecoesPaginacao').style.display='none';
+  const cache = CACHE_CARTAS_SETS.get(setId);
+  if(cache){
+    CARTAS_SET = cache.cartas;
+    TOTAL_CARTAS_SET = cache.total;
+    PAGINA_CARTAS = cache.ultimaPagina;
+    renderCartasSet();
+    return;
+  }
+  CARTAS_SET=[]; TOTAL_CARTAS_SET=0; PAGINA_CARTAS=0;
+  await carregarPaginaDeCartas(1);
+}
+async function carregarMaisCartas(){
+  if(CARREGANDO_CARTAS || !SET_ATUAL_ID || CARTAS_SET.length>=TOTAL_CARTAS_SET) return;
+  await carregarPaginaDeCartas(PAGINA_CARTAS+1);
+}
+async function carregarPaginaDeCartas(pagina){
+  const setId = SET_ATUAL_ID;
+  if(!setId || CARREGANDO_CARTAS) return;
+  CARREGANDO_CARTAS = true;
+  const botao = $('btnCarregarMaisCartas');
+  botao.disabled = true;
+  botao.textContent = 'Carregando…';
   try{
-    const r = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`, {headers:headersPokemonTCG()});
+    const params = new URLSearchParams({
+      q:`set.id:${setId}`, orderBy:'number', page:String(pagina), pageSize:String(TAMANHO_PAGINA_CARTAS),
+      select:'id,name,number,set,images,tcgplayer,cardmarket'
+    });
+    const r = await fetch(`https://api.pokemontcg.io/v2/cards?${params}`, {headers:headersPokemonTCG()});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const j = await r.json();
-    CARTAS_SET = j.data||[];
+    if(setId!==SET_ATUAL_ID) return;
+    const cache = CACHE_CARTAS_SETS.get(setId) || {cartas:[], total:0, ultimaPagina:0};
+    const ids = new Set(cache.cartas.map(c=>c.id));
+    cache.cartas.push(...(j.data||[]).filter(c=>!ids.has(c.id)));
+    cache.total = j.totalCount||cache.cartas.length;
+    cache.ultimaPagina = Math.max(cache.ultimaPagina,pagina);
+    CACHE_CARTAS_SETS.set(setId,cache);
+    CARTAS_SET = cache.cartas;
+    TOTAL_CARTAS_SET = cache.total;
+    PAGINA_CARTAS = cache.ultimaPagina;
     renderCartasSet();
   }catch(e){
-    grid.innerHTML = '';
-    $('colecoesVazio').style.display='block';
-    $('colecoesVazio').textContent = 'Erro ao buscar cartas: '+(e.message==='Failed to fetch' ? 'sem conexão com pokemontcg.io (bloqueio de rede ou limite de requisições — configure uma API key em Configurações)' : e.message);
+    if(setId!==SET_ATUAL_ID) return;
+    const grid = $('colecoesGrid');
+    if(!CARTAS_SET.length){
+      grid.innerHTML = '';
+      $('colecoesVazio').style.display='block';
+      $('colecoesVazio').textContent = 'Erro ao buscar cartas: '+(e.message==='Failed to fetch' ? 'sem conexão com pokemontcg.io (bloqueio de rede ou limite de requisições — configure uma API key em Configurações)' : e.message);
+    }
     toast('Erro ao buscar cartas');
+  }finally{
+    CARREGANDO_CARTAS = false;
+    botao.disabled = false;
+    botao.textContent = 'Carregar mais cartas';
   }
 }
 function renderCartasSet(){
@@ -1385,6 +1548,14 @@ function renderCartasSet(){
         <div class="cc-price">${brl?fmt(brl):'sem preço ref.'}</div>
       </div></div>`;
   }).join('');
+  const paginacao = $('colecoesPaginacao');
+  const botao = $('btnCarregarMaisCartas');
+  const temMais = CARTAS_SET.length<TOTAL_CARTAS_SET;
+  paginacao.style.display = CARTAS_SET.length ? 'block' : 'none';
+  botao.style.display = temMais ? '' : 'none';
+  $('colecoesInfo').textContent = busca
+    ? `${lista.length} encontrada(s) entre ${CARTAS_SET.length} carta(s) carregada(s) de ${TOTAL_CARTAS_SET}.`
+    : `${CARTAS_SET.length} de ${TOTAL_CARTAS_SET} carta(s) carregada(s).`;
 }
 function abrirAddCarta(cardId){
   const c = CARTAS_SET.find(x=>x.id===cardId);
