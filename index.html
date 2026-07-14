@@ -74,7 +74,68 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
 .overlay{display:none;position:fixed;inset:0;background:rgba(42,23,8,.45);z-index:50;align-items:flex-start;justify-content:center;padding:30px 14px;overflow-y:auto}
 .overlay.show{display:flex}
 .modal{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:26px;width:100%;max-width:560px}
+.col-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:16px}
+.colecao-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;cursor:pointer}
+.colecao-card img{width:100%;aspect-ratio:5/7;object-fit:cover;display:block;background:#F1E6CB}
+.colecao-card .cc-body{padding:9px 10px}
+.colecao-card .cc-name{font-size:13px;font-weight:700;line-height:1.25;margin-bottom:2px}
+.colecao-card .cc-price{font-size:12px;color:var(--gold-deep);font-weight:800}
+.colecao-card .cc-num{font-size:11px;color:var(--ink-soft)}
 .modal h3{margin-bottom:6px}
+
+/* ---------- Animações ---------- */
+@media (prefers-reduced-motion: no-preference){
+  .page{animation:pageIn .38s cubic-bezier(.22,1,.36,1)}
+  @keyframes pageIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  .card{animation:cardIn .4s cubic-bezier(.22,1,.36,1) backwards}
+  .card:nth-of-type(1){animation-delay:.02s} .card:nth-of-type(2){animation-delay:.06s}
+  .card:nth-of-type(3){animation-delay:.10s} .card:nth-of-type(4){animation-delay:.14s}
+  @keyframes cardIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  .kpi{animation:kpiIn .45s cubic-bezier(.22,1,.36,1) backwards}
+  .kpi:nth-child(1){animation-delay:0s} .kpi:nth-child(2){animation-delay:.05s}
+  .kpi:nth-child(3){animation-delay:.10s} .kpi:nth-child(4){animation-delay:.15s}
+  .kpi:nth-child(5){animation-delay:.20s} .kpi:nth-child(6){animation-delay:.25s}
+  @keyframes kpiIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
+
+  .tbl tbody tr{animation:rowIn .3s ease backwards}
+  @keyframes rowIn{from{opacity:0;transform:translateX(-4px)}to{opacity:1;transform:translateX(0)}}
+
+  .overlay .modal{animation:modalIn .28s cubic-bezier(.22,1,.36,1)}
+  @keyframes modalIn{from{opacity:0;transform:translateY(14px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+  .overlay{animation:overlayIn .2s ease}
+  @keyframes overlayIn{from{opacity:0}to{opacity:1}}
+
+  .toast{transition:opacity .3s ease, transform .3s cubic-bezier(.22,1,.36,1);transform:translateX(-50%) translateY(8px)}
+  .toast.show{transform:translateX(-50%) translateY(0)}
+
+  nav.tabs button{position:relative;transition:color .2s ease}
+  nav.tabs button::after{content:'';position:absolute;left:16px;right:16px;bottom:-1px;height:3px;background:var(--gold);
+    transform:scaleX(0);transform-origin:center;transition:transform .25s cubic-bezier(.22,1,.36,1)}
+  nav.tabs button.on::after{transform:scaleX(1)}
+  nav.tabs button{border-bottom-color:transparent !important}
+
+  .btn,.btn.ghost,.mini{transition:transform .15s ease, background .2s ease, box-shadow .2s ease}
+  .btn:active,.btn.ghost:active,.mini:active{transform:scale(.96)}
+  .btn:hover{box-shadow:0 3px 10px rgba(159,106,23,.25);transform:translateY(-1px)}
+
+  .status-dot{transition:background .3s ease}
+  .status-dot.ok{animation:pulseOk 1.6s ease-in-out infinite}
+  @keyframes pulseOk{0%,100%{box-shadow:0 0 0 0 rgba(46,125,79,.35)}50%{box-shadow:0 0 0 5px rgba(46,125,79,0)}}
+
+  .colecao-card{transition:transform .2s cubic-bezier(.22,1,.36,1), box-shadow .2s ease}
+  .colecao-card:hover{transform:translateY(-3px);box-shadow:0 8px 18px rgba(90,58,20,.18)}
+  .colecao-card img{transition:transform .3s ease}
+  .colecao-card:hover img{transform:scale(1.04)}
+
+  .skeleton{background:linear-gradient(90deg,#EEE2C6 25%,#F6EDD8 37%,#EEE2C6 63%);background-size:400% 100%;animation:shimmer 1.4s ease infinite}
+  @keyframes shimmer{0%{background-position:100% 0}100%{background-position:0 0}}
+
+  #btnLogin:not(:disabled):active{transform:scale(.98)}
+  .brick{background-size:50px 6px;animation:brickShift 6s linear infinite}
+  @keyframes brickShift{from{background-position-x:0}to{background-position-x:200px}}
+}
 .st{font-size:12px;font-weight:800;padding:3px 10px;border-radius:12px;letter-spacing:.03em}
 .st-orcamento{background:#EFE6D2;color:#7A6234}
 .st-pago{background:#DCEEE3;color:#2E7D4F}
@@ -133,7 +194,9 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
     <nav class="tabs" id="tabs">
       <button data-p="dash" class="on" onclick="go('dash')">Dashboard</button>
       <button data-p="estoque" onclick="go('estoque')">Estoque</button>
+      <button data-p="colecoes" onclick="go('colecoes')">Coleções</button>
       <button data-p="pedidos" onclick="go('pedidos')">Pedidos</button>
+      <button data-p="clientes" onclick="go('clientes')">Clientes</button>
       <button data-p="financeiro" onclick="go('financeiro')">Financeiro</button>
       <button data-p="config" onclick="go('config')">Configurações</button>
     </nav>
@@ -187,6 +250,42 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
       <p class="muted" id="estoqueTotais"></p>
     </div>
 
+    <div class="page" id="p-colecoes" style="display:none">
+      <h2>Coleções</h2>
+      <p class="muted" style="margin-bottom:16px">Navegue pelas cartas de um set e adicione ao estoque com um clique. Preço de referência convertido de USD para BRL — não é seu preço de venda, é ponto de partida.</p>
+      <div class="card" style="padding:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <select id="co_set_sel" style="flex:2;min-width:220px" onchange="carregarCartasDoSet()">
+            <option value="">Carregando coleções…</option>
+          </select>
+          <input id="co_cartas_busca" placeholder="Buscar carta no set…" style="flex:1;min-width:160px" oninput="renderCartasSet()">
+        </div>
+      </div>
+      <p class="muted" id="colCambioInfo"></p>
+      <div id="colecoesGrid" class="col-grid"></div>
+      <div id="colecoesVazio" class="soon" style="display:none">Selecione uma coleção acima para ver as cartas.</div>
+    </div>
+
+    <!-- MODAL ADICIONAR CARTA AO ESTOQUE -->
+    <div class="overlay" id="mAddCarta">
+      <div class="modal">
+        <h3>Adicionar ao estoque</h3>
+        <div id="addCartaHeader" style="display:flex;gap:14px;align-items:center;margin-bottom:6px"></div>
+        <div class="grid2">
+          <div><label>Quantidade</label><input id="ac_qtd" type="number" min="1" value="1"></div>
+          <div><label>Custo unitário (R$)</label><input id="ac_custo" type="number" step="0.01" min="0"></div>
+        </div>
+        <label>Preço de venda (R$) <span style="font-weight:400;text-transform:none" id="ac_ref"></span></label>
+        <input id="ac_preco" type="number" step="0.01" min="0">
+        <p class="muted" style="margin-top:10px">Cria o produto (se novo) e já registra a primeira entrada de compra.</p>
+        <div class="msg-err" id="acErr"></div>
+        <footer class="actions">
+          <button class="btn" onclick="confirmarAddCarta()">Adicionar ao estoque</button>
+          <button class="btn ghost" onclick="fechar('mAddCarta')">Cancelar</button>
+        </footer>
+      </div>
+    </div>
+
     <!-- MODAL PRODUTO -->
     <div class="overlay" id="mProduto">
       <div class="modal">
@@ -206,11 +305,24 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
           <div><label>Preço de venda (R$)</label><input id="pr_preco_venda" type="number" step="0.01" min="0"></div>
           <div><label>Estoque mínimo (alerta)</label><input id="pr_estoque_minimo" type="number" step="1" min="0" value="0"></div>
         </div>
+        <label>Foto do produto</label>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div id="pr_img_preview" style="width:84px;height:84px;border-radius:10px;border:1.5px dashed var(--line);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:var(--ink-soft);font-size:12px;text-align:center">sem foto</div>
+          <div>
+            <button class="btn ghost" type="button" style="padding:8px 14px" onclick="document.getElementById('pr_img_file').click()">Enviar foto</button>
+            <button class="mini" type="button" id="pr_img_remover" style="display:none;color:var(--warn)" onclick="removerImagemProduto()">Remover</button>
+            <input type="file" id="pr_img_file" accept="image/*" style="display:none" onchange="uploadImagemProduto(event)">
+            <p class="muted" style="font-size:12px;margin-top:4px">JPG/PNG, redimensionado automaticamente.</p>
+          </div>
+        </div>
+        <input type="hidden" id="pr_imagem_url">
         <p class="muted" style="margin-top:12px">Quantidade e custo entram por <b>Registrar compra</b> — assim o custo médio fica sempre correto.</p>
+        <div id="prHistorico" style="margin-top:10px"></div>
         <div class="msg-err" id="prErr"></div>
         <footer class="actions">
           <button class="btn" onclick="salvarProduto()">Salvar produto</button>
           <button class="btn ghost" onclick="fechar('mProduto')">Cancelar</button>
+          <button class="btn ghost" id="btnExcluirProduto" style="display:none;color:var(--warn);border-color:var(--warn);margin-left:auto" onclick="excluirProduto()">Excluir produto</button>
         </footer>
       </div>
     </div>
@@ -262,10 +374,26 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
       </div>
     </div>
 
+    <div class="page" id="p-clientes" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <h2 style="margin:0;flex:1">Clientes</h2>
+        <button class="btn" onclick="abrirCliente()">Novo cliente</button>
+      </div>
+      <div class="card" style="padding:14px">
+        <input id="fc_busca" placeholder="Buscar por nome ou WhatsApp…" oninput="renderClientes()">
+      </div>
+      <div class="kpis" id="clientesKpis"></div>
+      <div class="card" style="padding:0;overflow-x:auto">
+        <table class="tbl" id="tblClientes"><thead><tr><th>Nome</th><th>WhatsApp</th><th>Cidade/UF</th><th class="num">Pedidos</th><th class="num">Total comprado</th><th></th></tr></thead><tbody></tbody></table>
+        <div id="clientesVazio" class="soon" style="display:none;border:none">Nenhum cliente cadastrado.</div>
+      </div>
+    </div>
+
     <!-- MODAL CLIENTE -->
     <div class="overlay" id="mCliente">
       <div class="modal">
-        <h3>Novo cliente</h3>
+        <h3 id="mClienteTitulo">Novo cliente</h3>
+        <input type="hidden" id="cl_id">
         <label>Nome</label><input id="cl_nome">
         <div class="grid2">
           <div><label>WhatsApp</label><input id="cl_whatsapp"></div>
@@ -276,6 +404,7 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
         <footer class="actions">
           <button class="btn" onclick="salvarCliente()">Salvar cliente</button>
           <button class="btn ghost" onclick="fechar('mCliente')">Cancelar</button>
+          <button class="btn ghost" id="btnExcluirCliente" style="display:none;color:var(--warn);border-color:var(--warn);margin-left:auto" onclick="excluirCliente()">Excluir cliente</button>
         </footer>
       </div>
     </div>
@@ -392,8 +521,12 @@ const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const TABELAS = ['empresa','produtos','compras','clientes','pedidos','pedido_itens'];
 const $ = id => document.getElementById(id);
+let CURRENT_EMAIL = '';
 
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+async function logEvento(tipo, descricao){
+  try{ await db.from('log_eventos').insert({tipo, descricao, usuario:CURRENT_EMAIL}); }catch(e){}
+}
 
 /* ---------- Sessão ---------- */
 async function boot(){
@@ -407,6 +540,7 @@ function showLogin(){ $('app').style.display='none'; $('login').style.display='f
 async function showApp(session){
   $('login').style.display='none'; $('app').style.display='block';
   $('whoami').textContent = session.user.email;
+  CURRENT_EMAIL = session.user.email;
   popularSelectsTipos();
   await carregarEmpresa();
   await Promise.all([carregarEstoque(), carregarPedidos()]);
@@ -426,12 +560,16 @@ async function doLogout(){ await db.auth.signOut(); }
 /* ---------- Navegação ---------- */
 function go(p){
   document.querySelectorAll('.page').forEach(x=>x.style.display='none');
-  $('p-'+p).style.display='block';
+  const el = $('p-'+p);
+  el.style.display='block';
+  el.style.animation='none'; void el.offsetWidth; el.style.animation='';
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
   if(p==='estoque') carregarEstoque();
+  if(p==='clientes') carregarPedidos();
   if(p==='pedidos'){ carregarEstoque(); carregarPedidos(); }
   if(p==='financeiro'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderFinanceiro); }
   if(p==='dash'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderDash); }
+  if(p==='colecoes' && !SETS_CARREGADOS) carregarSets();
 }
 
 /* ---------- Empresa ---------- */
@@ -526,7 +664,10 @@ function renderEstoque(){
       ? ((p.preco_venda-p.custo_medio)/p.preco_venda*100).toFixed(0)+'%' : '—';
     const baixo = p.qtd <= p.estoque_minimo && p.estoque_minimo>0;
     return `<tr class="${baixo?'baixo':''}">
-      <td><b>${p.nome}</b>${p.set_nome?`<br><span class="muted" style="font-size:13px">${p.set_nome}${p.numero_carta?' · '+p.numero_carta:''}</span>`:''}</td>
+      <td style="display:flex;align-items:center;gap:10px">
+        ${p.imagem_url?`<img src="${p.imagem_url}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;flex-shrink:0">`:`<div style="width:38px;height:38px;border-radius:6px;background:#F1E6CB;flex-shrink:0"></div>`}
+        <div><b>${p.nome}</b>${p.set_nome?`<br><span class="muted" style="font-size:13px">${p.set_nome}${p.numero_carta?' · '+p.numero_carta:''}</span>`:''}</div>
+      </td>
       <td><span class="tag">${TIPOS[p.tipo]||p.tipo}</span></td>
       <td>${p.sku}</td>
       <td class="num"><b>${p.qtd}</b>${baixo?' ⚠️':''}</td>
@@ -557,7 +698,64 @@ function abrirProduto(id){
   $('pr_numero_carta').value = p?.numero_carta||'';
   $('pr_preco_venda').value = p?.preco_venda??'';
   $('pr_estoque_minimo').value = p?.estoque_minimo??0;
+  $('pr_imagem_url').value = p?.imagem_url||'';
+  atualizarPreviewImagem(p?.imagem_url||'');
+  $('btnExcluirProduto').style.display = p? 'inline-block':'none';
+  $('prHistorico').innerHTML = '';
   $('mProduto').classList.add('show');
+  if(p) carregarHistoricoCompras(p.id);
+}
+async function carregarHistoricoCompras(produtoId){
+  const {data,error} = await db.from('compras').select('*').eq('produto_id',produtoId).order('data',{ascending:false});
+  if(error){ return; }
+  const ativas = data.filter(c=>!c.estornada);
+  if(!ativas.length){ $('prHistorico').innerHTML=''; return; }
+  $('prHistorico').innerHTML = `<label style="margin-top:18px">Histórico de compras</label>
+    <table class="tbl"><thead><tr><th>Data</th><th class="num">Qtd</th><th class="num">Custo unit.</th><th>Fornecedor</th><th></th></tr></thead>
+    <tbody>${ativas.map(c=>`<tr>
+      <td>${new Date(c.data+'T12:00').toLocaleDateString('pt-BR')}</td>
+      <td class="num">${c.qtd}</td><td class="num">${fmt(c.custo_unit)}</td><td>${c.fornecedor||'—'}</td>
+      <td><button class="mini" style="color:var(--warn)" onclick="estornarCompra('${c.id}')">Estornar</button></td>
+    </tr>`).join('')}</tbody></table>
+    <p class="muted" style="font-size:12px;margin-top:4px">Estornar remove a entrada e recalcula qtd e custo médio do zero, a partir das compras restantes.</p>`;
+}
+async function estornarCompra(compraId){
+  if(!confirm('Estornar esta compra? A quantidade e o custo médio do produto serão recalculados sem ela.')) return;
+  const {data:compra,error:e0} = await db.from('compras').select('*').eq('id',compraId).single();
+  if(e0){ toast('Erro: '+e0.message); return; }
+  const {error:e1} = await db.from('compras').update({estornada:true, estornada_em:new Date().toISOString(), estornada_por:CURRENT_EMAIL}).eq('id',compraId);
+  if(e1){ toast('Erro ao estornar: '+e1.message); return; }
+  await recalcularProdutoDoZero(compra.produto_id);
+  await logEvento('compra_estornada', `Compra de ${compra.qtd}un a ${fmt(compra.custo_unit)} estornada`);
+  toast('Compra estornada e produto recalculado');
+  await carregarEstoque();
+  carregarHistoricoCompras(compra.produto_id);
+}
+async function recalcularProdutoDoZero(produtoId){
+  // soma apenas compras não estornadas; NÃO considera vendas (a baixa de venda já é refletida na qtd atual via pedidos)
+  const {data:compras} = await db.from('compras').select('*').eq('produto_id',produtoId).eq('estornada',false);
+  const {data:vendidos} = await db.from('pedido_itens').select('qtd, pedido_id').eq('produto_id',produtoId);
+  const {data:pedidosBaixados} = await db.from('pedidos').select('id').eq('estoque_baixado',true);
+  const idsBaixados = new Set((pedidosBaixados||[]).map(p=>p.id));
+  const qtdVendida = (vendidos||[]).filter(v=>idsBaixados.has(v.pedido_id)).reduce((s,v)=>s+v.qtd,0);
+  const qtdComprada = (compras||[]).reduce((s,c)=>s+c.qtd,0);
+  const custoTotal = (compras||[]).reduce((s,c)=>s+c.qtd*c.custo_unit,0);
+  const custoMedio = qtdComprada>0 ? custoTotal/qtdComprada : 0;
+  const qtdFinal = Math.max(0, qtdComprada - qtdVendida);
+  await db.from('produtos').update({qtd:qtdFinal, custo_medio:custoMedio.toFixed(2), atualizado_em:new Date().toISOString()}).eq('id',produtoId);
+}
+async function excluirProduto(){
+  const id = $('pr_id').value;
+  const p = PRODUTOS.find(x=>x.id===id);
+  if(!confirm(`Excluir "${p.nome}"? Isso não é possível se houver pedidos vinculados a ele.`)) return;
+  const {error} = await db.from('produtos').delete().eq('id',id);
+  if(error){
+    toast(error.code==='23503' ? 'Não é possível excluir: há pedidos vinculados a este produto.' : 'Erro: '+error.message);
+    return;
+  }
+  await logEvento('produto_excluido', `Produto "${p.nome}" (SKU ${p.sku}) excluído`);
+  fechar('mProduto'); toast('Produto excluído');
+  carregarEstoque();
 }
 async function salvarProduto(){
   const id = $('pr_id').value;
@@ -569,9 +767,11 @@ async function salvarProduto(){
     numero_carta: $('pr_numero_carta').value.trim(),
     preco_venda: Number($('pr_preco_venda').value||0),
     estoque_minimo: parseInt($('pr_estoque_minimo').value||0),
+    imagem_url: $('pr_imagem_url').value,
     atualizado_em: new Date().toISOString()
   };
   if(!payload.sku || !payload.nome){ $('prErr').textContent='SKU e nome são obrigatórios.'; return; }
+  if(!id) payload.criado_por = CURRENT_EMAIL;
   const q = id ? db.from('produtos').update(payload).eq('id',id)
                : db.from('produtos').insert(payload);
   const {error} = await q;
@@ -582,6 +782,34 @@ async function salvarProduto(){
   fechar('mProduto'); toast(id?'Produto atualizado':'Produto criado');
   carregarEstoque();
 }
+
+function atualizarPreviewImagem(url){
+  const el = $('pr_img_preview');
+  if(url){ el.style.padding='0'; el.innerHTML = `<img src="${url}" style="width:100%;height:100%;object-fit:cover">`; $('pr_img_remover').style.display='inline-block'; }
+  else { el.style.padding=''; el.innerHTML = 'sem foto'; $('pr_img_remover').style.display='none'; }
+}
+function uploadImagemProduto(ev){
+  const file = ev.target.files[0]; ev.target.value='';
+  if(!file) return;
+  if(!file.type.startsWith('image/')){ toast('Selecione um arquivo de imagem.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 480;
+      const scale = Math.min(1, MAX/Math.max(img.width,img.height));
+      const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+      const canvas = document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+      $('pr_imagem_url').value = dataUrl;
+      atualizarPreviewImagem(dataUrl);
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removerImagemProduto(){ $('pr_imagem_url').value=''; atualizarPreviewImagem(''); }
 
 function abrirCompra(prodId){
   $('coErr').textContent=''; $('coPreview').textContent='';
@@ -611,7 +839,8 @@ async function salvarCompra(){
   if(!p || qtd<1 || custo<0 || $('co_custo').value===''){ $('coErr').textContent='Informe quantidade e custo unitário válidos.'; return; }
   const {error:e1} = await db.from('compras').insert({
     produto_id:p.id, qtd, custo_unit:custo,
-    data:$('co_data').value, fornecedor:$('co_fornecedor').value.trim()
+    data:$('co_data').value, fornecedor:$('co_fornecedor').value.trim(),
+    criado_por: CURRENT_EMAIL
   });
   if(e1){ $('coErr').textContent=e1.message; return; }
   const novoQtd = p.qtd+qtd;
@@ -629,20 +858,71 @@ function fechar(id){ $(id).classList.remove('show'); }
 /* ---------- Clientes ---------- */
 let CLIENTES = [], PEDIDOS = [], ITENS = [];
 
-function abrirCliente(){
+function abrirCliente(id){
   $('clErr').textContent='';
-  ['cl_nome','cl_whatsapp','cl_cidade_uf','cl_endereco'].forEach(i=>$(i).value='');
+  const c = id ? CLIENTES.find(x=>x.id===id) : null;
+  $('mClienteTitulo').textContent = c? 'Editar cliente' : 'Novo cliente';
+  $('cl_id').value = c?.id||'';
+  $('cl_nome').value = c?.nome||'';
+  $('cl_whatsapp').value = c?.whatsapp||'';
+  $('cl_cidade_uf').value = c?.cidade_uf||'';
+  $('cl_endereco').value = c?.endereco||'';
+  $('btnExcluirCliente').style.display = c? 'inline-block':'none';
   $('mCliente').classList.add('show');
 }
 async function salvarCliente(){
+  const id = $('cl_id').value;
   const nome = $('cl_nome').value.trim();
   if(!nome){ $('clErr').textContent='Nome é obrigatório.'; return; }
-  const {error} = await db.from('clientes').insert({
-    nome, whatsapp:$('cl_whatsapp').value.trim(),
-    cidade_uf:$('cl_cidade_uf').value.trim(), endereco:$('cl_endereco').value.trim()
-  });
+  const payload = { nome, whatsapp:$('cl_whatsapp').value.trim(),
+    cidade_uf:$('cl_cidade_uf').value.trim(), endereco:$('cl_endereco').value.trim() };
+  if(!id) payload.criado_por = CURRENT_EMAIL;
+  const q = id ? db.from('clientes').update(payload).eq('id',id) : db.from('clientes').insert(payload);
+  const {error} = await q;
   if(error){ $('clErr').textContent=error.message; return; }
-  fechar('mCliente'); toast('Cliente salvo'); carregarPedidos();
+  fechar('mCliente'); toast(id?'Cliente atualizado':'Cliente salvo'); carregarPedidos();
+}
+async function excluirCliente(){
+  const id = $('cl_id').value;
+  const c = CLIENTES.find(x=>x.id===id);
+  if(!confirm(`Excluir "${c.nome}"? Isso não é possível se houver pedidos vinculados a ele.`)) return;
+  const {error} = await db.from('clientes').delete().eq('id',id);
+  if(error){
+    toast(error.code==='23503' ? 'Não é possível excluir: há pedidos vinculados a este cliente.' : 'Erro: '+error.message);
+    return;
+  }
+  await logEvento('cliente_excluido', `Cliente "${c.nome}" excluído`);
+  fechar('mCliente'); toast('Cliente excluído');
+  carregarPedidos();
+}
+function renderClientes(){
+  const busca = ($('fc_busca')?.value||'').toLowerCase();
+  const lista = CLIENTES.filter(c => !busca || (c.nome+' '+(c.whatsapp||'')).toLowerCase().includes(busca));
+  const vendidosPorCliente = {};
+  PEDIDOS.filter(p=>VENDIDO.includes(p.status)).forEach(p=>{
+    const t = itensDe(p.id).reduce((s,i)=>s+i.qtd*i.preco_unit,0) - p.desconto;
+    const c = vendidosPorCliente[p.cliente_id] ||= {n:0,total:0};
+    c.n++; c.total+=t;
+  });
+  const tb = document.querySelector('#tblClientes tbody');
+  if(tb){
+    tb.innerHTML = lista.map(c=>{
+      const info = vendidosPorCliente[c.id] || {n:0,total:0};
+      return `<tr><td><b>${c.nome}</b></td><td>${c.whatsapp||'—'}</td><td>${c.cidade_uf||'—'}</td>
+        <td class="num">${info.n}</td><td class="num">${fmt(info.total)}</td>
+        <td><button class="mini" onclick="abrirCliente('${c.id}')">Editar</button></td></tr>`;
+    }).join('');
+    $('clientesVazio').style.display = lista.length? 'none':'block';
+  }
+  const kpiEl = $('clientesKpis');
+  if(kpiEl){
+    const totalGasto = Object.values(vendidosPorCliente).reduce((s,c)=>s+c.total,0);
+    kpiEl.innerHTML = [
+      ['Clientes cadastrados', CLIENTES.length],
+      ['Clientes com compra', Object.keys(vendidosPorCliente).length],
+      ['Total já vendido a clientes', fmt(totalGasto)]
+    ].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
+  }
 }
 
 /* ---------- Pedidos ---------- */
@@ -680,6 +960,7 @@ function renderPedidos(){
       <td><button class="mini" onclick="verPedido('${p.id}')">Abrir</button></td>
     </tr>`).join('');
   $('pedidosVazio').style.display = lista.length?'none':'block';
+  renderClientes();
 }
 
 function abrirPedido(){
@@ -739,7 +1020,7 @@ async function salvarPedido(){
     cliente_id:$('pe_cliente').value, canal:$('pe_canal').value,
     desconto:Number($('pe_desconto').value||0), frete:Number($('pe_frete').value||0),
     taxas:Number($('pe_taxas').value||0), observacoes:$('pe_obs').value.trim(),
-    data:$('pe_data').value, status:'orcamento'
+    data:$('pe_data').value, status:'orcamento', criado_por: CURRENT_EMAIL
   }).select().single();
   if(e1){ $('peErr').textContent=e1.message; return; }
   const rows = itens.map(i=>{
@@ -773,9 +1054,19 @@ function verPedido(id){
     <footer class="actions">
       ${prox.map(s=>`<button class="btn ${s==='cancelado'?'ghost':''}" onclick="mudarStatus('${p.id}','${s}')">${s==='cancelado'?'Cancelar pedido':'Marcar como '+ST_LABEL[s]}</button>`).join('')}
       <button class="btn ghost" onclick="imprimirPedido('${p.id}')">Imprimir PDF</button>
+      ${!p.estoque_baixado?`<button class="btn ghost" style="color:var(--warn);border-color:var(--warn)" onclick="excluirPedido('${p.id}')">Excluir pedido</button>`:''}
       <button class="btn ghost" onclick="fechar('mDetalhe')">Fechar</button>
     </footer>`;
   $('mDetalhe').classList.add('show');
+}
+async function excluirPedido(id){
+  const p = PEDIDOS.find(x=>x.id===id);
+  if(!confirm(`Excluir o pedido #${p.numero} permanentemente? Esta ação não pode ser desfeita.`)) return;
+  const {error} = await db.from('pedidos').delete().eq('id',id); // pedido_itens cai em cascata
+  if(error){ toast('Erro ao excluir: '+error.message); return; }
+  await logEvento('pedido_excluido', `Pedido #${p.numero} (${nomeCliente(p.cliente_id)}) excluído`);
+  fechar('mDetalhe'); toast('Pedido excluído');
+  carregarPedidos();
 }
 async function mudarStatus(id, novo){
   const p = PEDIDOS.find(x=>x.id===id);
@@ -790,16 +1081,16 @@ async function mudarStatus(id, novo){
       const {error} = await db.from('produtos').update({qtd:prod.qtd-i.qtd}).eq('id',prod.id).eq('qtd',prod.qtd);
       if(error){ toast('Falha na baixa de estoque: '+error.message); return; }
     }
-    await db.from('pedidos').update({status:novo, estoque_baixado:true, atualizado_em:new Date().toISOString()}).eq('id',id);
+    await db.from('pedidos').update({status:novo, estoque_baixado:true, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL}).eq('id',id);
   } else if(novo==='cancelado' && p.estoque_baixado){
     if(!confirm('Cancelar devolve os itens ao estoque. Confirmar?')) return;
     for(const i of itensDe(id).filter(x=>x.produto_id)){
       const prod = PRODUTOS.find(x=>x.id===i.produto_id);
       if(prod) await db.from('produtos').update({qtd:prod.qtd+i.qtd}).eq('id',prod.id);
     }
-    await db.from('pedidos').update({status:novo, estoque_baixado:false, atualizado_em:new Date().toISOString()}).eq('id',id);
+    await db.from('pedidos').update({status:novo, estoque_baixado:false, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL}).eq('id',id);
   } else {
-    await db.from('pedidos').update({status:novo, atualizado_em:new Date().toISOString()}).eq('id',id);
+    await db.from('pedidos').update({status:novo, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL}).eq('id',id);
   }
   fechar('mDetalhe'); toast('Pedido atualizado');
   await carregarEstoque(); carregarPedidos();
@@ -904,6 +1195,103 @@ function renderDash(){
   document.querySelector('#tblBaixo tbody').innerHTML = baixos.map(p=>
     `<tr class="baixo"><td>${p.nome}</td><td class="num"><b>${p.qtd}</b></td><td class="num">${p.estoque_minimo}</td></tr>`
   ).join('') || '<tr><td colspan="3" class="muted">Nenhum alerta.</td></tr>';
+}
+
+/* ---------- Coleções (pokemontcg.io + câmbio) ---------- */
+let SETS_CARREGADOS = false, CAMBIO_USD_BRL = null, CARTAS_SET = [], SET_ATUAL_NOME = '';
+const ERA_ORDEM = ['me','sv','swsh','sm','xy','bw','hgss','dp','pl','ex','base'];
+async function buscarCambio(){
+  if(CAMBIO_USD_BRL) return CAMBIO_USD_BRL;
+  try{
+    const r = await fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL');
+    const j = await r.json();
+    CAMBIO_USD_BRL = parseFloat(j.USDBRL.bid);
+  }catch(e){ CAMBIO_USD_BRL = 5.5; } // fallback aproximado se a API falhar
+  return CAMBIO_USD_BRL;
+}
+async function carregarSets(){
+  SETS_CARREGADOS = true;
+  const sel = $('co_set_sel');
+  try{
+    const r = await fetch('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate');
+    const j = await r.json();
+    const sets = j.data||[];
+    sel.innerHTML = '<option value="">Selecione uma coleção...</option>' +
+      sets.map(s=>`<option value="${s.id}">${s.name} (${s.series}) — ${s.total} cartas</option>`).join('');
+  }catch(e){
+    sel.innerHTML = '<option value="">Erro ao carregar coleções — tente novamente</option>';
+    toast('Erro ao buscar coleções: '+e.message);
+  }
+  await buscarCambio();
+  $('colCambioInfo').textContent = CAMBIO_USD_BRL ? `Câmbio de referência: US$ 1 = R$ ${CAMBIO_USD_BRL.toFixed(2)}` : '';
+}
+async function carregarCartasDoSet(){
+  const setId = $('co_set_sel').value;
+  const grid = $('colecoesGrid');
+  if(!setId){ grid.innerHTML=''; $('colecoesVazio').style.display='block'; return; }
+  $('colecoesVazio').style.display='none';
+  SET_ATUAL_NOME = $('co_set_sel').selectedOptions[0].textContent;
+  grid.innerHTML = Array.from({length:10}).map(()=>`<div class="colecao-card"><div class="skeleton" style="aspect-ratio:5/7"></div></div>`).join('');
+  try{
+    const r = await fetch(`https://api.pokemontcg.io/v2/cards?q=set.id:${setId}&orderBy=number&pageSize=250`);
+    const j = await r.json();
+    CARTAS_SET = j.data||[];
+    renderCartasSet();
+  }catch(e){
+    grid.innerHTML = '';
+    toast('Erro ao buscar cartas: '+e.message);
+  }
+}
+function renderCartasSet(){
+  const busca = ($('co_cartas_busca').value||'').toLowerCase();
+  const lista = CARTAS_SET.filter(c=>!busca || c.name.toLowerCase().includes(busca));
+  const grid = $('colecoesGrid');
+  grid.innerHTML = lista.map((c,i)=>{
+    const usd = c.tcgplayer?.prices?.holofoil?.market || c.tcgplayer?.prices?.normal?.market || c.cardmarket?.prices?.averageSellPrice || null;
+    const brl = usd && CAMBIO_USD_BRL ? usd*CAMBIO_USD_BRL : null;
+    return `<div class="colecao-card" style="animation-delay:${Math.min(i*0.02,0.4)}s" onclick="abrirAddCarta('${c.id}')">
+      <img src="${c.images.small}" loading="lazy" alt="${c.name}">
+      <div class="cc-body">
+        <div class="cc-name">${c.name}</div>
+        <div class="cc-num">${c.number}/${c.set.printedTotal||c.set.total}</div>
+        <div class="cc-price">${brl?fmt(brl):'sem preço ref.'}</div>
+      </div></div>`;
+  }).join('');
+}
+function abrirAddCarta(cardId){
+  const c = CARTAS_SET.find(x=>x.id===cardId);
+  const usd = c.tcgplayer?.prices?.holofoil?.market || c.tcgplayer?.prices?.normal?.market || c.cardmarket?.prices?.averageSellPrice || null;
+  const brl = usd && CAMBIO_USD_BRL ? usd*CAMBIO_USD_BRL : null;
+  $('acErr').textContent='';
+  $('addCartaHeader').innerHTML = `<img src="${c.images.small}" style="width:64px;border-radius:6px">
+    <div><b>${c.name}</b><br><span class="muted">${c.set.name} · ${c.number}/${c.set.printedTotal||c.set.total}</span></div>`;
+  $('ac_qtd').value=1; $('ac_custo').value='';
+  $('ac_preco').value = brl? brl.toFixed(2) : '';
+  $('ac_ref').textContent = brl ? `(referência de mercado: ${fmt(brl)})` : '(sem referência de mercado disponível)';
+  $('mAddCarta').dataset.cardId = cardId;
+  $('mAddCarta').classList.add('show');
+}
+async function confirmarAddCarta(){
+  const c = CARTAS_SET.find(x=>x.id===$('mAddCarta').dataset.cardId);
+  const qtd = parseInt($('ac_qtd').value||0), custo = Number($('ac_custo').value||0), preco = Number($('ac_preco').value||0);
+  if(qtd<1 || $('ac_custo').value===''){ $('acErr').textContent='Informe quantidade e custo válidos.'; return; }
+  const sku = 'CARTA-'+c.set.id.toUpperCase()+'-'+c.number.replace(/\W/g,'');
+  let prod = PRODUTOS.find(p=>p.sku===sku);
+  if(!prod){
+    const {data,error} = await db.from('produtos').insert({
+      sku, tipo:'carta', nome:c.name, set_nome:c.set.name, numero_carta:c.number+'/'+(c.set.printedTotal||c.set.total),
+      imagem_url:c.images.large||c.images.small, preco_venda:preco, estoque_minimo:0, criado_por:CURRENT_EMAIL
+    }).select().single();
+    if(error){ $('acErr').textContent=error.message; return; }
+    prod = data;
+  } else if(preco !== prod.preco_venda){
+    await db.from('produtos').update({preco_venda:preco}).eq('id',prod.id);
+  }
+  const {error:e1} = await db.from('compras').insert({ produto_id:prod.id, qtd, custo_unit:custo, data:new Date().toISOString().slice(0,10), fornecedor:'Coleções', criado_por:CURRENT_EMAIL });
+  if(e1){ $('acErr').textContent=e1.message; return; }
+  await recalcularProdutoDoZero(prod.id);
+  await carregarEstoque();
+  fechar('mAddCarta'); toast(`${c.name} adicionado ao estoque`);
 }
 
 /* ---------- Conexão ---------- */
