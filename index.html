@@ -75,6 +75,28 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
 .overlay.show{display:flex}
 .modal{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:26px;width:100%;max-width:560px}
 .modal h3{margin-bottom:6px}
+.st{font-size:12px;font-weight:800;padding:3px 10px;border-radius:12px;letter-spacing:.03em}
+.st-orcamento{background:#EFE6D2;color:#7A6234}
+.st-pago{background:#DCEEE3;color:#2E7D4F}
+.st-enviado{background:#DCE7F5;color:#2F5C9E}
+.st-concluido{background:#E5DCF5;color:#5B3F9E}
+.st-cancelado{background:#F5DCDC;color:#B3402A}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
+.kpi .v{font-size:24px;font-weight:800;margin-top:4px}
+.kpi .l{font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
+.item-row{display:grid;grid-template-columns:1fr 74px 110px 34px;gap:8px;margin-top:8px;align-items:center}
+#printArea{display:none}
+@media print{
+  body>*{display:none !important}
+  #printArea{display:block !important;font-family:'Alegreya Sans',sans-serif;color:#000}
+  #printArea .ph{display:flex;align-items:center;gap:14px;border-bottom:3px solid #C98A2B;padding-bottom:10px;margin-bottom:14px}
+  #printArea .ph img{height:70px}
+  #printArea table{width:100%;border-collapse:collapse;margin-top:12px}
+  #printArea th,#printArea td{border:1px solid #999;padding:6px 8px;font-size:13px;text-align:left}
+  #printArea th{background:#F6E9CE}
+  #printArea .tot td{font-weight:800}
+}
 </style>
 </head>
 <body>
@@ -120,9 +142,16 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
   <main>
     <div class="page" id="p-dash">
       <h2>Dashboard</h2>
-      <div class="card">
-        <span class="pill">BLOCO 5</span>
-        <p class="muted" style="margin-top:10px">Indicadores de vendas, ticket médio, top produtos e estoque baixo entram aqui quando Estoque e Pedidos estiverem ativos. Por enquanto, esta é a base do sistema: acesso multiusuário, dados da empresa e backup já funcionam.</p>
+      <div class="kpis" id="dashKpis"></div>
+      <div class="grid2" style="align-items:start">
+        <div class="card" style="padding:0;overflow-x:auto">
+          <h3 style="padding:16px 16px 0">Top produtos (30 dias)</h3>
+          <table class="tbl" id="tblTop"><thead><tr><th>Produto</th><th class="num">Qtd</th><th class="num">Receita</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="card" style="padding:0;overflow-x:auto">
+          <h3 style="padding:16px 16px 0">Estoque baixo</h3>
+          <table class="tbl" id="tblBaixo"><thead><tr><th>Produto</th><th class="num">Qtd</th><th class="num">Mínimo</th></tr></thead><tbody></tbody></table>
+        </div>
       </div>
     </div>
 
@@ -210,13 +239,108 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
     </div>
 
     <div class="page" id="p-pedidos" style="display:none">
-      <h2>Pedidos</h2>
-      <div class="soon"><span class="pill">BLOCO 3</span><p style="margin-top:10px">Clientes, criação de pedidos com baixa automática de estoque e impressão em PDF.</p></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <h2 style="margin:0;flex:1">Pedidos</h2>
+        <button class="btn ghost" onclick="abrirCliente()">Novo cliente</button>
+        <button class="btn" onclick="abrirPedido()">Novo pedido</button>
+      </div>
+      <div class="card" style="padding:14px;display:flex;gap:10px;flex-wrap:wrap">
+        <select id="fp_status" style="flex:1;min-width:150px" onchange="renderPedidos()">
+          <option value="">Todos os status</option>
+          <option value="orcamento">Orçamento</option><option value="pago">Pago</option>
+          <option value="enviado">Enviado</option><option value="concluido">Concluído</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <input id="fp_busca" placeholder="Buscar por cliente…" style="flex:2;min-width:180px" oninput="renderPedidos()">
+      </div>
+      <div class="card" style="padding:0;overflow-x:auto">
+        <table class="tbl" id="tblPedidos">
+          <thead><tr><th>Nº</th><th>Data</th><th>Cliente</th><th>Canal</th><th class="num">Total</th><th>Status</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <div id="pedidosVazio" class="soon" style="display:none;border:none">Nenhum pedido ainda.</div>
+      </div>
+    </div>
+
+    <!-- MODAL CLIENTE -->
+    <div class="overlay" id="mCliente">
+      <div class="modal">
+        <h3>Novo cliente</h3>
+        <label>Nome</label><input id="cl_nome">
+        <div class="grid2">
+          <div><label>WhatsApp</label><input id="cl_whatsapp"></div>
+          <div><label>Cidade / UF</label><input id="cl_cidade_uf"></div>
+        </div>
+        <label>Endereço</label><input id="cl_endereco">
+        <div class="msg-err" id="clErr"></div>
+        <footer class="actions">
+          <button class="btn" onclick="salvarCliente()">Salvar cliente</button>
+          <button class="btn ghost" onclick="fechar('mCliente')">Cancelar</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- MODAL PEDIDO -->
+    <div class="overlay" id="mPedido">
+      <div class="modal" style="max-width:680px">
+        <h3>Novo pedido</h3>
+        <div class="grid2">
+          <div><label>Cliente</label><select id="pe_cliente"></select></div>
+          <div><label>Canal</label>
+            <select id="pe_canal">
+              <option value="direto">Venda direta</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="instagram">Instagram</option>
+              <option value="mercado_livre">Mercado Livre</option>
+              <option value="outro">Outro</option>
+            </select></div>
+        </div>
+        <label>Itens</label>
+        <div id="peItens"></div>
+        <button class="btn ghost" style="margin-top:10px;padding:7px 14px" onclick="addItemRow()">+ Adicionar item</button>
+        <div class="grid2" style="margin-top:6px">
+          <div><label>Desconto (R$)</label><input id="pe_desconto" type="number" step="0.01" min="0" value="0" oninput="totPedido()"></div>
+          <div><label>Frete (R$)</label><input id="pe_frete" type="number" step="0.01" min="0" value="0" oninput="totPedido()"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Taxas de marketplace (R$)</label><input id="pe_taxas" type="number" step="0.01" min="0" value="0" oninput="totPedido()"></div>
+          <div><label>Data</label><input id="pe_data" type="date"></div>
+        </div>
+        <label>Observações</label><input id="pe_obs">
+        <p class="muted" style="margin-top:12px;font-size:16px">Total do pedido: <b id="peTotal">R$ 0,00</b></p>
+        <div class="msg-err" id="peErr"></div>
+        <footer class="actions">
+          <button class="btn" onclick="salvarPedido()">Criar pedido (orçamento)</button>
+          <button class="btn ghost" onclick="fechar('mPedido')">Cancelar</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- MODAL DETALHE PEDIDO -->
+    <div class="overlay" id="mDetalhe">
+      <div class="modal" style="max-width:680px" id="detBody"></div>
     </div>
 
     <div class="page" id="p-financeiro" style="display:none">
-      <h2>Financeiro</h2>
-      <div class="soon"><span class="pill">BLOCO 4</span><p style="margin-top:10px">Receita, CMV, lucro bruto, margem por produto/canal e valor imobilizado em estoque.</p></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <h2 style="margin:0;flex:1">Financeiro</h2>
+        <select id="fi_periodo" onchange="renderFinanceiro()" style="max-width:200px">
+          <option value="mes">Este mês</option>
+          <option value="mes_ant">Mês anterior</option>
+          <option value="ano">Este ano</option>
+          <option value="tudo">Tudo</option>
+        </select>
+      </div>
+      <div class="kpis" id="fiKpis"></div>
+      <div class="card" style="padding:0;overflow-x:auto">
+        <h3 style="padding:16px 16px 0">Por canal de venda</h3>
+        <table class="tbl" id="tblCanal"><thead><tr><th>Canal</th><th class="num">Pedidos</th><th class="num">Receita</th><th class="num">Lucro bruto</th><th class="num">Margem</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card" style="padding:0;overflow-x:auto">
+        <h3 style="padding:16px 16px 0">Contas a receber (orçamentos em aberto)</h3>
+        <table class="tbl" id="tblReceber"><thead><tr><th>Nº</th><th>Cliente</th><th>Data</th><th class="num">Valor</th></tr></thead><tbody></tbody></table>
+      </div>
+      <p class="muted">Receita e lucro consideram pedidos <b>pagos, enviados ou concluídos</b>. Lucro bruto = receita − custo dos produtos (custo congelado na venda) − taxas. Frete não entra na receita (repasse).</p>
     </div>
 
     <div class="page" id="p-config" style="display:none">
@@ -257,6 +381,7 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
   </main>
 </div>
 
+<div id="printArea"></div>
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -284,7 +409,8 @@ async function showApp(session){
   $('whoami').textContent = session.user.email;
   popularSelectsTipos();
   await carregarEmpresa();
-  carregarEstoque();
+  await Promise.all([carregarEstoque(), carregarPedidos()]);
+  renderDash();
   checarConexao();
 }
 async function doLogin(e){
@@ -302,7 +428,10 @@ function go(p){
   document.querySelectorAll('.page').forEach(x=>x.style.display='none');
   $('p-'+p).style.display='block';
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
-  if(p==='estoque') carregarEstoque();  // sempre busca dados frescos (outro PC pode ter alterado)
+  if(p==='estoque') carregarEstoque();
+  if(p==='pedidos'){ carregarEstoque(); carregarPedidos(); }
+  if(p==='financeiro'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderFinanceiro); }
+  if(p==='dash'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderDash); }
 }
 
 /* ---------- Empresa ---------- */
@@ -310,6 +439,7 @@ const CAMPOS_EMPRESA = ['nome','cnpj_cpf','contato','whatsapp','email','endereco
 async function carregarEmpresa(){
   const {data,error} = await db.from('empresa').select('*').eq('id',1).single();
   if(error){ toast('Erro ao carregar empresa: '+error.message); return; }
+  EMPRESA = data;
   CAMPOS_EMPRESA.forEach(c=>{ $('e_'+c).value = data[c]||''; });
 }
 async function salvarEmpresa(){
@@ -495,6 +625,286 @@ async function salvarCompra(){
 }
 
 function fechar(id){ $(id).classList.remove('show'); }
+
+/* ---------- Clientes ---------- */
+let CLIENTES = [], PEDIDOS = [], ITENS = [];
+
+function abrirCliente(){
+  $('clErr').textContent='';
+  ['cl_nome','cl_whatsapp','cl_cidade_uf','cl_endereco'].forEach(i=>$(i).value='');
+  $('mCliente').classList.add('show');
+}
+async function salvarCliente(){
+  const nome = $('cl_nome').value.trim();
+  if(!nome){ $('clErr').textContent='Nome é obrigatório.'; return; }
+  const {error} = await db.from('clientes').insert({
+    nome, whatsapp:$('cl_whatsapp').value.trim(),
+    cidade_uf:$('cl_cidade_uf').value.trim(), endereco:$('cl_endereco').value.trim()
+  });
+  if(error){ $('clErr').textContent=error.message; return; }
+  fechar('mCliente'); toast('Cliente salvo'); carregarPedidos();
+}
+
+/* ---------- Pedidos ---------- */
+async function carregarPedidos(){
+  const [c,p,i] = await Promise.all([
+    db.from('clientes').select('*').order('nome'),
+    db.from('pedidos').select('*').order('numero',{ascending:false}),
+    db.from('pedido_itens').select('*')
+  ]);
+  if(c.error||p.error||i.error){ toast('Erro ao carregar pedidos'); return; }
+  CLIENTES=c.data; PEDIDOS=p.data; ITENS=i.data;
+  renderPedidos();
+}
+const itensDe = pid => ITENS.filter(x=>x.pedido_id===pid);
+const totalPedido = p => itensDe(p.id).reduce((s,x)=>s+x.qtd*x.preco_unit,0) - p.desconto + p.frete;
+const nomeCliente = id => CLIENTES.find(c=>c.id===id)?.nome || '—';
+const ST_LABEL = {orcamento:'Orçamento',pago:'Pago',enviado:'Enviado',concluido:'Concluído',cancelado:'Cancelado'};
+const CANAL_LABEL = {direto:'Venda direta',whatsapp:'WhatsApp',instagram:'Instagram',mercado_livre:'Mercado Livre',outro:'Outro'};
+
+function renderPedidos(){
+  const st=$('fp_status').value, busca=($('fp_busca').value||'').toLowerCase();
+  const lista = PEDIDOS.filter(p=>{
+    if(st && p.status!==st) return false;
+    if(busca && !nomeCliente(p.cliente_id).toLowerCase().includes(busca)) return false;
+    return true;
+  });
+  document.querySelector('#tblPedidos tbody').innerHTML = lista.map(p=>`
+    <tr>
+      <td><b>#${p.numero}</b></td>
+      <td>${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')}</td>
+      <td>${nomeCliente(p.cliente_id)}</td>
+      <td>${CANAL_LABEL[p.canal]||p.canal}</td>
+      <td class="num"><b>${fmt(totalPedido(p))}</b></td>
+      <td><span class="st st-${p.status}">${ST_LABEL[p.status]}</span></td>
+      <td><button class="mini" onclick="verPedido('${p.id}')">Abrir</button></td>
+    </tr>`).join('');
+  $('pedidosVazio').style.display = lista.length?'none':'block';
+}
+
+function abrirPedido(){
+  if(!CLIENTES.length){ toast('Cadastre um cliente antes de criar pedido.'); return; }
+  const emEstoque = PRODUTOS.filter(p=>p.ativo && p.qtd>0);
+  if(!emEstoque.length){ toast('Nenhum produto com estoque disponível.'); return; }
+  $('peErr').textContent='';
+  $('pe_cliente').innerHTML = CLIENTES.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
+  ['pe_desconto','pe_frete','pe_taxas'].forEach(i=>$(i).value=0);
+  $('pe_obs').value=''; $('pe_canal').value='direto';
+  $('pe_data').value = new Date().toISOString().slice(0,10);
+  $('peItens').innerHTML=''; addItemRow();
+  $('mPedido').classList.add('show');
+}
+function addItemRow(){
+  const emEstoque = PRODUTOS.filter(p=>p.ativo && p.qtd>0);
+  const row = document.createElement('div');
+  row.className='item-row';
+  row.innerHTML = `
+    <select class="it-prod" onchange="itemProdChange(this)">
+      ${emEstoque.map(p=>`<option value="${p.id}">${p.nome} (${p.qtd} disp.)</option>`).join('')}
+    </select>
+    <input class="it-qtd" type="number" min="1" value="1" oninput="totPedido()">
+    <input class="it-preco" type="number" step="0.01" min="0" oninput="totPedido()">
+    <button class="mini" onclick="this.parentElement.remove();totPedido()">✕</button>`;
+  $('peItens').appendChild(row);
+  itemProdChange(row.querySelector('.it-prod'));
+}
+function itemProdChange(sel){
+  const p = PRODUTOS.find(x=>x.id===sel.value);
+  sel.parentElement.querySelector('.it-preco').value = p? p.preco_venda : '';
+  totPedido();
+}
+function lerItens(){
+  return [...document.querySelectorAll('#peItens .item-row')].map(r=>({
+    produto_id: r.querySelector('.it-prod').value,
+    qtd: parseInt(r.querySelector('.it-qtd').value||0),
+    preco_unit: Number(r.querySelector('.it-preco').value||0)
+  }));
+}
+function totPedido(){
+  const t = lerItens().reduce((s,i)=>s+i.qtd*i.preco_unit,0)
+    - Number($('pe_desconto').value||0) + Number($('pe_frete').value||0);
+  $('peTotal').textContent = fmt(t);
+}
+async function salvarPedido(){
+  const itens = lerItens().filter(i=>i.qtd>0);
+  if(!itens.length){ $('peErr').textContent='Adicione ao menos um item.'; return; }
+  // valida estoque disponível somando itens repetidos do mesmo produto
+  const porProduto = {};
+  itens.forEach(i=> porProduto[i.produto_id]=(porProduto[i.produto_id]||0)+i.qtd);
+  for(const [pid,q] of Object.entries(porProduto)){
+    const p = PRODUTOS.find(x=>x.id===pid);
+    if(!p || q>p.qtd){ $('peErr').textContent=`Estoque insuficiente de ${p?.nome||'produto'} (disponível: ${p?.qtd??0}).`; return; }
+  }
+  const {data:ped,error:e1} = await db.from('pedidos').insert({
+    cliente_id:$('pe_cliente').value, canal:$('pe_canal').value,
+    desconto:Number($('pe_desconto').value||0), frete:Number($('pe_frete').value||0),
+    taxas:Number($('pe_taxas').value||0), observacoes:$('pe_obs').value.trim(),
+    data:$('pe_data').value, status:'orcamento'
+  }).select().single();
+  if(e1){ $('peErr').textContent=e1.message; return; }
+  const rows = itens.map(i=>{
+    const p = PRODUTOS.find(x=>x.id===i.produto_id);
+    return { pedido_id:ped.id, produto_id:i.produto_id,
+      descricao:p.nome+(p.set_nome?' — '+p.set_nome:''), qtd:i.qtd,
+      preco_unit:i.preco_unit, custo_unit:p.custo_medio };
+  });
+  const {error:e2} = await db.from('pedido_itens').insert(rows);
+  if(e2){ $('peErr').textContent=e2.message; return; }
+  fechar('mPedido'); toast('Pedido #'+ped.numero+' criado como orçamento');
+  carregarPedidos();
+}
+
+/* ---------- Detalhe / status / estoque ---------- */
+function verPedido(id){
+  const p = PEDIDOS.find(x=>x.id===id);
+  const its = itensDe(id);
+  const prox = { orcamento:['pago','cancelado'], pago:['enviado','cancelado'],
+                 enviado:['concluido','cancelado'], concluido:[], cancelado:[] }[p.status];
+  $('detBody').innerHTML = `
+    <h3>Pedido #${p.numero} <span class="st st-${p.status}">${ST_LABEL[p.status]}</span></h3>
+    <p class="muted">${nomeCliente(p.cliente_id)} · ${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')} · ${CANAL_LABEL[p.canal]||p.canal}</p>
+    <table class="tbl" style="margin-top:12px">
+      <thead><tr><th>Item</th><th class="num">Qtd</th><th class="num">Unit.</th><th class="num">Subtotal</th></tr></thead>
+      <tbody>${its.map(i=>`<tr><td>${i.descricao}</td><td class="num">${i.qtd}</td><td class="num">${fmt(i.preco_unit)}</td><td class="num">${fmt(i.qtd*i.preco_unit)}</td></tr>`).join('')}</tbody>
+    </table>
+    <p class="muted" style="margin-top:10px">Desconto: ${fmt(p.desconto)} · Frete: ${fmt(p.frete)} · Taxas: ${fmt(p.taxas)}<br>
+    <span style="font-size:17px;color:var(--ink)">Total: <b>${fmt(totalPedido(p))}</b></span></p>
+    ${p.observacoes?`<p class="muted">Obs.: ${p.observacoes}</p>`:''}
+    <footer class="actions">
+      ${prox.map(s=>`<button class="btn ${s==='cancelado'?'ghost':''}" onclick="mudarStatus('${p.id}','${s}')">${s==='cancelado'?'Cancelar pedido':'Marcar como '+ST_LABEL[s]}</button>`).join('')}
+      <button class="btn ghost" onclick="imprimirPedido('${p.id}')">Imprimir PDF</button>
+      <button class="btn ghost" onclick="fechar('mDetalhe')">Fechar</button>
+    </footer>`;
+  $('mDetalhe').classList.add('show');
+}
+async function mudarStatus(id, novo){
+  const p = PEDIDOS.find(x=>x.id===id);
+  // baixa de estoque ao pagar; estorno ao cancelar pedido que já baixou
+  if(novo==='pago' && !p.estoque_baixado){
+    for(const i of itensDe(id).filter(x=>x.produto_id)){
+      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
+      if(!prod || prod.qtd < i.qtd){ toast('Estoque insuficiente de '+(prod?.nome||'item')+' — pedido não pode ser pago.'); return; }
+    }
+    for(const i of itensDe(id).filter(x=>x.produto_id)){
+      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
+      const {error} = await db.from('produtos').update({qtd:prod.qtd-i.qtd}).eq('id',prod.id).eq('qtd',prod.qtd);
+      if(error){ toast('Falha na baixa de estoque: '+error.message); return; }
+    }
+    await db.from('pedidos').update({status:novo, estoque_baixado:true, atualizado_em:new Date().toISOString()}).eq('id',id);
+  } else if(novo==='cancelado' && p.estoque_baixado){
+    if(!confirm('Cancelar devolve os itens ao estoque. Confirmar?')) return;
+    for(const i of itensDe(id).filter(x=>x.produto_id)){
+      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
+      if(prod) await db.from('produtos').update({qtd:prod.qtd+i.qtd}).eq('id',prod.id);
+    }
+    await db.from('pedidos').update({status:novo, estoque_baixado:false, atualizado_em:new Date().toISOString()}).eq('id',id);
+  } else {
+    await db.from('pedidos').update({status:novo, atualizado_em:new Date().toISOString()}).eq('id',id);
+  }
+  fechar('mDetalhe'); toast('Pedido atualizado');
+  await carregarEstoque(); carregarPedidos();
+}
+
+/* ---------- PDF ---------- */
+let EMPRESA = {};
+function imprimirPedido(id){
+  const p = PEDIDOS.find(x=>x.id===id);
+  const its = itensDe(id);
+  const cli = CLIENTES.find(c=>c.id===p.cliente_id)||{};
+  const logo = document.querySelector('.top-inner img').src;
+  const sub = its.reduce((s,i)=>s+i.qtd*i.preco_unit,0);
+  $('printArea').innerHTML = `
+    <div class="ph"><img src="${logo}">
+      <div><h2 style="margin:0">${EMPRESA.nome||'Rapadura TCG'}</h2>
+      <div style="font-size:13px">${[EMPRESA.cnpj_cpf&&('CNPJ/CPF: '+EMPRESA.cnpj_cpf),EMPRESA.whatsapp,EMPRESA.email,EMPRESA.endereco,EMPRESA.cidade_uf].filter(Boolean).join(' · ')}</div></div>
+    </div>
+    <h3>Pedido #${p.numero} — ${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')} (${ST_LABEL[p.status]})</h3>
+    <p style="font-size:14px"><b>Cliente:</b> ${cli.nome||'—'}${cli.whatsapp?' · '+cli.whatsapp:''}${cli.endereco?'<br>'+cli.endereco+(cli.cidade_uf?' — '+cli.cidade_uf:''):''}</p>
+    <table>
+      <thead><tr><th>Item</th><th>Qtd</th><th>Valor unit.</th><th>Subtotal</th></tr></thead>
+      <tbody>
+        ${its.map(i=>`<tr><td>${i.descricao}</td><td>${i.qtd}</td><td>${fmt(i.preco_unit)}</td><td>${fmt(i.qtd*i.preco_unit)}</td></tr>`).join('')}
+        <tr><td colspan="3">Subtotal</td><td>${fmt(sub)}</td></tr>
+        <tr><td colspan="3">Desconto</td><td>− ${fmt(p.desconto)}</td></tr>
+        <tr><td colspan="3">Frete</td><td>${fmt(p.frete)}</td></tr>
+        <tr class="tot"><td colspan="3">TOTAL</td><td>${fmt(totalPedido(p))}</td></tr>
+      </tbody>
+    </table>
+    ${p.observacoes?`<p style="font-size:13px"><b>Obs.:</b> ${p.observacoes}</p>`:''}
+    ${EMPRESA.observacoes_pedido?`<p style="font-size:12px;margin-top:14px;border-top:1px solid #ccc;padding-top:8px">${EMPRESA.observacoes_pedido}</p>`:''}`;
+  window.print();
+}
+
+/* ---------- Financeiro ---------- */
+function periodoRange(v){
+  const h = new Date(); const y=h.getFullYear(), m=h.getMonth();
+  if(v==='mes') return [new Date(y,m,1), new Date(y,m+1,1)];
+  if(v==='mes_ant') return [new Date(y,m-1,1), new Date(y,m,1)];
+  if(v==='ano') return [new Date(y,0,1), new Date(y+1,0,1)];
+  return [new Date(2000,0,1), new Date(2100,0,1)];
+}
+const VENDIDO = ['pago','enviado','concluido'];
+function renderFinanceiro(){
+  const [ini,fim] = periodoRange($('fi_periodo').value);
+  const vendidos = PEDIDOS.filter(p=>{
+    const d = new Date(p.data+'T12:00');
+    return VENDIDO.includes(p.status) && d>=ini && d<fim;
+  });
+  let receita=0, cmv=0, taxas=0;
+  const canais = {};
+  vendidos.forEach(p=>{
+    const its = itensDe(p.id);
+    const rec = its.reduce((s,i)=>s+i.qtd*i.preco_unit,0) - p.desconto;
+    const custo = its.reduce((s,i)=>s+i.qtd*i.custo_unit,0);
+    receita+=rec; cmv+=custo; taxas+=p.taxas;
+    const c = canais[p.canal] ||= {n:0,rec:0,lucro:0};
+    c.n++; c.rec+=rec; c.lucro+=rec-custo-p.taxas;
+  });
+  const lucro = receita-cmv-taxas;
+  const estoqueCusto = PRODUTOS.reduce((s,p)=>s+p.qtd*p.custo_medio,0);
+  $('fiKpis').innerHTML = [
+    ['Receita',fmt(receita)],['CMV',fmt(cmv)],['Taxas',fmt(taxas)],
+    ['Lucro bruto',fmt(lucro)],['Margem',receita>0?(lucro/receita*100).toFixed(1)+'%':'—'],
+    ['Estoque (custo)',fmt(estoqueCusto)]
+  ].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
+  document.querySelector('#tblCanal tbody').innerHTML = Object.entries(canais).map(([c,d])=>
+    `<tr><td>${CANAL_LABEL[c]||c}</td><td class="num">${d.n}</td><td class="num">${fmt(d.rec)}</td><td class="num">${fmt(d.lucro)}</td><td class="num">${d.rec>0?(d.lucro/d.rec*100).toFixed(1)+'%':'—'}</td></tr>`
+  ).join('') || '<tr><td colspan="5" class="muted">Sem vendas no período.</td></tr>';
+  const abertos = PEDIDOS.filter(p=>p.status==='orcamento');
+  document.querySelector('#tblReceber tbody').innerHTML = abertos.map(p=>
+    `<tr><td>#${p.numero}</td><td>${nomeCliente(p.cliente_id)}</td><td>${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')}</td><td class="num">${fmt(totalPedido(p))}</td></tr>`
+  ).join('') || '<tr><td colspan="4" class="muted">Nenhum orçamento em aberto.</td></tr>';
+}
+
+/* ---------- Dashboard ---------- */
+function renderDash(){
+  const h=new Date(), ini=new Date(h.getFullYear(),h.getMonth(),1);
+  const d30 = new Date(Date.now()-30*864e5);
+  const mes = PEDIDOS.filter(p=>VENDIDO.includes(p.status) && new Date(p.data+'T12:00')>=ini);
+  const recMes = mes.reduce((s,p)=>s+itensDe(p.id).reduce((a,i)=>a+i.qtd*i.preco_unit,0)-p.desconto,0);
+  const lucroMes = mes.reduce((s,p)=>s+itensDe(p.id).reduce((a,i)=>a+i.qtd*(i.preco_unit-i.custo_unit),0)-p.desconto-p.taxas,0);
+  const ticket = mes.length? recMes/mes.length : 0;
+  const estoqueCusto = PRODUTOS.reduce((s,p)=>s+p.qtd*p.custo_medio,0);
+  const abertos = PEDIDOS.filter(p=>p.status==='orcamento').length;
+  $('dashKpis').innerHTML = [
+    ['Vendas no mês',mes.length],['Receita no mês',fmt(recMes)],['Lucro no mês',fmt(lucroMes)],
+    ['Ticket médio',fmt(ticket)],['Orçamentos abertos',abertos],['Capital em estoque',fmt(estoqueCusto)]
+  ].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
+  const vendas30 = {};
+  PEDIDOS.filter(p=>VENDIDO.includes(p.status) && new Date(p.data+'T12:00')>=d30)
+    .forEach(p=> itensDe(p.id).forEach(i=>{
+      const k = i.descricao; const v = vendas30[k] ||= {q:0,r:0};
+      v.q+=i.qtd; v.r+=i.qtd*i.preco_unit;
+    }));
+  document.querySelector('#tblTop tbody').innerHTML = Object.entries(vendas30)
+    .sort((a,b)=>b[1].r-a[1].r).slice(0,8)
+    .map(([n,v])=>`<tr><td>${n}</td><td class="num">${v.q}</td><td class="num">${fmt(v.r)}</td></tr>`)
+    .join('') || '<tr><td colspan="3" class="muted">Sem vendas nos últimos 30 dias.</td></tr>';
+  const baixos = PRODUTOS.filter(p=>p.ativo && p.estoque_minimo>0 && p.qtd<=p.estoque_minimo);
+  document.querySelector('#tblBaixo tbody').innerHTML = baixos.map(p=>
+    `<tr class="baixo"><td>${p.nome}</td><td class="num"><b>${p.qtd}</b></td><td class="num">${p.estoque_minimo}</td></tr>`
+  ).join('') || '<tr><td colspan="3" class="muted">Nenhum alerta.</td></tr>';
+}
 
 /* ---------- Conexão ---------- */
 async function checarConexao(){
