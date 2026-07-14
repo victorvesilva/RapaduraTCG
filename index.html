@@ -63,6 +63,18 @@ main{max-width:1200px;margin:0 auto;padding:24px 18px 80px}
 .status-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--warn);margin-right:6px}
 .status-dot.ok{background:var(--ok)}
 footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.tbl{width:100%;border-collapse:collapse;font-size:15px}
+.tbl th{background:#F6E9CE;color:var(--ink-soft);text-transform:uppercase;font-size:12px;letter-spacing:.05em;padding:10px 12px;text-align:left}
+.tbl td{padding:10px 12px;border-top:1px solid var(--line)}
+.tbl .num{text-align:right}
+.tbl tr.baixo td:first-child{border-left:4px solid var(--warn)}
+.tbl .mini{background:none;border:none;color:var(--gold-deep);font-weight:800;font-size:13px;padding:4px 6px}
+.tbl .mini:hover{text-decoration:underline}
+.tag{font-size:11px;font-weight:800;background:#F6E9CE;color:var(--gold-deep);padding:2px 8px;border-radius:12px;letter-spacing:.04em}
+.overlay{display:none;position:fixed;inset:0;background:rgba(42,23,8,.45);z-index:50;align-items:flex-start;justify-content:center;padding:30px 14px;overflow-y:auto}
+.overlay.show{display:flex}
+.modal{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:26px;width:100%;max-width:560px}
+.modal h3{margin-bottom:6px}
 </style>
 </head>
 <body>
@@ -115,8 +127,86 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
     </div>
 
     <div class="page" id="p-estoque" style="display:none">
-      <h2>Estoque</h2>
-      <div class="soon"><span class="pill">BLOCO 2</span><p style="margin-top:10px">Produtos selados (pack, blisters, ETB, TPC, mini booster box), cartas avulsas e entradas de compra com custo médio.</p></div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+        <h2 style="margin:0;flex:1">Estoque</h2>
+        <button class="btn ghost" onclick="abrirCompra()">Registrar compra</button>
+        <button class="btn" onclick="abrirProduto()">Novo produto</button>
+      </div>
+
+      <div class="card" style="padding:14px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <input id="f_busca" placeholder="Buscar por nome, SKU ou set…" style="flex:2;min-width:200px" oninput="renderEstoque()">
+          <select id="f_tipo" style="flex:1;min-width:140px" onchange="renderEstoque()">
+            <option value="">Todos os tipos</option>
+          </select>
+          <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;font-size:14px;white-space:nowrap">
+            <input type="checkbox" id="f_baixo" style="width:auto" onchange="renderEstoque()"> Só estoque baixo
+          </label>
+        </div>
+      </div>
+
+      <div class="card" style="padding:0;overflow-x:auto">
+        <table class="tbl" id="tblEstoque">
+          <thead><tr>
+            <th>Produto</th><th>Tipo</th><th>SKU</th><th class="num">Qtd</th>
+            <th class="num">Custo médio</th><th class="num">Preço venda</th><th class="num">Margem</th><th></th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+        <div id="estoqueVazio" class="soon" style="display:none;border:none">Nenhum produto. Clique em <b>Novo produto</b> para começar.</div>
+      </div>
+      <p class="muted" id="estoqueTotais"></p>
+    </div>
+
+    <!-- MODAL PRODUTO -->
+    <div class="overlay" id="mProduto">
+      <div class="modal">
+        <h3 id="mProdutoTitulo">Novo produto</h3>
+        <input type="hidden" id="pr_id">
+        <div class="grid2">
+          <div><label>Tipo</label>
+            <select id="pr_tipo"></select></div>
+          <div><label>SKU</label><input id="pr_sku" placeholder="Ex.: ETB-DRI-PT"></div>
+        </div>
+        <label>Nome</label><input id="pr_nome" placeholder="Ex.: ETB Destinos de Paldea">
+        <div class="grid2">
+          <div><label>Set / Coleção</label><input id="pr_set_nome" placeholder="Ex.: Destinos de Paldea"></div>
+          <div><label>Nº da carta <span style="font-weight:400;text-transform:none">(só cartas)</span></label><input id="pr_numero_carta" placeholder="Ex.: 245/193"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Preço de venda (R$)</label><input id="pr_preco_venda" type="number" step="0.01" min="0"></div>
+          <div><label>Estoque mínimo (alerta)</label><input id="pr_estoque_minimo" type="number" step="1" min="0" value="0"></div>
+        </div>
+        <p class="muted" style="margin-top:12px">Quantidade e custo entram por <b>Registrar compra</b> — assim o custo médio fica sempre correto.</p>
+        <div class="msg-err" id="prErr"></div>
+        <footer class="actions">
+          <button class="btn" onclick="salvarProduto()">Salvar produto</button>
+          <button class="btn ghost" onclick="fechar('mProduto')">Cancelar</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- MODAL COMPRA -->
+    <div class="overlay" id="mCompra">
+      <div class="modal">
+        <h3>Registrar compra (entrada de estoque)</h3>
+        <label>Produto</label>
+        <select id="co_produto"></select>
+        <div class="grid2">
+          <div><label>Quantidade</label><input id="co_qtd" type="number" step="1" min="1" value="1"></div>
+          <div><label>Custo unitário (R$)</label><input id="co_custo" type="number" step="0.01" min="0"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Data</label><input id="co_data" type="date"></div>
+          <div><label>Fornecedor</label><input id="co_fornecedor" placeholder="Ex.: Distribuidora X"></div>
+        </div>
+        <p class="muted" id="coPreview" style="margin-top:12px"></p>
+        <div class="msg-err" id="coErr"></div>
+        <footer class="actions">
+          <button class="btn" onclick="salvarCompra()">Confirmar entrada</button>
+          <button class="btn ghost" onclick="fechar('mCompra')">Cancelar</button>
+        </footer>
+      </div>
     </div>
 
     <div class="page" id="p-pedidos" style="display:none">
@@ -192,7 +282,9 @@ function showLogin(){ $('app').style.display='none'; $('login').style.display='f
 async function showApp(session){
   $('login').style.display='none'; $('app').style.display='block';
   $('whoami').textContent = session.user.email;
+  popularSelectsTipos();
   await carregarEmpresa();
+  carregarEstoque();
   checarConexao();
 }
 async function doLogin(e){
@@ -210,6 +302,7 @@ function go(p){
   document.querySelectorAll('.page').forEach(x=>x.style.display='none');
   $('p-'+p).style.display='block';
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  if(p==='estoque') carregarEstoque();  // sempre busca dados frescos (outro PC pode ter alterado)
 }
 
 /* ---------- Empresa ---------- */
@@ -265,6 +358,143 @@ async function importBackup(ev){
     carregarEmpresa();
   }catch(e){ toast('Erro na importação: '+e.message); }
 }
+
+/* ---------- Estoque ---------- */
+const TIPOS = {
+  pack:'Pack unitário', blister3:'Blister triplo', blister4:'Blister quádruplo',
+  etb:'ETB', tpc:'TPC', mini_bb:'Mini booster box', carta:'Carta avulsa'
+};
+let PRODUTOS = [];
+const fmt = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+function popularSelectsTipos(){
+  const opts = Object.entries(TIPOS).map(([v,l])=>`<option value="${v}">${l}</option>`).join('');
+  $('pr_tipo').innerHTML = opts;
+  $('f_tipo').innerHTML = '<option value="">Todos os tipos</option>'+opts;
+}
+
+async function carregarEstoque(){
+  const {data,error} = await db.from('produtos').select('*').order('nome');
+  if(error){ toast('Erro ao carregar estoque: '+error.message); return; }
+  PRODUTOS = data;
+  renderEstoque();
+}
+
+function renderEstoque(){
+  const busca = ($('f_busca').value||'').toLowerCase();
+  const tipo = $('f_tipo').value;
+  const soBaixo = $('f_baixo').checked;
+  const tb = document.querySelector('#tblEstoque tbody');
+  const lista = PRODUTOS.filter(p=>{
+    if(tipo && p.tipo!==tipo) return false;
+    if(soBaixo && !(p.qtd <= p.estoque_minimo)) return false;
+    if(busca && !((p.nome+' '+p.sku+' '+p.set_nome).toLowerCase().includes(busca))) return false;
+    return p.ativo;
+  });
+  tb.innerHTML = lista.map(p=>{
+    const margem = p.preco_venda>0 && p.custo_medio>0
+      ? ((p.preco_venda-p.custo_medio)/p.preco_venda*100).toFixed(0)+'%' : '—';
+    const baixo = p.qtd <= p.estoque_minimo && p.estoque_minimo>0;
+    return `<tr class="${baixo?'baixo':''}">
+      <td><b>${p.nome}</b>${p.set_nome?`<br><span class="muted" style="font-size:13px">${p.set_nome}${p.numero_carta?' · '+p.numero_carta:''}</span>`:''}</td>
+      <td><span class="tag">${TIPOS[p.tipo]||p.tipo}</span></td>
+      <td>${p.sku}</td>
+      <td class="num"><b>${p.qtd}</b>${baixo?' ⚠️':''}</td>
+      <td class="num">${fmt(p.custo_medio)}</td>
+      <td class="num">${fmt(p.preco_venda)}</td>
+      <td class="num">${margem}</td>
+      <td style="white-space:nowrap">
+        <button class="mini" onclick="abrirProduto('${p.id}')">Editar</button>
+        <button class="mini" onclick="abrirCompra('${p.id}')">+ Compra</button>
+      </td></tr>`;
+  }).join('');
+  $('estoqueVazio').style.display = lista.length? 'none':'block';
+  const totCusto = lista.reduce((s,p)=>s+p.qtd*p.custo_medio,0);
+  const totVenda = lista.reduce((s,p)=>s+p.qtd*p.preco_venda,0);
+  $('estoqueTotais').textContent = lista.length
+    ? `${lista.length} produto(s) · Valor em estoque: ${fmt(totCusto)} (custo) / ${fmt(totVenda)} (venda)` : '';
+}
+
+function abrirProduto(id){
+  $('prErr').textContent='';
+  const p = id ? PRODUTOS.find(x=>x.id===id) : null;
+  $('mProdutoTitulo').textContent = p? 'Editar produto' : 'Novo produto';
+  $('pr_id').value = p?.id||'';
+  $('pr_tipo').value = p?.tipo||'pack';
+  $('pr_sku').value = p?.sku||'';
+  $('pr_nome').value = p?.nome||'';
+  $('pr_set_nome').value = p?.set_nome||'';
+  $('pr_numero_carta').value = p?.numero_carta||'';
+  $('pr_preco_venda').value = p?.preco_venda??'';
+  $('pr_estoque_minimo').value = p?.estoque_minimo??0;
+  $('mProduto').classList.add('show');
+}
+async function salvarProduto(){
+  const id = $('pr_id').value;
+  const payload = {
+    tipo: $('pr_tipo').value,
+    sku: $('pr_sku').value.trim(),
+    nome: $('pr_nome').value.trim(),
+    set_nome: $('pr_set_nome').value.trim(),
+    numero_carta: $('pr_numero_carta').value.trim(),
+    preco_venda: Number($('pr_preco_venda').value||0),
+    estoque_minimo: parseInt($('pr_estoque_minimo').value||0),
+    atualizado_em: new Date().toISOString()
+  };
+  if(!payload.sku || !payload.nome){ $('prErr').textContent='SKU e nome são obrigatórios.'; return; }
+  const q = id ? db.from('produtos').update(payload).eq('id',id)
+               : db.from('produtos').insert(payload);
+  const {error} = await q;
+  if(error){
+    $('prErr').textContent = error.code==='23505' ? 'Já existe um produto com esse SKU.' : error.message;
+    return;
+  }
+  fechar('mProduto'); toast(id?'Produto atualizado':'Produto criado');
+  carregarEstoque();
+}
+
+function abrirCompra(prodId){
+  $('coErr').textContent=''; $('coPreview').textContent='';
+  const ativos = PRODUTOS.filter(p=>p.ativo);
+  if(!ativos.length){ toast('Cadastre um produto antes de registrar compra.'); return; }
+  $('co_produto').innerHTML = ativos.map(p=>`<option value="${p.id}">${p.nome} (${p.sku})</option>`).join('');
+  if(prodId) $('co_produto').value = prodId;
+  $('co_qtd').value=1; $('co_custo').value=''; $('co_fornecedor').value='';
+  $('co_data').value = new Date().toISOString().slice(0,10);
+  $('mCompra').classList.add('show');
+  previewCompra();
+}
+function previewCompra(){
+  const p = PRODUTOS.find(x=>x.id===$('co_produto').value);
+  const qtd = parseInt($('co_qtd').value||0), custo = Number($('co_custo').value||0);
+  if(!p || !qtd || !custo){ $('coPreview').textContent=''; return; }
+  const novoQtd = p.qtd+qtd;
+  const novoCusto = (p.qtd*p.custo_medio + qtd*custo)/novoQtd;
+  $('coPreview').innerHTML = `Após a entrada: <b>${novoQtd} un.</b> · novo custo médio <b>${fmt(novoCusto)}</b> (atual: ${fmt(p.custo_medio)})`;
+}
+['co_produto','co_qtd','co_custo'].forEach(id=>{
+  document.addEventListener('input', e=>{ if(e.target.id===id) previewCompra(); });
+});
+async function salvarCompra(){
+  const p = PRODUTOS.find(x=>x.id===$('co_produto').value);
+  const qtd = parseInt($('co_qtd').value||0), custo = Number($('co_custo').value||0);
+  if(!p || qtd<1 || custo<0 || $('co_custo').value===''){ $('coErr').textContent='Informe quantidade e custo unitário válidos.'; return; }
+  const {error:e1} = await db.from('compras').insert({
+    produto_id:p.id, qtd, custo_unit:custo,
+    data:$('co_data').value, fornecedor:$('co_fornecedor').value.trim()
+  });
+  if(e1){ $('coErr').textContent=e1.message; return; }
+  const novoQtd = p.qtd+qtd;
+  const novoCusto = (p.qtd*p.custo_medio + qtd*custo)/novoQtd;
+  const {error:e2} = await db.from('produtos')
+    .update({qtd:novoQtd, custo_medio:novoCusto.toFixed(2), atualizado_em:new Date().toISOString()})
+    .eq('id',p.id).eq('qtd',p.qtd);   // proteção: falha se outro PC alterou a qtd no meio
+  if(e2){ $('coErr').textContent=e2.message; return; }
+  fechar('mCompra'); toast('Entrada registrada');
+  carregarEstoque();
+}
+
+function fechar(id){ $(id).classList.remove('show'); }
 
 /* ---------- Conexão ---------- */
 async function checarConexao(){
