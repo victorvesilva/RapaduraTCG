@@ -412,7 +412,8 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
     <!-- MODAL PEDIDO -->
     <div class="overlay" id="mPedido">
       <div class="modal" style="max-width:680px">
-        <h3>Novo pedido</h3>
+        <h3 id="mPedidoTitulo">Novo pedido</h3>
+        <input type="hidden" id="pe_id">
         <div class="grid2">
           <div><label>Cliente</label><select id="pe_cliente"></select></div>
           <div><label>Canal</label>
@@ -439,7 +440,7 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
         <p class="muted" style="margin-top:12px;font-size:16px">Total do pedido: <b id="peTotal">R$ 0,00</b></p>
         <div class="msg-err" id="peErr"></div>
         <footer class="actions">
-          <button class="btn" onclick="salvarPedido()">Criar pedido (orçamento)</button>
+          <button class="btn" id="btnSalvarPedido" onclick="salvarPedido()">Criar pedido (orçamento)</button>
           <button class="btn ghost" onclick="fechar('mPedido')">Cancelar</button>
         </footer>
       </div>
@@ -466,8 +467,8 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
         <table class="tbl" id="tblCanal"><thead><tr><th>Canal</th><th class="num">Pedidos</th><th class="num">Receita</th><th class="num">Lucro bruto</th><th class="num">Margem</th></tr></thead><tbody></tbody></table>
       </div>
       <div class="card" style="padding:0;overflow-x:auto">
-        <h3 style="padding:16px 16px 0">Contas a receber (orçamentos em aberto)</h3>
-        <table class="tbl" id="tblReceber"><thead><tr><th>Nº</th><th>Cliente</th><th>Data</th><th class="num">Valor</th></tr></thead><tbody></tbody></table>
+        <h3 style="padding:16px 16px 0">Contas a receber</h3>
+        <table class="tbl" id="tblReceber"><thead><tr><th>Nº</th><th>Cliente</th><th>Data</th><th>Status</th><th class="num">Saldo</th></tr></thead><tbody></tbody></table>
       </div>
       <p class="muted">Receita e lucro consideram pedidos <b>pagos, enviados ou concluídos</b>. Lucro bruto = receita − custo dos produtos (custo congelado na venda) − taxas. Frete não entra na receita (repasse).</p>
     </div>
@@ -526,7 +527,7 @@ const SUPABASE_URL = "https://gqhwrwkuaegmydbiiprd.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxaHdyd2t1YWVnbXlkYmlpcHJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMzE2NTUsImV4cCI6MjA5OTYwNzY1NX0.bL_oob4K4F9cVwA-_IyxNvBEjcjNE_EG6PQ_QNzY4TQ";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-const TABELAS = ['empresa','produtos','compras','clientes','pedidos','pedido_itens'];
+const TABELAS = ['empresa','produtos','compras','clientes','pedidos','pedido_itens','log_eventos'];
 const $ = id => document.getElementById(id);
 let CURRENT_EMAIL = '';
 
@@ -629,11 +630,11 @@ async function importBackup(ev){
     const dump = JSON.parse(await file.text());
     if(dump.app!=='rapadura-tcg') throw new Error('Arquivo não é um backup válido.');
     // ordem inversa para apagar filhos antes dos pais
-    for(const t of ['pedido_itens','pedidos','clientes','compras','produtos']){
+    for(const t of ['pedido_itens','pedidos','clientes','compras','produtos','log_eventos']){
       const {error} = await db.from(t).delete().not('id','is',null);
       if(error) throw new Error('limpar '+t+': '+error.message);
     }
-    for(const t of ['produtos','compras','clientes','pedidos','pedido_itens','empresa']){
+    for(const t of ['produtos','compras','clientes','pedidos','pedido_itens','log_eventos','empresa']){
       const rows = dump.tabelas[t]||[];
       if(!rows.length) continue;
       const {error} = await db.from(t).upsert(rows);
@@ -966,45 +967,67 @@ function renderPedidos(){
     if(busca && !nomeCliente(p.cliente_id).toLowerCase().includes(busca)) return false;
     return true;
   });
-  document.querySelector('#tblPedidos tbody').innerHTML = lista.map(p=>`
-    <tr>
+  document.querySelector('#tblPedidos tbody').innerHTML = lista.map(p=>{
+    const total = totalPedido(p), pago = Math.min(p.valor_pago||0,total), saldo = Math.max(0,total-pago);
+    return `<tr>
       <td><b>#${p.numero}</b></td>
       <td>${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')}</td>
       <td>${nomeCliente(p.cliente_id)}</td>
       <td>${CANAL_LABEL[p.canal]||p.canal}</td>
-      <td class="num"><b>${fmt(totalPedido(p))}</b></td>
+      <td class="num"><b>${fmt(total)}</b>${p.status!=='cancelado'&&saldo>0?`<br><span class="muted" style="font-size:12px">saldo ${fmt(saldo)}</span>`:''}</td>
       <td><span class="st st-${p.status}">${ST_LABEL[p.status]}</span></td>
       <td><button class="mini" onclick="verPedido('${p.id}')">Abrir</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
   $('pedidosVazio').style.display = lista.length?'none':'block';
   renderClientes();
 }
 
-function abrirPedido(){
+function abrirPedido(id){
+  const p = id ? PEDIDOS.find(x=>x.id===id) : null;
   if(!CLIENTES.length){ toast('Cadastre um cliente antes de criar pedido.'); return; }
-  const emEstoque = PRODUTOS.filter(p=>p.ativo && p.qtd>0);
-  if(!emEstoque.length){ toast('Nenhum produto com estoque disponível.'); return; }
+  const emEstoque = PRODUTOS.filter(x=>x.ativo && x.qtd>0);
+  if(!p && !emEstoque.length){ toast('Nenhum produto com estoque disponível.'); return; }
   $('peErr').textContent='';
+  $('pe_id').value = p?.id||'';
+  $('mPedidoTitulo').textContent = p? `Editar pedido #${p.numero}` : 'Novo pedido';
+  $('btnSalvarPedido').textContent = p? 'Salvar alterações' : 'Criar pedido (orçamento)';
   $('pe_cliente').innerHTML = CLIENTES.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
-  ['pe_desconto','pe_frete','pe_taxas'].forEach(i=>$(i).value=0);
-  $('pe_obs').value=''; $('pe_canal').value='direto';
-  $('pe_data').value = new Date().toISOString().slice(0,10);
-  $('peItens').innerHTML=''; addItemRow();
+  $('pe_cliente').value = p?.cliente_id || CLIENTES[0]?.id;
+  $('pe_canal').value = p?.canal || 'direto';
+  $('pe_desconto').value = p?.desconto ?? 0;
+  $('pe_frete').value = p?.frete ?? 0;
+  $('pe_taxas').value = p?.taxas ?? 0;
+  $('pe_obs').value = p?.observacoes || '';
+  $('pe_data').value = p?.data || new Date().toISOString().slice(0,10);
+  $('peItens').innerHTML = '';
+  if(p){
+    const its = itensDe(p.id);
+    its.forEach(i => addItemRow(i.produto_id, i.qtd, i.preco_unit));
+    if(!its.length) addItemRow();
+  } else {
+    addItemRow();
+  }
+  totPedido();
   $('mPedido').classList.add('show');
 }
-function addItemRow(){
+function addItemRow(presetProdId, presetQtd, presetPreco){
   const emEstoque = PRODUTOS.filter(p=>p.ativo && p.qtd>0);
+  // ao editar, garante que o produto do item já lançado apareça mesmo se qtd disponível hoje for baixa
+  const preset = presetProdId ? PRODUTOS.find(x=>x.id===presetProdId) : null;
+  const lista = preset && !emEstoque.some(x=>x.id===preset.id) ? [preset,...emEstoque] : emEstoque;
   const row = document.createElement('div');
   row.className='item-row';
   row.innerHTML = `
     <select class="it-prod" onchange="itemProdChange(this)">
-      ${emEstoque.map(p=>`<option value="${p.id}">${p.nome} (${p.qtd} disp.)</option>`).join('')}
+      ${lista.map(p=>`<option value="${p.id}">${p.nome} (${p.qtd} disp.)</option>`).join('')}
     </select>
-    <input class="it-qtd" type="number" min="1" value="1" oninput="totPedido()">
-    <input class="it-preco" type="number" step="0.01" min="0" oninput="totPedido()">
+    <input class="it-qtd" type="number" min="1" value="${presetQtd||1}" oninput="totPedido()">
+    <input class="it-preco" type="number" step="0.01" min="0" value="${presetPreco??''}" oninput="totPedido()">
     <button class="mini" onclick="this.parentElement.remove();totPedido()">✕</button>`;
   $('peItens').appendChild(row);
-  itemProdChange(row.querySelector('.it-prod'));
+  if(presetProdId) row.querySelector('.it-prod').value = presetProdId;
+  if(presetPreco===undefined) itemProdChange(row.querySelector('.it-prod'));
 }
 function itemProdChange(sel){
   const p = PRODUTOS.find(x=>x.id===sel.value);
@@ -1024,6 +1047,7 @@ function totPedido(){
   $('peTotal').textContent = fmt(t);
 }
 async function salvarPedido(){
+  const id = $('pe_id').value;
   const itens = lerItens().filter(i=>i.qtd>0);
   if(!itens.length){ $('peErr').textContent='Adicione ao menos um item.'; return; }
   // valida estoque disponível somando itens repetidos do mesmo produto
@@ -1033,22 +1057,35 @@ async function salvarPedido(){
     const p = PRODUTOS.find(x=>x.id===pid);
     if(!p || q>p.qtd){ $('peErr').textContent=`Estoque insuficiente de ${p?.nome||'produto'} (disponível: ${p?.qtd??0}).`; return; }
   }
-  const {data:ped,error:e1} = await db.from('pedidos').insert({
+  const payload = {
     cliente_id:$('pe_cliente').value, canal:$('pe_canal').value,
     desconto:Number($('pe_desconto').value||0), frete:Number($('pe_frete').value||0),
     taxas:Number($('pe_taxas').value||0), observacoes:$('pe_obs').value.trim(),
-    data:$('pe_data').value, status:'orcamento', criado_por: CURRENT_EMAIL
-  }).select().single();
-  if(e1){ $('peErr').textContent=e1.message; return; }
+    data:$('pe_data').value
+  };
+  let pedidoId = id;
+  if(id){
+    payload.alterado_por = CURRENT_EMAIL;
+    payload.atualizado_em = new Date().toISOString();
+    const {error} = await db.from('pedidos').update(payload).eq('id',id);
+    if(error){ $('peErr').textContent=error.message; return; }
+    const {error:eDel} = await db.from('pedido_itens').delete().eq('pedido_id',id);
+    if(eDel){ $('peErr').textContent=eDel.message; return; }
+  } else {
+    payload.status='orcamento'; payload.criado_por=CURRENT_EMAIL;
+    const {data:ped,error:e1} = await db.from('pedidos').insert(payload).select().single();
+    if(e1){ $('peErr').textContent=e1.message; return; }
+    pedidoId = ped.id;
+  }
   const rows = itens.map(i=>{
     const p = PRODUTOS.find(x=>x.id===i.produto_id);
-    return { pedido_id:ped.id, produto_id:i.produto_id,
+    return { pedido_id:pedidoId, produto_id:i.produto_id,
       descricao:p.nome+(p.set_nome?' — '+p.set_nome:''), qtd:i.qtd,
       preco_unit:i.preco_unit, custo_unit:p.custo_medio };
   });
   const {error:e2} = await db.from('pedido_itens').insert(rows);
   if(e2){ $('peErr').textContent=e2.message; return; }
-  fechar('mPedido'); toast('Pedido #'+ped.numero+' criado como orçamento');
+  fechar('mPedido'); toast(id? 'Pedido atualizado' : 'Pedido criado como orçamento');
   carregarPedidos();
 }
 
@@ -1056,8 +1093,12 @@ async function salvarPedido(){
 function verPedido(id){
   const p = PEDIDOS.find(x=>x.id===id);
   const its = itensDe(id);
-  const prox = { orcamento:['pago','cancelado'], pago:['enviado','cancelado'],
+  const total = totalPedido(p);
+  const pago = Math.min(p.valor_pago||0, total);
+  const saldo = Math.max(0, total-pago);
+  const prox = { orcamento:['cancelado'], pago:['enviado','cancelado'],
                  enviado:['concluido','cancelado'], concluido:[], cancelado:[] }[p.status];
+  const stPag = saldo<=0.004 ? {l:'Quitado',c:'st-concluido'} : pago>0 ? {l:'Parcial',c:'st-pago'} : {l:'Pendente',c:'st-orcamento'};
   $('detBody').innerHTML = `
     <h3>Pedido #${p.numero} <span class="st st-${p.status}">${ST_LABEL[p.status]}</span></h3>
     <p class="muted">${nomeCliente(p.cliente_id)} · ${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')} · ${CANAL_LABEL[p.canal]||p.canal}</p>
@@ -1066,15 +1107,70 @@ function verPedido(id){
       <tbody>${its.map(i=>`<tr><td>${i.descricao}</td><td class="num">${i.qtd}</td><td class="num">${fmt(i.preco_unit)}</td><td class="num">${fmt(i.qtd*i.preco_unit)}</td></tr>`).join('')}</tbody>
     </table>
     <p class="muted" style="margin-top:10px">Desconto: ${fmt(p.desconto)} · Frete: ${fmt(p.frete)} · Taxas: ${fmt(p.taxas)}<br>
-    <span style="font-size:17px;color:var(--ink)">Total: <b>${fmt(totalPedido(p))}</b></span></p>
+    <span style="font-size:17px;color:var(--ink)">Total: <b>${fmt(total)}</b></span></p>
     ${p.observacoes?`<p class="muted">Obs.: ${p.observacoes}</p>`:''}
+
+    ${p.status!=='cancelado' ? `
+    <div class="card" style="margin-top:14px;padding:16px;background:#FBF3E3">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+        <div><span class="st ${stPag.c}">${stPag.l}</span>
+          <span class="muted" style="margin-left:8px">Pago: <b>${fmt(pago)}</b> · Saldo: <b>${fmt(saldo)}</b></span></div>
+      </div>
+      ${saldo>0 ? `
+      <div style="display:flex;gap:8px;margin-top:12px;align-items:flex-end;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px"><label style="margin:0 0 5px">Valor recebido agora (R$)</label>
+          <input id="pg_valor" type="number" step="0.01" min="0.01" max="${saldo.toFixed(2)}" placeholder="${fmt(saldo)}"></div>
+        <button class="btn" style="padding:10px 18px" onclick="registrarPagamento('${p.id}')">Registrar pagamento</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin-top:6px">${p.status==='orcamento'?'O primeiro pagamento (sinal) reserva os itens e baixa o estoque automaticamente.':''}</p>
+      <div class="msg-err" id="pgErr"></div>` : ''}
+    </div>` : ''}
+
     <footer class="actions">
-      ${prox.map(s=>`<button class="btn ${s==='cancelado'?'ghost':''}" onclick="mudarStatus('${p.id}','${s}')">${s==='cancelado'?'Cancelar pedido':'Marcar como '+ST_LABEL[s]}</button>`).join('')}
+      ${prox.map(s=>`<button class="btn ghost" onclick="mudarStatus('${p.id}','${s}')">${s==='cancelado'?'Cancelar pedido':'Marcar como '+ST_LABEL[s]}</button>`).join('')}
+      ${p.status==='orcamento'?`<button class="btn ghost" onclick="fechar('mDetalhe');abrirPedido('${p.id}')">Editar pedido</button>`:''}
       <button class="btn ghost" onclick="imprimirPedido('${p.id}')">Imprimir PDF</button>
       ${!p.estoque_baixado?`<button class="btn ghost" style="color:var(--warn);border-color:var(--warn)" onclick="excluirPedido('${p.id}')">Excluir pedido</button>`:''}
       <button class="btn ghost" onclick="fechar('mDetalhe')">Fechar</button>
     </footer>`;
   $('mDetalhe').classList.add('show');
+}
+async function registrarPagamento(id){
+  const p = PEDIDOS.find(x=>x.id===id);
+  const total = totalPedido(p);
+  const jaPago = Math.min(p.valor_pago||0, total);
+  const saldo = Math.max(0, total-jaPago);
+  const valorInput = $('pg_valor').value.trim();
+  const valor = valorInput==='' ? saldo : Number(valorInput);
+  if(!valor || valor<=0){ $('pgErr').textContent='Informe um valor válido.'; return; }
+  if(valor > saldo + 0.01){ $('pgErr').textContent=`O valor não pode passar o saldo devedor (${fmt(saldo)}).`; return; }
+  const novoValorPago = Math.min(total, jaPago+valor);
+
+  if(p.status==='orcamento'){
+    // primeiro pagamento: reserva itens (baixa de estoque), igual à transição para "pago"
+    for(const i of itensDe(id).filter(x=>x.produto_id)){
+      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
+      if(!prod || prod.qtd < i.qtd){ $('pgErr').textContent='Estoque insuficiente de '+(prod?.nome||'item')+' — não é possível confirmar o pagamento.'; return; }
+    }
+    for(const i of itensDe(id).filter(x=>x.produto_id)){
+      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
+      const {error} = await db.from('produtos').update({qtd:prod.qtd-i.qtd}).eq('id',prod.id).eq('qtd',prod.qtd);
+      if(error){ $('pgErr').textContent='Falha na baixa de estoque: '+error.message; return; }
+    }
+    const {error} = await db.from('pedidos').update({
+      status:'pago', estoque_baixado:true, valor_pago:novoValorPago,
+      atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL
+    }).eq('id',id);
+    if(error){ $('pgErr').textContent=error.message; return; }
+  } else {
+    const {error} = await db.from('pedidos').update({
+      valor_pago:novoValorPago, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL
+    }).eq('id',id);
+    if(error){ $('pgErr').textContent=error.message; return; }
+  }
+  fechar('mDetalhe');
+  toast(novoValorPago>=total ? 'Pedido quitado' : `Pagamento de ${fmt(valor)} registrado — saldo ${fmt(total-novoValorPago)}`);
+  await carregarEstoque(); carregarPedidos();
 }
 async function excluirPedido(id){
   const p = PEDIDOS.find(x=>x.id===id);
@@ -1121,6 +1217,9 @@ function imprimirPedido(id){
   const cli = CLIENTES.find(c=>c.id===p.cliente_id)||{};
   const logo = document.querySelector('.top-inner img').src;
   const sub = its.reduce((s,i)=>s+i.qtd*i.preco_unit,0);
+  const total = totalPedido(p);
+  const pago = Math.min(p.valor_pago||0, total);
+  const saldo = Math.max(0, total-pago);
   $('printArea').innerHTML = `
     <div class="ph"><img src="${logo}">
       <div><h2 style="margin:0">${EMPRESA.nome||'Rapadura TCG'}</h2>
@@ -1136,6 +1235,7 @@ function imprimirPedido(id){
         <tr><td colspan="3">Desconto</td><td>− ${fmt(p.desconto)}</td></tr>
         <tr><td colspan="3">Frete</td><td>${fmt(p.frete)}</td></tr>
         <tr class="tot"><td colspan="3">TOTAL</td><td>${fmt(totalPedido(p))}</td></tr>
+        ${pago>0?`<tr><td colspan="3">Pago</td><td>${fmt(pago)}</td></tr><tr class="tot"><td colspan="3">SALDO</td><td>${fmt(saldo)}</td></tr>`:''}
       </tbody>
     </table>
     ${p.observacoes?`<p style="font-size:13px"><b>Obs.:</b> ${p.observacoes}</p>`:''}
@@ -1170,18 +1270,25 @@ function renderFinanceiro(){
   });
   const lucro = receita-cmv-taxas;
   const estoqueCusto = PRODUTOS.reduce((s,p)=>s+p.qtd*p.custo_medio,0);
+  const totalReceita = receita; // já calculada acima (reconhecida na venda, não no recebimento)
+  const aReceber = PEDIDOS.filter(p=>{
+    if(p.status==='cancelado') return false;
+    const saldo = totalPedido(p) - Math.min(p.valor_pago||0, totalPedido(p));
+    return saldo > 0.01;
+  });
+  const totalSaldo = aReceber.reduce((s,p)=>s+(totalPedido(p)-Math.min(p.valor_pago||0,totalPedido(p))),0);
   $('fiKpis').innerHTML = [
     ['Receita',fmt(receita)],['CMV',fmt(cmv)],['Taxas',fmt(taxas)],
     ['Lucro bruto',fmt(lucro)],['Margem',receita>0?(lucro/receita*100).toFixed(1)+'%':'—'],
-    ['Estoque (custo)',fmt(estoqueCusto)]
+    ['Estoque (custo)',fmt(estoqueCusto)],['A receber',fmt(totalSaldo)]
   ].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
   document.querySelector('#tblCanal tbody').innerHTML = Object.entries(canais).map(([c,d])=>
     `<tr><td>${CANAL_LABEL[c]||c}</td><td class="num">${d.n}</td><td class="num">${fmt(d.rec)}</td><td class="num">${fmt(d.lucro)}</td><td class="num">${d.rec>0?(d.lucro/d.rec*100).toFixed(1)+'%':'—'}</td></tr>`
   ).join('') || '<tr><td colspan="5" class="muted">Sem vendas no período.</td></tr>';
-  const abertos = PEDIDOS.filter(p=>p.status==='orcamento');
-  document.querySelector('#tblReceber tbody').innerHTML = abertos.map(p=>
-    `<tr><td>#${p.numero}</td><td>${nomeCliente(p.cliente_id)}</td><td>${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')}</td><td class="num">${fmt(totalPedido(p))}</td></tr>`
-  ).join('') || '<tr><td colspan="4" class="muted">Nenhum orçamento em aberto.</td></tr>';
+  document.querySelector('#tblReceber tbody').innerHTML = aReceber.map(p=>{
+    const saldo = totalPedido(p)-Math.min(p.valor_pago||0,totalPedido(p));
+    return `<tr><td>#${p.numero}</td><td>${nomeCliente(p.cliente_id)}</td><td>${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')}</td><td><span class="st st-${p.status}">${ST_LABEL[p.status]}</span></td><td class="num">${fmt(saldo)}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="muted">Nada a receber no momento.</td></tr>';
 }
 
 /* ---------- Dashboard ---------- */
