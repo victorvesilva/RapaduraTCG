@@ -49,6 +49,7 @@ header.top{background:var(--card);border-bottom:1px solid var(--line);position:s
 nav.tabs{display:flex;gap:4px;max-width:1200px;margin:0 auto;padding:0 12px;overflow-x:auto}
 nav.tabs button{background:none;border:none;padding:12px 16px;font-size:15px;font-weight:700;color:var(--ink-soft);border-bottom:3px solid transparent;white-space:nowrap}
 nav.tabs button.on{color:var(--gold-deep);border-bottom-color:var(--gold)}
+.subtab.on{color:var(--gold-deep)!important;border-bottom-color:var(--gold)!important}
 main{max-width:1200px;margin:0 auto;padding:24px 18px 80px}
 .page h2{font-size:20px;margin-bottom:16px;letter-spacing:.04em}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:22px;margin-bottom:18px}
@@ -237,15 +238,93 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
   <main>
     <div class="page" id="p-dash">
       <h2>Dashboard</h2>
-      <div class="kpis" id="dashKpis"></div>
-      <div class="grid2" style="align-items:start">
-        <div class="card" style="padding:0;overflow-x:auto">
-          <h3 style="padding:16px 16px 0">Top produtos (30 dias)</h3>
-          <table class="tbl" id="tblTop"><thead><tr><th>Produto</th><th class="num">Qtd</th><th class="num">Receita</th></tr></thead><tbody></tbody></table>
+      <div style="display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid var(--line)">
+        <button class="subtab on" data-sub="visao" onclick="goDashSub('visao')" style="background:none;border:none;padding:9px 16px;font-weight:700;color:var(--ink-soft);border-bottom:3px solid transparent;cursor:pointer">Visão geral</button>
+        <button class="subtab" data-sub="relatorios" onclick="goDashSub('relatorios')" style="background:none;border:none;padding:9px 16px;font-weight:700;color:var(--ink-soft);border-bottom:3px solid transparent;cursor:pointer">Relatórios</button>
+      </div>
+
+      <div id="dashSub-visao">
+        <div class="kpis" id="dashKpis"></div>
+        <div class="grid2" style="align-items:start">
+          <div class="card" style="padding:0;overflow-x:auto">
+            <h3 style="padding:16px 16px 0">Top produtos (30 dias)</h3>
+            <table class="tbl" id="tblTop"><thead><tr><th>Produto</th><th class="num">Qtd</th><th class="num">Receita</th></tr></thead><tbody></tbody></table>
+          </div>
+          <div class="card" style="padding:0;overflow-x:auto">
+            <h3 style="padding:16px 16px 0">Estoque baixo</h3>
+            <table class="tbl" id="tblBaixo"><thead><tr><th>Produto</th><th class="num">Qtd</th><th class="num">Mínimo</th></tr></thead><tbody></tbody></table>
+          </div>
         </div>
-        <div class="card" style="padding:0;overflow-x:auto">
-          <h3 style="padding:16px 16px 0">Estoque baixo</h3>
-          <table class="tbl" id="tblBaixo"><thead><tr><th>Produto</th><th class="num">Qtd</th><th class="num">Mínimo</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div id="dashSub-relatorios" style="display:none">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Evolução de vendas — Receita x Lucro</h3>
+            <select id="rel_agrupamento" onchange="renderGraficoEvolucao()" style="max-width:160px">
+              <option value="semana">Por semana</option>
+              <option value="mes">Por mês</option>
+            </select>
+          </div>
+          <canvas id="graficoEvolucao" height="90" style="margin-top:14px"></canvas>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Vendas por período</h3>
+            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('vendas')">Exportar PDF</button>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+            <div style="flex:1;min-width:140px"><label style="margin:0 0 5px">De</label><input id="rv_de" type="date"></div>
+            <div style="flex:1;min-width:140px"><label style="margin:0 0 5px">Até</label><input id="rv_ate" type="date"></div>
+            <div style="align-self:flex-end"><button class="btn" onclick="renderRelatorioVendas()">Filtrar</button></div>
+          </div>
+          <div style="overflow-x:auto;margin-top:12px">
+            <table class="tbl" id="tblRelVendas"><thead><tr><th>Nº</th><th>Data</th><th>Cliente</th><th>Canal</th><th>Status</th><th class="num">Receita</th><th class="num">Lucro</th></tr></thead><tbody></tbody></table>
+          </div>
+          <p class="muted" id="relVendasTotais" style="margin-top:8px"></p>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Estoque atual</h3>
+            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('estoque')">Exportar PDF</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;margin:10px 0 0;text-transform:none;font-size:14px">
+            <input type="checkbox" id="re_baixo" style="width:auto" onchange="renderRelatorioEstoque()"> Só estoque baixo
+          </label>
+          <div style="overflow-x:auto;margin-top:10px">
+            <table class="tbl" id="tblRelEstoque"><thead><tr><th>Produto</th><th>Tipo</th><th class="num">Qtd</th><th class="num">Custo médio</th><th class="num">Valor (custo)</th><th class="num">Valor (venda)</th></tr></thead><tbody></tbody></table>
+          </div>
+          <p class="muted" id="relEstoqueTotais" style="margin-top:8px"></p>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Ranking de clientes</h3>
+            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('clientes')">Exportar PDF</button>
+          </div>
+          <div style="overflow-x:auto;margin-top:10px">
+            <table class="tbl" id="tblRelClientes"><thead><tr><th>Cliente</th><th class="num">Pedidos</th><th class="num">Total comprado</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Produtos mais vendidos</h3>
+            <div style="display:flex;gap:10px;align-items:center">
+              <select id="rp_periodo" onchange="renderRelatorioProdutos()" style="max-width:160px">
+                <option value="30">Últimos 30 dias</option>
+                <option value="90">Últimos 90 dias</option>
+                <option value="365">Último ano</option>
+                <option value="0">Tudo</option>
+              </select>
+              <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('produtos')">Exportar PDF</button>
+            </div>
+          </div>
+          <div style="overflow-x:auto;margin-top:10px">
+            <table class="tbl" id="tblRelProdutos"><thead><tr><th>Produto</th><th class="num">Qtd vendida</th><th class="num">Receita</th></tr></thead><tbody></tbody></table>
+          </div>
         </div>
       </div>
     </div>
@@ -580,6 +659,9 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 const SUPABASE_URL = "https://gqhwrwkuaegmydbiiprd.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxaHdyd2t1YWVnbXlkYmlpcHJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMzE2NTUsImV4cCI6MjA5OTYwNzY1NX0.bL_oob4K4F9cVwA-_IyxNvBEjcjNE_EG6PQ_QNzY4TQ";
@@ -635,7 +717,12 @@ function go(p){
   if(p==='clientes') carregarPedidos();
   if(p==='pedidos'){ carregarEstoque(); carregarPedidos(); }
   if(p==='financeiro'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderFinanceiro); }
-  if(p==='dash'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderDash); }
+  if(p==='dash'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(()=>{
+    renderDash();
+    if($('dashSub-relatorios').style.display!=='none'){
+      renderGraficoEvolucao(); renderRelatorioVendas(); renderRelatorioEstoque(); renderRelatorioClientes(); renderRelatorioProdutos();
+    }
+  }); }
   if(p==='colecoes' && !SETS_CARREGADOS) carregarSets();
   if(p==='config') carregarLogsSistema();
 }
@@ -1429,6 +1516,184 @@ function renderDash(){
   document.querySelector('#tblBaixo tbody').innerHTML = baixos.map(p=>
     `<tr class="baixo"><td>${p.nome}</td><td class="num"><b>${p.qtd}</b></td><td class="num">${p.estoque_minimo}</td></tr>`
   ).join('') || '<tr><td colspan="3" class="muted">Nenhum alerta.</td></tr>';
+}
+
+/* ---------- Relatórios (dentro do Dashboard) ---------- */
+function goDashSub(sub){
+  document.querySelectorAll('.subtab').forEach(b=>b.classList.toggle('on', b.dataset.sub===sub));
+  $('dashSub-visao').style.display = sub==='visao'?'block':'none';
+  $('dashSub-relatorios').style.display = sub==='relatorios'?'block':'none';
+  if(sub==='relatorios'){
+    if(!$('rv_de').value){
+      const h=new Date();
+      $('rv_de').value = new Date(h.getFullYear(),h.getMonth(),1).toISOString().slice(0,10);
+      $('rv_ate').value = h.toISOString().slice(0,10);
+    }
+    renderGraficoEvolucao();
+    renderRelatorioVendas();
+    renderRelatorioEstoque();
+    renderRelatorioClientes();
+    renderRelatorioProdutos();
+  }
+}
+
+let CHART_EVOLUCAO = null;
+function receitaLucroPedido(p){
+  const its = itensDe(p.id);
+  const receita = its.reduce((s,i)=>s+i.qtd*i.preco_unit,0) - p.desconto;
+  const custo = its.reduce((s,i)=>s+i.qtd*i.custo_unit,0);
+  return { receita, lucro: receita - custo - p.taxas };
+}
+function renderGraficoEvolucao(){
+  const agrup = $('rel_agrupamento').value; // 'semana' | 'mes'
+  const vendidos = PEDIDOS.filter(p=>VENDIDO.includes(p.status));
+  const buckets = {}; // chave -> {receita,lucro}
+  const chaveSemana = (d) => {
+    const dt = new Date(d+'T12:00');
+    const inicio = new Date(dt); inicio.setDate(dt.getDate()-dt.getDay());
+    return inicio.toISOString().slice(0,10);
+  };
+  const chaveMes = (d) => d.slice(0,7); // YYYY-MM
+  vendidos.forEach(p=>{
+    const k = agrup==='semana' ? chaveSemana(p.data) : chaveMes(p.data);
+    const {receita,lucro} = receitaLucroPedido(p);
+    const b = buckets[k] ||= {receita:0,lucro:0};
+    b.receita += receita; b.lucro += lucro;
+  });
+  const chaves = Object.keys(buckets).sort();
+  const labels = chaves.map(k => agrup==='semana'
+    ? 'Sem. '+new Date(k+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})
+    : new Date(k+'-01T12:00').toLocaleDateString('pt-BR',{month:'short',year:'2-digit'}));
+  const receitas = chaves.map(k=>buckets[k].receita);
+  const lucros = chaves.map(k=>buckets[k].lucro);
+
+  const ctx = document.getElementById('graficoEvolucao').getContext('2d');
+  if(CHART_EVOLUCAO) CHART_EVOLUCAO.destroy();
+  if(!chaves.length){
+    ctx.clearRect(0,0,9999,9999);
+    return;
+  }
+  CHART_EVOLUCAO = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets: [
+      { label:'Receita', data:receitas, borderColor:'#C98A2B', backgroundColor:'rgba(201,138,43,.12)', tension:.3, fill:true },
+      { label:'Lucro', data:lucros, borderColor:'#2E7D4F', backgroundColor:'rgba(46,125,79,.12)', tension:.3, fill:true },
+    ]},
+    options: { responsive:true, plugins:{ legend:{position:'bottom'} },
+      scales:{ y:{ ticks:{ callback:v=>fmt(v) } } } }
+  });
+}
+
+function renderRelatorioVendas(){
+  const de = $('rv_de').value, ate = $('rv_ate').value;
+  const lista = PEDIDOS.filter(p=>{
+    if(!VENDIDO.includes(p.status)) return false;
+    if(de && p.data<de) return false;
+    if(ate && p.data>ate) return false;
+    return true;
+  }).sort((a,b)=>a.data.localeCompare(b.data));
+  let totRec=0, totLucro=0;
+  document.querySelector('#tblRelVendas tbody').innerHTML = lista.map(p=>{
+    const {receita,lucro} = receitaLucroPedido(p);
+    totRec+=receita; totLucro+=lucro;
+    return `<tr><td>#${p.numero}</td><td>${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')}</td><td>${nomeCliente(p.cliente_id)}</td><td>${CANAL_LABEL[p.canal]||p.canal}</td><td><span class="st st-${p.status}">${ST_LABEL[p.status]}</span></td><td class="num">${fmt(receita)}</td><td class="num">${fmt(lucro)}</td></tr>`;
+  }).join('') || '<tr><td colspan="7" class="muted">Nenhuma venda no período.</td></tr>';
+  $('relVendasTotais').textContent = lista.length ? `${lista.length} venda(s) · Receita total: ${fmt(totRec)} · Lucro total: ${fmt(totLucro)}` : '';
+}
+
+function renderRelatorioEstoque(){
+  const soBaixo = $('re_baixo').checked;
+  const lista = PRODUTOS.filter(p=>p.ativo).filter(p=> !soBaixo || (p.estoque_minimo>0 && p.qtd<=p.estoque_minimo));
+  let totCusto=0, totVenda=0;
+  document.querySelector('#tblRelEstoque tbody').innerHTML = lista.map(p=>{
+    totCusto+=p.qtd*p.custo_medio; totVenda+=p.qtd*p.preco_venda;
+    return `<tr><td>${p.nome}</td><td>${TIPOS[p.tipo]||p.tipo}</td><td class="num">${p.qtd}</td><td class="num">${fmt(p.custo_medio)}</td><td class="num">${fmt(p.qtd*p.custo_medio)}</td><td class="num">${fmt(p.qtd*p.preco_venda)}</td></tr>`;
+  }).join('') || '<tr><td colspan="6" class="muted">Nenhum produto.</td></tr>';
+  $('relEstoqueTotais').textContent = lista.length ? `${lista.length} produto(s) · Valor total: ${fmt(totCusto)} (custo) / ${fmt(totVenda)} (venda)` : '';
+}
+
+function renderRelatorioClientes(){
+  const porCliente = {};
+  PEDIDOS.filter(p=>VENDIDO.includes(p.status)).forEach(p=>{
+    const {receita} = receitaLucroPedido(p);
+    const c = porCliente[p.cliente_id] ||= {n:0,total:0};
+    c.n++; c.total+=receita;
+  });
+  const lista = Object.entries(porCliente).sort((a,b)=>b[1].total-a[1].total);
+  document.querySelector('#tblRelClientes tbody').innerHTML = lista.map(([cid,d])=>
+    `<tr><td>${nomeCliente(cid)}</td><td class="num">${d.n}</td><td class="num">${fmt(d.total)}</td></tr>`
+  ).join('') || '<tr><td colspan="3" class="muted">Nenhum cliente com compras.</td></tr>';
+}
+
+function renderRelatorioProdutos(){
+  const dias = parseInt($('rp_periodo').value);
+  const desde = dias>0 ? new Date(Date.now()-dias*864e5) : new Date(2000,0,1);
+  const vendas = {};
+  PEDIDOS.filter(p=>VENDIDO.includes(p.status) && new Date(p.data+'T12:00')>=desde)
+    .forEach(p=> itensDe(p.id).forEach(i=>{
+      const v = vendas[i.descricao] ||= {q:0,r:0};
+      v.q+=i.qtd; v.r+=i.qtd*i.preco_unit;
+    }));
+  const lista = Object.entries(vendas).sort((a,b)=>b[1].r-a[1].r);
+  document.querySelector('#tblRelProdutos tbody').innerHTML = lista.map(([n,v])=>
+    `<tr><td>${n}</td><td class="num">${v.q}</td><td class="num">${fmt(v.r)}</td></tr>`
+  ).join('') || '<tr><td colspan="3" class="muted">Sem vendas no período.</td></tr>';
+}
+
+/* ---------- Exportação de relatórios em PDF (jsPDF) ---------- */
+function pdfCabecalho(doc, titulo){
+  doc.setFontSize(14); doc.setFont(undefined,'bold');
+  doc.text(EMPRESA?.nome || 'Rapadura TCG', 40, 40);
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  doc.text(titulo, 40, 58);
+  doc.setFontSize(9); doc.setTextColor(120);
+  doc.text('Gerado em '+new Date().toLocaleString('pt-BR'), 40, 72);
+  doc.setTextColor(0);
+  return 90;
+}
+function exportarRelatorioPDF(tipo){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let head, body, titulo, nomeArquivo;
+
+  if(tipo==='vendas'){
+    titulo = 'Relatório de Vendas'+($('rv_de').value?` — ${new Date($('rv_de').value+'T12:00').toLocaleDateString('pt-BR')} a ${new Date($('rv_ate').value+'T12:00').toLocaleDateString('pt-BR')}`:'');
+    head = [['Nº','Data','Cliente','Canal','Status','Receita','Lucro']];
+    body = [...document.querySelectorAll('#tblRelVendas tbody tr')].map(tr=>
+      [...tr.children].map(td=>td.textContent.trim()));
+    nomeArquivo = 'relatorio-vendas';
+  } else if(tipo==='estoque'){
+    titulo = 'Relatório de Estoque'+($('re_baixo').checked?' — apenas estoque baixo':'');
+    head = [['Produto','Tipo','Qtd','Custo médio','Valor (custo)','Valor (venda)']];
+    body = [...document.querySelectorAll('#tblRelEstoque tbody tr')].map(tr=>
+      [...tr.children].map(td=>td.textContent.trim()));
+    nomeArquivo = 'relatorio-estoque';
+  } else if(tipo==='clientes'){
+    titulo = 'Ranking de Clientes';
+    head = [['Cliente','Pedidos','Total comprado']];
+    body = [...document.querySelectorAll('#tblRelClientes tbody tr')].map(tr=>
+      [...tr.children].map(td=>td.textContent.trim()));
+    nomeArquivo = 'relatorio-clientes';
+  } else if(tipo==='produtos'){
+    const label = {30:'Últimos 30 dias',90:'Últimos 90 dias',365:'Último ano',0:'Todo o período'}[$('rp_periodo').value];
+    titulo = 'Produtos Mais Vendidos — '+label;
+    head = [['Produto','Qtd vendida','Receita']];
+    body = [...document.querySelectorAll('#tblRelProdutos tbody tr')].map(tr=>
+      [...tr.children].map(td=>td.textContent.trim()));
+    nomeArquivo = 'relatorio-produtos';
+  }
+
+  if(!body.length || body[0].length<=1){ toast('Nada para exportar neste relatório.'); return; }
+
+  const y = pdfCabecalho(doc, titulo);
+  doc.autoTable({
+    head, body, startY:y,
+    styles:{ fontSize:8, cellPadding:5 },
+    headStyles:{ fillColor:[201,138,43], textColor:255 },
+    alternateRowStyles:{ fillColor:[251,243,227] },
+  });
+  doc.save(nomeArquivo+'-'+new Date().toISOString().slice(0,10)+'.pdf');
+  toast('PDF exportado');
 }
 
 /* ---------- Coleções (pokemontcg.io + câmbio) ---------- */
