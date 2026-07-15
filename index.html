@@ -287,6 +287,22 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Despesas por período</h3>
+            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('despesas')">Exportar PDF</button>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
+            <div style="flex:1;min-width:140px"><label style="margin:0 0 5px">De</label><input id="rd_de" type="date"></div>
+            <div style="flex:1;min-width:140px"><label style="margin:0 0 5px">Até</label><input id="rd_ate" type="date"></div>
+            <div style="align-self:flex-end"><button class="btn" onclick="renderRelatorioDespesas()">Filtrar</button></div>
+          </div>
+          <div style="overflow-x:auto;margin-top:12px">
+            <table class="tbl" id="tblRelDespesas"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th class="num">Valor</th></tr></thead><tbody></tbody></table>
+          </div>
+          <p class="muted" id="relDespesasTotais" style="margin-top:8px"></p>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">Estoque atual</h3>
             <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('estoque')">Exportar PDF</button>
           </div>
@@ -306,6 +322,17 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           </div>
           <div style="overflow-x:auto;margin-top:10px">
             <table class="tbl" id="tblRelClientes"><thead><tr><th>Cliente</th><th class="num">Pedidos</th><th class="num">Total comprado</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Ranking de fornecedores</h3>
+            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('fornecedores')">Exportar PDF</button>
+          </div>
+          <p class="muted" style="font-size:12px;margin:6px 0 0">Considera apenas compras registradas com fornecedor cadastrado. Compras antigas com fornecedor em texto livre não entram aqui.</p>
+          <div style="overflow-x:auto;margin-top:10px">
+            <table class="tbl" id="tblRelFornecedores"><thead><tr><th>Fornecedor</th><th class="num">Compras</th><th class="num">Total gasto</th></tr></thead><tbody></tbody></table>
           </div>
         </div>
 
@@ -459,7 +486,12 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         </div>
         <div class="grid2">
           <div><label>Data</label><input id="co_data" type="date"></div>
-          <div><label>Fornecedor</label><input id="co_fornecedor" placeholder="Ex.: Distribuidora X"></div>
+          <div><label>Fornecedor</label>
+            <div style="display:flex;gap:6px">
+              <select id="co_fornecedor_sel" style="flex:1"></select>
+              <button class="btn ghost" type="button" style="padding:0 12px" onclick="abrirFornecedor(null,true)" title="Novo fornecedor">+</button>
+            </div>
+          </div>
         </div>
         <p class="muted" id="coPreview" style="margin-top:12px"></p>
         <div class="msg-err" id="coErr"></div>
@@ -495,17 +527,37 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
     </div>
 
     <div class="page" id="p-clientes" style="display:none">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-        <h2 style="margin:0;flex:1">Clientes</h2>
-        <button class="btn" onclick="abrirCliente()">Novo cliente</button>
+      <h2>Clientes</h2>
+      <div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--line)">
+        <button class="subtab on" data-sub="clientes" onclick="goClientesSub('clientes')" style="background:none;border:none;padding:9px 16px;font-weight:700;color:var(--ink-soft);border-bottom:3px solid transparent;cursor:pointer">Clientes</button>
+        <button class="subtab" data-sub="fornecedores" onclick="goClientesSub('fornecedores')" style="background:none;border:none;padding:9px 16px;font-weight:700;color:var(--ink-soft);border-bottom:3px solid transparent;cursor:pointer">Fornecedores</button>
       </div>
-      <div class="card" style="padding:14px">
-        <input id="fc_busca" placeholder="Buscar por nome ou WhatsApp…" oninput="renderClientes()">
+
+      <div id="clientesSub-clientes">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+          <button class="btn" onclick="abrirCliente()">Novo cliente</button>
+        </div>
+        <div class="card" style="padding:14px">
+          <input id="fc_busca" placeholder="Buscar por nome ou WhatsApp…" oninput="renderClientes()">
+        </div>
+        <div class="kpis" id="clientesKpis"></div>
+        <div class="card" style="padding:0;overflow-x:auto">
+          <table class="tbl" id="tblClientes"><thead><tr><th>Nome</th><th>WhatsApp</th><th>Cidade/UF</th><th class="num">Pedidos</th><th class="num">Total comprado</th><th></th></tr></thead><tbody></tbody></table>
+          <div id="clientesVazio" class="soon" style="display:none;border:none">Nenhum cliente cadastrado.</div>
+        </div>
       </div>
-      <div class="kpis" id="clientesKpis"></div>
-      <div class="card" style="padding:0;overflow-x:auto">
-        <table class="tbl" id="tblClientes"><thead><tr><th>Nome</th><th>WhatsApp</th><th>Cidade/UF</th><th class="num">Pedidos</th><th class="num">Total comprado</th><th></th></tr></thead><tbody></tbody></table>
-        <div id="clientesVazio" class="soon" style="display:none;border:none">Nenhum cliente cadastrado.</div>
+
+      <div id="clientesSub-fornecedores" style="display:none">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+          <button class="btn" onclick="abrirFornecedor()">Novo fornecedor</button>
+        </div>
+        <div class="card" style="padding:14px">
+          <input id="ff_busca" placeholder="Buscar por nome ou WhatsApp…" oninput="renderFornecedores()">
+        </div>
+        <div class="card" style="padding:0;overflow-x:auto">
+          <table class="tbl" id="tblFornecedores"><thead><tr><th>Nome</th><th>WhatsApp</th><th>Contato</th><th class="num">Compras</th><th class="num">Total comprado</th><th></th></tr></thead><tbody></tbody></table>
+          <div id="fornecedoresVazio" class="soon" style="display:none;border:none">Nenhum fornecedor cadastrado.</div>
+        </div>
       </div>
     </div>
 
@@ -525,6 +577,27 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <button class="btn" onclick="salvarCliente()">Salvar cliente</button>
           <button class="btn ghost" onclick="fechar('mCliente')">Cancelar</button>
           <button class="btn ghost" id="btnExcluirCliente" style="display:none;color:var(--warn);border-color:var(--warn);margin-left:auto" onclick="excluirCliente()">Excluir cliente</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- MODAL FORNECEDOR -->
+    <div class="overlay" id="mFornecedor">
+      <div class="modal">
+        <h3 id="mFornecedorTitulo">Novo fornecedor</h3>
+        <input type="hidden" id="fo_id">
+        <label>Nome</label><input id="fo_nome">
+        <div class="grid2">
+          <div><label>WhatsApp</label><input id="fo_whatsapp"></div>
+          <div><label>CNPJ / CPF</label><input id="fo_cnpj_cpf"></div>
+        </div>
+        <label>Pessoa de contato</label><input id="fo_contato">
+        <label>Observações</label><input id="fo_observacoes">
+        <div class="msg-err" id="foErr"></div>
+        <footer class="actions">
+          <button class="btn" onclick="salvarFornecedor()">Salvar fornecedor</button>
+          <button class="btn ghost" onclick="fechar('mFornecedor')">Cancelar</button>
+          <button class="btn ghost" id="btnExcluirFornecedor" style="display:none;color:var(--warn);border-color:var(--warn);margin-left:auto" onclick="excluirFornecedor()">Excluir fornecedor</button>
         </footer>
       </div>
     </div>
@@ -590,7 +663,88 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <h3 style="padding:16px 16px 0">Contas a receber</h3>
         <table class="tbl" id="tblReceber"><thead><tr><th>Nº</th><th>Cliente</th><th>Data</th><th>Status</th><th class="num">Saldo</th></tr></thead><tbody></tbody></table>
       </div>
-      <p class="muted">Receita e lucro consideram pedidos <b>pagos, enviados ou concluídos</b>. Lucro bruto = receita − custo dos produtos (custo congelado na venda) − taxas. Frete não entra na receita (repasse).</p>
+
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+          <h3 style="margin:0">Despesas do período</h3>
+          <div style="display:flex;gap:8px">
+            <button class="btn ghost" style="padding:7px 14px" onclick="abrirDespesaFixa()">Despesas fixas</button>
+            <button class="btn" style="padding:7px 14px" onclick="abrirDespesa()">Lançar despesa</button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;margin-top:12px">
+          <table class="tbl" id="tblDespesas"><thead><tr><th>Data</th><th>Categoria</th><th>Descrição</th><th class="num">Valor</th><th></th></tr></thead><tbody></tbody></table>
+          <div id="despesasVazio" class="soon" style="display:none;border:none">Nenhuma despesa no período.</div>
+        </div>
+        <p class="muted" id="despesasTotais" style="margin-top:8px"></p>
+      </div>
+
+      <p class="muted">Receita e lucro consideram pedidos <b>pagos, enviados ou concluídos</b>. Lucro bruto = receita − custo dos produtos (custo congelado na venda) − taxas de venda. Lucro líquido = lucro bruto − despesas do período. Frete de venda não entra na receita (repasse).</p>
+    </div>
+
+    <!-- MODAL DESPESA AVULSA -->
+    <div class="overlay" id="mDespesa">
+      <div class="modal">
+        <h3 id="mDespesaTitulo">Lançar despesa</h3>
+        <input type="hidden" id="de_id">
+        <div class="grid2">
+          <div><label>Categoria</label>
+            <select id="de_categoria">
+              <option value="embalagem">Embalagem</option>
+              <option value="frete_compra">Frete (compra)</option>
+              <option value="taxas_fixas">Taxas fixas</option>
+              <option value="marketing">Marketing</option>
+              <option value="aluguel">Aluguel</option>
+              <option value="ferramentas">Ferramentas/assinaturas</option>
+              <option value="outros">Outros</option>
+            </select></div>
+          <div><label>Data</label><input id="de_data" type="date"></div>
+        </div>
+        <label>Descrição</label><input id="de_descricao" placeholder="Ex.: Caixas e etiquetas para envio">
+        <label>Valor (R$)</label><input id="de_valor" type="number" step="0.01" min="0">
+        <div class="msg-err" id="deErr"></div>
+        <footer class="actions">
+          <button class="btn" onclick="salvarDespesa()">Salvar despesa</button>
+          <button class="btn ghost" onclick="fechar('mDespesa')">Cancelar</button>
+          <button class="btn ghost" id="btnExcluirDespesa" style="display:none;color:var(--warn);border-color:var(--warn);margin-left:auto" onclick="excluirDespesa()">Excluir</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- MODAL DESPESAS FIXAS -->
+    <div class="overlay" id="mDespesaFixa">
+      <div class="modal" style="max-width:640px">
+        <h3>Despesas fixas mensais</h3>
+        <p class="muted">Geradas automaticamente todo mês, sem precisar lançar na mão. Desativar preserva os lançamentos já gerados.</p>
+        <div id="listaDespesasFixas" style="margin:14px 0"></div>
+        <div class="brick" style="border-radius:3px;margin:10px 0"></div>
+        <h4 id="dfTitulo" style="margin-bottom:6px">Nova despesa fixa</h4>
+        <input type="hidden" id="df_id">
+        <div class="grid2">
+          <div><label>Categoria</label>
+            <select id="df_categoria">
+              <option value="aluguel">Aluguel</option>
+              <option value="taxas_fixas">Taxas fixas</option>
+              <option value="ferramentas">Ferramentas/assinaturas</option>
+              <option value="marketing">Marketing</option>
+              <option value="embalagem">Embalagem</option>
+              <option value="frete_compra">Frete (compra)</option>
+              <option value="outros">Outros</option>
+            </select></div>
+          <div><label>Dia de referência</label><input id="df_dia" type="number" min="1" max="28" value="1"></div>
+        </div>
+        <label>Nome</label><input id="df_nome" placeholder="Ex.: Aluguel do espaço">
+        <div class="grid2">
+          <div><label>Valor mensal (R$)</label><input id="df_valor" type="number" step="0.01" min="0"></div>
+          <div><label>Início da cobrança</label><input id="df_data_inicio" type="date"></div>
+        </div>
+        <div class="msg-err" id="dfErr"></div>
+        <footer class="actions">
+          <button class="btn" onclick="salvarDespesaFixa()">Salvar</button>
+          <button class="btn ghost" onclick="limparFormDespesaFixa()">Limpar formulário</button>
+          <button class="btn ghost" onclick="fechar('mDespesaFixa')" style="margin-left:auto">Fechar</button>
+        </footer>
+      </div>
     </div>
 
     <div class="page" id="p-config" style="display:none">
@@ -667,7 +821,7 @@ const SUPABASE_URL = "https://gqhwrwkuaegmydbiiprd.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxaHdyd2t1YWVnbXlkYmlpcHJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMzE2NTUsImV4cCI6MjA5OTYwNzY1NX0.bL_oob4K4F9cVwA-_IyxNvBEjcjNE_EG6PQ_QNzY4TQ";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-const TABELAS = ['empresa','produtos','compras','clientes','pedidos','pedido_itens','log_eventos'];
+const TABELAS = ['empresa','produtos','compras','clientes','fornecedores','pedidos','pedido_itens','despesas_fixas','despesas','log_eventos'];
 const $ = id => document.getElementById(id);
 let CURRENT_EMAIL = '';
 let LOGS_SISTEMA = [];
@@ -692,7 +846,8 @@ async function showApp(session){
   CURRENT_EMAIL = session.user.email;
   popularSelectsTipos();
   await carregarEmpresa();
-  await Promise.all([carregarEstoque(), carregarPedidos()]);
+  await Promise.all([carregarEstoque(), carregarPedidos(), carregarFornecedores()]);
+  gerarDespesasFixasPendentes(); // roda em segundo plano, não bloqueia a tela inicial
   renderDash();
   checarConexao();
 }
@@ -713,14 +868,14 @@ function go(p){
   el.style.display='block';
   el.style.animation='none'; void el.offsetWidth; el.style.animation='';
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
-  if(p==='estoque') carregarEstoque();
-  if(p==='clientes') carregarPedidos();
+  if(p==='estoque'){ carregarEstoque(); carregarFornecedores(); }
+  if(p==='clientes'){ carregarPedidos(); carregarFornecedores().then(renderFornecedores); }
   if(p==='pedidos'){ carregarEstoque(); carregarPedidos(); }
   if(p==='financeiro'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderFinanceiro); }
   if(p==='dash'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(()=>{
     renderDash();
     if($('dashSub-relatorios').style.display!=='none'){
-      renderGraficoEvolucao(); renderRelatorioVendas(); renderRelatorioEstoque(); renderRelatorioClientes(); renderRelatorioProdutos();
+      renderGraficoEvolucao(); renderRelatorioVendas(); renderRelatorioDespesas(); renderRelatorioEstoque(); renderRelatorioClientes(); renderRelatorioFornecedores(); renderRelatorioProdutos();
     }
   }); }
   if(p==='colecoes' && !SETS_CARREGADOS) carregarSets();
@@ -805,11 +960,11 @@ async function importBackup(ev){
     const dump = JSON.parse(await file.text());
     if(dump.app!=='rapadura-tcg') throw new Error('Arquivo não é um backup válido.');
     // ordem inversa para apagar filhos antes dos pais
-    for(const t of ['pedido_itens','pedidos','clientes','compras','produtos','log_eventos']){
+    for(const t of ['pedido_itens','pedidos','clientes','compras','produtos','fornecedores','despesas','despesas_fixas','log_eventos']){
       const {error} = await db.from(t).delete().not('id','is',null);
       if(error) throw new Error('limpar '+t+': '+error.message);
     }
-    for(const t of ['produtos','compras','clientes','pedidos','pedido_itens','log_eventos','empresa']){
+    for(const t of ['produtos','fornecedores','compras','clientes','pedidos','pedido_itens','despesas_fixas','despesas','log_eventos','empresa']){
       const rows = dump.tabelas[t]||[];
       if(!rows.length) continue;
       const {error} = await db.from(t).upsert(rows);
@@ -1032,10 +1187,17 @@ function abrirCompra(prodId){
   if(!ativos.length){ toast('Cadastre um produto antes de registrar compra.'); return; }
   $('co_produto').innerHTML = ativos.map(p=>`<option value="${p.id}">${p.nome} (${p.sku})</option>`).join('');
   if(prodId) $('co_produto').value = prodId;
-  $('co_qtd').value=1; $('co_custo').value=''; $('co_fornecedor').value='';
+  preencherSelectFornecedores();
+  $('co_qtd').value=1; $('co_custo').value='';
   $('co_data').value = new Date().toISOString().slice(0,10);
   $('mCompra').classList.add('show');
   previewCompra();
+}
+function preencherSelectFornecedores(preselId){
+  const sel = $('co_fornecedor_sel');
+  sel.innerHTML = '<option value="">Sem fornecedor cadastrado</option>' +
+    FORNECEDORES.map(f=>`<option value="${f.id}">${f.nome}</option>`).join('');
+  if(preselId) sel.value = preselId;
 }
 function previewCompra(){
   const p = PRODUTOS.find(x=>x.id===$('co_produto').value);
@@ -1052,9 +1214,11 @@ async function salvarCompra(){
   const p = PRODUTOS.find(x=>x.id===$('co_produto').value);
   const qtd = parseInt($('co_qtd').value||0), custo = Number($('co_custo').value||0);
   if(!p || qtd<1 || custo<0 || $('co_custo').value===''){ $('coErr').textContent='Informe quantidade e custo unitário válidos.'; return; }
+  const fornecedorId = $('co_fornecedor_sel').value || null;
+  const fornecedorNome = fornecedorId ? FORNECEDORES.find(f=>f.id===fornecedorId)?.nome || '' : '';
   const {error:e1} = await db.from('compras').insert({
     produto_id:p.id, qtd, custo_unit:custo,
-    data:$('co_data').value, fornecedor:$('co_fornecedor').value.trim(),
+    data:$('co_data').value, fornecedor:fornecedorNome, fornecedor_id:fornecedorId,
     criado_por: CURRENT_EMAIL
   });
   if(e1){ $('coErr').textContent=e1.message; return; }
@@ -1071,7 +1235,7 @@ async function salvarCompra(){
 function fechar(id){ $(id).classList.remove('show'); }
 
 /* ---------- Clientes ---------- */
-let CLIENTES = [], PEDIDOS = [], ITENS = [];
+let CLIENTES = [], PEDIDOS = [], ITENS = [], FORNECEDORES = [];
 
 function abrirCliente(id){
   $('clErr').textContent='';
@@ -1138,6 +1302,85 @@ function renderClientes(){
       ['Total já vendido a clientes', fmt(totalGasto)]
     ].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
   }
+}
+
+function goClientesSub(sub){
+  document.querySelectorAll('#p-clientes .subtab').forEach(b=>b.classList.toggle('on', b.dataset.sub===sub));
+  $('clientesSub-clientes').style.display = sub==='clientes'?'block':'none';
+  $('clientesSub-fornecedores').style.display = sub==='fornecedores'?'block':'none';
+  if(sub==='fornecedores') renderFornecedores();
+}
+
+async function carregarFornecedores(){
+  const {data,error} = await db.from('fornecedores').select('*').order('nome');
+  if(error){ toast('Erro ao carregar fornecedores: '+error.message); return; }
+  FORNECEDORES = data;
+}
+async function renderFornecedores(){
+  // total comprado exige consultar compras direto no banco (não fica em cache local)
+  const {data:compras, error} = await db.from('compras').select('produto_id,fornecedor_id,qtd,custo_unit,estornada').eq('estornada',false);
+  const porFornecedor = {};
+  if(!error){
+    (compras||[]).forEach(c=>{
+      if(!c.fornecedor_id) return;
+      const f = porFornecedor[c.fornecedor_id] ||= {n:0,total:0};
+      f.n++; f.total += c.qtd*c.custo_unit;
+    });
+  }
+  const busca = ($('ff_busca')?.value||'').toLowerCase();
+  const lista = FORNECEDORES.filter(f => !busca || (f.nome+' '+(f.whatsapp||'')).toLowerCase().includes(busca));
+  document.querySelector('#tblFornecedores tbody').innerHTML = lista.map(f=>{
+    const info = porFornecedor[f.id] || {n:0,total:0};
+    return `<tr><td><b>${f.nome}</b></td><td>${f.whatsapp||'—'}</td><td>${f.contato||'—'}</td>
+      <td class="num">${info.n}</td><td class="num">${fmt(info.total)}</td>
+      <td><button class="mini" onclick="abrirFornecedor('${f.id}')">Editar</button></td></tr>`;
+  }).join('');
+  $('fornecedoresVazio').style.display = lista.length? 'none':'block';
+}
+function abrirFornecedor(id, fromCompra){
+  $('foErr').textContent='';
+  const f = id ? FORNECEDORES.find(x=>x.id===id) : null;
+  $('mFornecedorTitulo').textContent = f? 'Editar fornecedor' : 'Novo fornecedor';
+  $('fo_id').value = f?.id||'';
+  $('fo_nome').value = f?.nome||'';
+  $('fo_whatsapp').value = f?.whatsapp||'';
+  $('fo_cnpj_cpf').value = f?.cnpj_cpf||'';
+  $('fo_contato').value = f?.contato||'';
+  $('fo_observacoes').value = f?.observacoes||'';
+  $('btnExcluirFornecedor').style.display = f? 'inline-block':'none';
+  $('mFornecedor').dataset.fromCompra = fromCompra? '1':'';
+  $('mFornecedor').classList.add('show');
+}
+async function salvarFornecedor(){
+  const id = $('fo_id').value;
+  const nome = $('fo_nome').value.trim();
+  if(!nome){ $('foErr').textContent='Nome é obrigatório.'; return; }
+  const payload = { nome, whatsapp:$('fo_whatsapp').value.trim(),
+    cnpj_cpf:$('fo_cnpj_cpf').value.trim(), contato:$('fo_contato').value.trim(),
+    observacoes:$('fo_observacoes').value.trim() };
+  if(!id) payload.criado_por = CURRENT_EMAIL;
+  const q = id ? db.from('fornecedores').update(payload).eq('id',id)
+               : db.from('fornecedores').insert(payload).select().single();
+  const {data,error} = await q;
+  if(error){ $('foErr').textContent=error.message; return; }
+  const veioDaCompra = $('mFornecedor').dataset.fromCompra==='1';
+  fechar('mFornecedor'); toast(id?'Fornecedor atualizado':'Fornecedor salvo');
+  await carregarFornecedores();
+  renderFornecedores();
+  if(veioDaCompra){
+    preencherSelectFornecedores(id || data?.id);
+  }
+}
+async function excluirFornecedor(){
+  const id = $('fo_id').value;
+  const f = FORNECEDORES.find(x=>x.id===id);
+  if(!confirm(`Excluir "${f.nome}"? Compras já registradas com ele mantêm o histórico, apenas deixam de referenciar o cadastro.`)) return;
+  const {error} = await db.from('fornecedores').delete().eq('id',id);
+  if(error){ toast('Erro: '+error.message); return; }
+  await logEvento('fornecedor_excluido', `Fornecedor "${f.nome}" excluído`);
+  fechar('mFornecedor'); toast('Fornecedor excluído');
+  await carregarFornecedores();
+  renderFornecedores();
 }
 
 /* ---------- Pedidos ---------- */
@@ -1449,8 +1692,45 @@ function periodoRange(v){
   return [new Date(2000,0,1), new Date(2100,0,1)];
 }
 const VENDIDO = ['pago','enviado','concluido'];
-function renderFinanceiro(){
+let DESPESAS = [], DESPESAS_FIXAS = [];
+const CATEGORIA_LABEL = {embalagem:'Embalagem', frete_compra:'Frete (compra)', taxas_fixas:'Taxas fixas', marketing:'Marketing', aluguel:'Aluguel', ferramentas:'Ferramentas/assinaturas', outros:'Outros'};
+
+async function gerarDespesasFixasPendentes(){
+  const {data:fixas, error} = await db.from('despesas_fixas').select('*').eq('ativa', true);
+  if(error || !fixas || !fixas.length) return;
+  const hoje = new Date();
+  for(const f of fixas){
+    const inicio = new Date(f.data_inicio+'T12:00');
+    let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+    const limite = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    const competencias = [];
+    while(cursor <= limite){
+      competencias.push(cursor.toISOString().slice(0,7));
+      cursor.setMonth(cursor.getMonth()+1);
+    }
+    if(!competencias.length) continue;
+    const {data:existentes} = await db.from('despesas').select('competencia').eq('despesa_fixa_id', f.id).in('competencia', competencias);
+    const jaExistem = new Set((existentes||[]).map(e=>e.competencia));
+    const faltantes = competencias.filter(c=>!jaExistem.has(c));
+    if(!faltantes.length) continue;
+    const dia = Math.min(f.dia_referencia||1, 28);
+    const rows = faltantes.map(comp=>{
+      const [ano,mes] = comp.split('-').map(Number);
+      const dataStr = `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      return { data:dataStr, categoria:f.categoria, descricao:f.nome, valor:f.valor, despesa_fixa_id:f.id, competencia:comp, criado_por:'sistema (despesa fixa)' };
+    });
+    await db.from('despesas').insert(rows); // se colidir por concorrência entre PCs, o índice único ignora a duplicata
+  }
+}
+async function carregarDespesasFixas(){
+  const {data,error} = await db.from('despesas_fixas').select('*').order('nome');
+  if(!error) DESPESAS_FIXAS = data;
+}
+
+async function renderFinanceiro(){
+  await gerarDespesasFixasPendentes();
   const [ini,fim] = periodoRange($('fi_periodo').value);
+  const iniStr = ini.toISOString().slice(0,10), fimStr = fim.toISOString().slice(0,10);
   const vendidos = PEDIDOS.filter(p=>{
     const d = new Date(p.data+'T12:00');
     return VENDIDO.includes(p.status) && d>=ini && d<fim;
@@ -1467,7 +1747,10 @@ function renderFinanceiro(){
   });
   const lucro = receita-cmv-taxas;
   const estoqueCusto = PRODUTOS.reduce((s,p)=>s+p.qtd*p.custo_medio,0);
-  const totalReceita = receita; // já calculada acima (reconhecida na venda, não no recebimento)
+  const {data:despesasPeriodo} = await db.from('despesas').select('*').gte('data',iniStr).lt('data',fimStr).order('data',{ascending:false});
+  DESPESAS = despesasPeriodo || [];
+  const totalDespesas = DESPESAS.reduce((s,d)=>s+Number(d.valor),0);
+  const lucroLiquido = lucro - totalDespesas;
   const aReceber = PEDIDOS.filter(p=>{
     if(p.status==='cancelado') return false;
     const saldo = totalPedido(p) - Math.min(p.valor_pago||0, totalPedido(p));
@@ -1475,8 +1758,9 @@ function renderFinanceiro(){
   });
   const totalSaldo = aReceber.reduce((s,p)=>s+(totalPedido(p)-Math.min(p.valor_pago||0,totalPedido(p))),0);
   $('fiKpis').innerHTML = [
-    ['Receita',fmt(receita)],['CMV',fmt(cmv)],['Taxas',fmt(taxas)],
-    ['Lucro bruto',fmt(lucro)],['Margem',receita>0?(lucro/receita*100).toFixed(1)+'%':'—'],
+    ['Receita',fmt(receita)],['CMV',fmt(cmv)],['Taxas de venda',fmt(taxas)],
+    ['Lucro bruto',fmt(lucro)],['Despesas',fmt(totalDespesas)],['Lucro líquido',fmt(lucroLiquido)],
+    ['Margem líquida',receita>0?(lucroLiquido/receita*100).toFixed(1)+'%':'—'],
     ['Estoque (custo)',fmt(estoqueCusto)],['A receber',fmt(totalSaldo)]
   ].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
   document.querySelector('#tblCanal tbody').innerHTML = Object.entries(canais).map(([c,d])=>
@@ -1486,6 +1770,115 @@ function renderFinanceiro(){
     const saldo = totalPedido(p)-Math.min(p.valor_pago||0,totalPedido(p));
     return `<tr><td>#${p.numero}</td><td>${nomeCliente(p.cliente_id)}</td><td>${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')}</td><td><span class="st st-${p.status}">${ST_LABEL[p.status]}</span></td><td class="num">${fmt(saldo)}</td></tr>`;
   }).join('') || '<tr><td colspan="5" class="muted">Nada a receber no momento.</td></tr>';
+  document.querySelector('#tblDespesas tbody').innerHTML = DESPESAS.map(d=>
+    `<tr><td>${new Date(d.data+'T12:00').toLocaleDateString('pt-BR')}</td><td>${CATEGORIA_LABEL[d.categoria]||d.categoria}</td>
+     <td>${d.descricao||'—'}${d.despesa_fixa_id?' <span class="tag">fixa</span>':''}</td>
+     <td class="num">${fmt(d.valor)}</td>
+     <td><button class="mini" onclick="abrirDespesa('${d.id}')">Editar</button></td></tr>`
+  ).join('');
+  $('despesasVazio').style.display = DESPESAS.length? 'none':'block';
+  $('despesasTotais').textContent = DESPESAS.length? `${DESPESAS.length} despesa(s) · Total: ${fmt(totalDespesas)}` : '';
+}
+
+/* ---------- Despesas (avulsas) ---------- */
+function abrirDespesa(id){
+  $('deErr').textContent='';
+  const d = id ? DESPESAS.find(x=>x.id===id) : null;
+  $('mDespesaTitulo').textContent = d? 'Editar despesa' : 'Lançar despesa';
+  $('de_id').value = d?.id||'';
+  $('de_categoria').value = d?.categoria||'outros';
+  $('de_data').value = d?.data || new Date().toISOString().slice(0,10);
+  $('de_descricao').value = d?.descricao||'';
+  $('de_valor').value = d?.valor??'';
+  $('btnExcluirDespesa').style.display = d? 'inline-block':'none';
+  $('mDespesa').classList.add('show');
+}
+async function salvarDespesa(){
+  const id = $('de_id').value;
+  const valor = Number($('de_valor').value||0);
+  if(!valor || valor<=0){ $('deErr').textContent='Informe um valor válido.'; return; }
+  const payload = { categoria:$('de_categoria').value, data:$('de_data').value,
+    descricao:$('de_descricao').value.trim(), valor };
+  if(!id) payload.criado_por = CURRENT_EMAIL;
+  const q = id ? db.from('despesas').update(payload).eq('id',id) : db.from('despesas').insert(payload);
+  const {error} = await q;
+  if(error){ $('deErr').textContent=error.message; return; }
+  fechar('mDespesa'); toast(id?'Despesa atualizada':'Despesa lançada');
+  renderFinanceiro();
+}
+async function excluirDespesa(){
+  const id = $('de_id').value;
+  const d = DESPESAS.find(x=>x.id===id);
+  const aviso = d.despesa_fixa_id
+    ? 'Esta despesa foi gerada automaticamente por uma despesa fixa. Excluí-la fará com que ela seja gerada de novo no próximo carregamento, a menos que você desative a despesa fixa correspondente. Continuar?'
+    : 'Excluir esta despesa?';
+  if(!confirm(aviso)) return;
+  const {error} = await db.from('despesas').delete().eq('id',id);
+  if(error){ toast('Erro: '+error.message); return; }
+  fechar('mDespesa'); toast('Despesa excluída');
+  renderFinanceiro();
+}
+
+/* ---------- Despesas fixas ---------- */
+async function abrirDespesaFixa(){
+  await carregarDespesasFixas();
+  renderListaDespesasFixas();
+  limparFormDespesaFixa();
+  $('mDespesaFixa').classList.add('show');
+}
+function renderListaDespesasFixas(){
+  $('listaDespesasFixas').innerHTML = DESPESAS_FIXAS.length ? DESPESAS_FIXAS.map(f=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
+      <div>
+        <b>${f.nome}</b> <span class="muted" style="font-size:13px">— ${CATEGORIA_LABEL[f.categoria]} · ${fmt(f.valor)}/mês · dia ${f.dia_referencia}</span>
+        ${!f.ativa?' <span class="tag" style="background:#F5DCDC;color:var(--warn)">inativa</span>':''}
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="mini" onclick="editarDespesaFixa('${f.id}')">Editar</button>
+        <button class="mini" onclick="alternarDespesaFixa('${f.id}')">${f.ativa?'Desativar':'Reativar'}</button>
+      </div>
+    </div>`).join('') : '<p class="muted">Nenhuma despesa fixa cadastrada ainda.</p>';
+}
+function editarDespesaFixa(id){
+  const f = DESPESAS_FIXAS.find(x=>x.id===id);
+  $('dfTitulo').textContent = 'Editar despesa fixa';
+  $('df_id').value = f.id;
+  $('df_categoria').value = f.categoria;
+  $('df_dia').value = f.dia_referencia;
+  $('df_nome').value = f.nome;
+  $('df_valor').value = f.valor;
+  $('df_data_inicio').value = f.data_inicio;
+}
+function limparFormDespesaFixa(){
+  $('dfTitulo').textContent = 'Nova despesa fixa';
+  $('df_id').value=''; $('df_categoria').value='aluguel'; $('df_dia').value=1;
+  $('df_nome').value=''; $('df_valor').value='';
+  $('df_data_inicio').value = new Date().toISOString().slice(0,10);
+  $('dfErr').textContent='';
+}
+async function salvarDespesaFixa(){
+  const id = $('df_id').value;
+  const nome = $('df_nome').value.trim();
+  const valor = Number($('df_valor').value||0);
+  if(!nome || !valor || valor<=0){ $('dfErr').textContent='Preencha nome e valor.'; return; }
+  const payload = { nome, categoria:$('df_categoria').value, valor,
+    dia_referencia: parseInt($('df_dia').value||1), data_inicio: $('df_data_inicio').value };
+  if(!id) payload.criado_por = CURRENT_EMAIL;
+  const q = id ? db.from('despesas_fixas').update(payload).eq('id',id) : db.from('despesas_fixas').insert(payload);
+  const {error} = await q;
+  if(error){ $('dfErr').textContent=error.message; return; }
+  toast(id?'Despesa fixa atualizada':'Despesa fixa criada — será gerada automaticamente todo mês');
+  await carregarDespesasFixas();
+  renderListaDespesasFixas();
+  limparFormDespesaFixa();
+  renderFinanceiro();
+}
+async function alternarDespesaFixa(id){
+  const f = DESPESAS_FIXAS.find(x=>x.id===id);
+  const {error} = await db.from('despesas_fixas').update({ativa:!f.ativa}).eq('id',id);
+  if(error){ toast('Erro: '+error.message); return; }
+  await carregarDespesasFixas();
+  renderListaDespesasFixas();
 }
 
 /* ---------- Dashboard ---------- */
@@ -1520,7 +1913,7 @@ function renderDash(){
 
 /* ---------- Relatórios (dentro do Dashboard) ---------- */
 function goDashSub(sub){
-  document.querySelectorAll('.subtab').forEach(b=>b.classList.toggle('on', b.dataset.sub===sub));
+  document.querySelectorAll('#p-dash .subtab').forEach(b=>b.classList.toggle('on', b.dataset.sub===sub));
   $('dashSub-visao').style.display = sub==='visao'?'block':'none';
   $('dashSub-relatorios').style.display = sub==='relatorios'?'block':'none';
   if(sub==='relatorios'){
@@ -1528,11 +1921,15 @@ function goDashSub(sub){
       const h=new Date();
       $('rv_de').value = new Date(h.getFullYear(),h.getMonth(),1).toISOString().slice(0,10);
       $('rv_ate').value = h.toISOString().slice(0,10);
+      $('rd_de').value = $('rv_de').value;
+      $('rd_ate').value = $('rv_ate').value;
     }
     renderGraficoEvolucao();
     renderRelatorioVendas();
+    renderRelatorioDespesas();
     renderRelatorioEstoque();
     renderRelatorioClientes();
+    renderRelatorioFornecedores();
     renderRelatorioProdutos();
   }
 }
@@ -1601,6 +1998,22 @@ function renderRelatorioVendas(){
   $('relVendasTotais').textContent = lista.length ? `${lista.length} venda(s) · Receita total: ${fmt(totRec)} · Lucro total: ${fmt(totLucro)}` : '';
 }
 
+async function renderRelatorioDespesas(){
+  const de = $('rd_de').value, ate = $('rd_ate').value;
+  let q = db.from('despesas').select('*').order('data',{ascending:false});
+  if(de) q = q.gte('data',de);
+  if(ate) q = q.lte('data',ate);
+  const {data,error} = await q;
+  if(error){ document.querySelector('#tblRelDespesas tbody').innerHTML = '<tr><td colspan="4" class="muted">Erro ao carregar.</td></tr>'; return; }
+  const lista = data||[];
+  let tot=0;
+  document.querySelector('#tblRelDespesas tbody').innerHTML = lista.map(d=>{
+    tot+=Number(d.valor);
+    return `<tr><td>${new Date(d.data+'T12:00').toLocaleDateString('pt-BR')}</td><td>${CATEGORIA_LABEL[d.categoria]||d.categoria}</td><td>${d.descricao||'—'}</td><td class="num">${fmt(d.valor)}</td></tr>`;
+  }).join('') || '<tr><td colspan="4" class="muted">Nenhuma despesa no período.</td></tr>';
+  $('relDespesasTotais').textContent = lista.length ? `${lista.length} despesa(s) · Total: ${fmt(tot)}` : '';
+}
+
 function renderRelatorioEstoque(){
   const soBaixo = $('re_baixo').checked;
   const lista = PRODUTOS.filter(p=>p.ativo).filter(p=> !soBaixo || (p.estoque_minimo>0 && p.qtd<=p.estoque_minimo));
@@ -1623,6 +2036,22 @@ function renderRelatorioClientes(){
   document.querySelector('#tblRelClientes tbody').innerHTML = lista.map(([cid,d])=>
     `<tr><td>${nomeCliente(cid)}</td><td class="num">${d.n}</td><td class="num">${fmt(d.total)}</td></tr>`
   ).join('') || '<tr><td colspan="3" class="muted">Nenhum cliente com compras.</td></tr>';
+}
+
+async function renderRelatorioFornecedores(){
+  const {data:compras, error} = await db.from('compras').select('fornecedor_id,qtd,custo_unit,estornada').eq('estornada',false);
+  if(error){ document.querySelector('#tblRelFornecedores tbody').innerHTML = '<tr><td colspan="3" class="muted">Erro ao carregar.</td></tr>'; return; }
+  const porFornecedor = {};
+  (compras||[]).forEach(c=>{
+    if(!c.fornecedor_id) return;
+    const f = porFornecedor[c.fornecedor_id] ||= {n:0,total:0};
+    f.n++; f.total += c.qtd*c.custo_unit;
+  });
+  const lista = Object.entries(porFornecedor).sort((a,b)=>b[1].total-a[1].total);
+  document.querySelector('#tblRelFornecedores tbody').innerHTML = lista.map(([fid,d])=>{
+    const nome = FORNECEDORES.find(f=>f.id===fid)?.nome || 'Fornecedor removido';
+    return `<tr><td>${nome}</td><td class="num">${d.n}</td><td class="num">${fmt(d.total)}</td></tr>`;
+  }).join('') || '<tr><td colspan="3" class="muted">Nenhuma compra com fornecedor cadastrado ainda.</td></tr>';
 }
 
 function renderRelatorioProdutos(){
@@ -1662,6 +2091,12 @@ function exportarRelatorioPDF(tipo){
     body = [...document.querySelectorAll('#tblRelVendas tbody tr')].map(tr=>
       [...tr.children].map(td=>td.textContent.trim()));
     nomeArquivo = 'relatorio-vendas';
+  } else if(tipo==='despesas'){
+    titulo = 'Relatório de Despesas'+($('rd_de').value?` — ${new Date($('rd_de').value+'T12:00').toLocaleDateString('pt-BR')} a ${new Date($('rd_ate').value+'T12:00').toLocaleDateString('pt-BR')}`:'');
+    head = [['Data','Categoria','Descrição','Valor']];
+    body = [...document.querySelectorAll('#tblRelDespesas tbody tr')].map(tr=>
+      [...tr.children].map(td=>td.textContent.trim()));
+    nomeArquivo = 'relatorio-despesas';
   } else if(tipo==='estoque'){
     titulo = 'Relatório de Estoque'+($('re_baixo').checked?' — apenas estoque baixo':'');
     head = [['Produto','Tipo','Qtd','Custo médio','Valor (custo)','Valor (venda)']];
@@ -1674,6 +2109,12 @@ function exportarRelatorioPDF(tipo){
     body = [...document.querySelectorAll('#tblRelClientes tbody tr')].map(tr=>
       [...tr.children].map(td=>td.textContent.trim()));
     nomeArquivo = 'relatorio-clientes';
+  } else if(tipo==='fornecedores'){
+    titulo = 'Ranking de Fornecedores';
+    head = [['Fornecedor','Compras','Total gasto']];
+    body = [...document.querySelectorAll('#tblRelFornecedores tbody tr')].map(tr=>
+      [...tr.children].map(td=>td.textContent.trim()));
+    nomeArquivo = 'relatorio-fornecedores';
   } else if(tipo==='produtos'){
     const label = {30:'Últimos 30 dias',90:'Últimos 90 dias',365:'Último ano',0:'Todo o período'}[$('rp_periodo').value];
     titulo = 'Produtos Mais Vendidos — '+label;
