@@ -191,6 +191,13 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 .stock-tabs button{border:0;border-radius:9px;padding:9px 12px;background:transparent;color:#6f7786;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;transition:background .2s,color .2s,box-shadow .2s}.stock-tabs button:hover{color:#3b4351;background:#f4f5f7}.stock-tabs button.on{background:#293240;color:#fff;box-shadow:0 3px 9px rgba(30,36,48,.18)}.stock-tabs span{display:inline-block;min-width:20px;margin-left:5px;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.16);font-size:11px}.stock-tabs button:not(.on) span{background:#eceef2;color:#697283}
 
 @media(max-width:640px){.top-inner{padding:11px 15px}.top-inner .brand{display:none}.top-inner .who{display:none}nav.tabs{padding:0 10px 9px}nav.tabs button{padding:8px 11px}main{padding:25px 14px 72px}.page h2{font-size:20px}.card{border-radius:14px;padding:17px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kpi{padding:14px}.kpi .v{font-size:20px}.grid2{gap:14px}.item-row{grid-template-columns:1fr 62px 92px 30px}.stock-tabs{display:flex;width:100%}.stock-tabs button{flex:1;padding:9px 8px;font-size:12px}}
+
+/* Relat\u00f3rios: leitura mais r\u00e1pida e entrada suave dos blocos. */
+#dashSub-relatorios .card{animation:reportReveal .45s cubic-bezier(.22,1,.36,1) both}
+#dashSub-relatorios .card:nth-child(2){animation-delay:.04s}#dashSub-relatorios .card:nth-child(3){animation-delay:.08s}#dashSub-relatorios .card:nth-child(4){animation-delay:.12s}#dashSub-relatorios .card:nth-child(5){animation-delay:.16s}#dashSub-relatorios .card:nth-child(6){animation-delay:.2s}#dashSub-relatorios .card:nth-child(7){animation-delay:.24s}
+@keyframes reportReveal{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.subtab{position:relative;transition:color .2s ease,background .2s ease}.subtab:hover{color:var(--gold-deep)!important}.subtab.on{color:#293240!important}.subtab.on::after{content:'';position:absolute;right:16px;bottom:-1px;left:16px;height:3px;border-radius:3px;background:var(--gold)}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
@@ -593,9 +600,13 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <label>Nome</label><input id="cl_nome">
         <div class="grid2">
           <div><label>WhatsApp</label><input id="cl_whatsapp"></div>
+          <div><label>CEP</label><input id="cl_cep" maxlength="9" placeholder="00000-000" oninput="mascaraCep(this); buscarCepAuto(this.value,'cl')"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Endereço</label><input id="cl_endereco"></div>
           <div><label>Cidade / UF</label><input id="cl_cidade_uf"></div>
         </div>
-        <label>Endereço</label><input id="cl_endereco">
+        <p class="muted" id="cl_cepStatus" style="font-size:12px;margin-top:-8px"></p>
         <div class="msg-err" id="clErr"></div>
         <footer class="actions">
           <button class="btn" onclick="salvarCliente()">Salvar cliente</button>
@@ -616,6 +627,12 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <div><label>CNPJ / CPF</label><input id="fo_cnpj_cpf"></div>
         </div>
         <label>Pessoa de contato</label><input id="fo_contato">
+        <div class="grid2">
+          <div><label>CEP</label><input id="fo_cep" maxlength="9" placeholder="00000-000" oninput="mascaraCep(this); buscarCepAuto(this.value,'fo')"></div>
+          <div><label>Cidade / UF</label><input id="fo_cidade_uf"></div>
+        </div>
+        <label>Endereço</label><input id="fo_endereco">
+        <p class="muted" id="fo_cepStatus" style="font-size:12px;margin-top:-8px"></p>
         <label>Observações</label><input id="fo_observacoes">
         <div class="msg-err" id="foErr"></div>
         <footer class="actions">
@@ -816,9 +833,13 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <div><label>Responsável</label><input id="e_contato"></div>
           <div><label>WhatsApp</label><input id="e_whatsapp"></div>
           <div><label>E-mail</label><input id="e_email"></div>
+          <div><label>CEP</label><input id="e_cep" maxlength="9" placeholder="00000-000" oninput="mascaraCep(this); buscarCepAuto(this.value,'e')"></div>
+        </div>
+        <p class="muted" id="e_cepStatus" style="font-size:12px;margin-top:-8px"></p>
+        <div class="grid2">
+          <div><label>Endereço</label><input id="e_endereco"></div>
           <div><label>Cidade / UF</label><input id="e_cidade_uf"></div>
         </div>
-        <label>Endereço</label><input id="e_endereco">
         <label>Observações padrão do pedido (rodapé do PDF)</label>
         <textarea id="e_observacoes_pedido" rows="2" placeholder="Ex.: Prazo de envio de 2 dias úteis após confirmação do pagamento."></textarea>
         <footer class="actions"><button class="btn" onclick="salvarEmpresa()">Salvar dados</button></footer>
@@ -968,7 +989,7 @@ async function carregarLogsSistema(){
 }
 
 /* ---------- Empresa ---------- */
-const CAMPOS_EMPRESA = ['nome','cnpj_cpf','contato','whatsapp','email','endereco','cidade_uf','observacoes_pedido'];
+const CAMPOS_EMPRESA = ['nome','cnpj_cpf','contato','whatsapp','email','cep','endereco','cidade_uf','observacoes_pedido'];
 async function carregarEmpresa(){
   const {data,error} = await db.from('empresa').select('*').eq('id',1).single();
   if(error){ toast('Erro ao carregar empresa: '+error.message); return; }
@@ -1343,6 +1364,34 @@ async function salvarCompra(){
 
 function fechar(id){ $(id).classList.remove('show'); }
 
+/* ---------- CEP (ViaCEP) ---------- */
+function mascaraCep(input){
+  let v = input.value.replace(/\D/g,'').slice(0,8);
+  if(v.length>5) v = v.slice(0,5)+'-'+v.slice(5);
+  input.value = v;
+}
+let CEP_DEBOUNCE = null;
+function buscarCepAuto(valor, prefixo){
+  const digits = valor.replace(/\D/g,'');
+  const statusEl = $(prefixo+'_cepStatus');
+  if(digits.length!==8){ if(statusEl) statusEl.textContent=''; return; }
+  clearTimeout(CEP_DEBOUNCE);
+  CEP_DEBOUNCE = setTimeout(async ()=>{
+    if(statusEl) statusEl.textContent = 'Buscando endereço…';
+    try{
+      const r = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
+      const j = await r.json();
+      if(j.erro){ if(statusEl) statusEl.textContent='CEP não encontrado — preencha manualmente.'; return; }
+      const endEl = $(prefixo+'_endereco'), cidEl = $(prefixo+'_cidade_uf');
+      if(endEl) endEl.value = [j.logradouro, j.bairro].filter(Boolean).join(', ');
+      if(cidEl) cidEl.value = j.localidade && j.uf ? `${j.localidade} - ${j.uf}` : '';
+      if(statusEl) statusEl.textContent = 'Endereço preenchido — confira o número.';
+    }catch(e){
+      if(statusEl) statusEl.textContent = 'Não foi possível buscar o CEP agora (verifique a conexão).';
+    }
+  }, 400);
+}
+
 /* ---------- Busca global ---------- */
 document.addEventListener('keydown', e=>{
   if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); abrirBusca(); }
@@ -1386,12 +1435,13 @@ function irParaFornecedorBusca(id){ fechar('mBusca'); go('clientes'); setTimeout
 let CLIENTES = [], PEDIDOS = [], ITENS = [], FORNECEDORES = [];
 
 function abrirCliente(id){
-  $('clErr').textContent='';
+  $('clErr').textContent=''; $('cl_cepStatus').textContent='';
   const c = id ? CLIENTES.find(x=>x.id===id) : null;
   $('mClienteTitulo').textContent = c? 'Editar cliente' : 'Novo cliente';
   $('cl_id').value = c?.id||'';
   $('cl_nome').value = c?.nome||'';
   $('cl_whatsapp').value = c?.whatsapp||'';
+  $('cl_cep').value = c?.cep||'';
   $('cl_cidade_uf').value = c?.cidade_uf||'';
   $('cl_endereco').value = c?.endereco||'';
   $('btnExcluirCliente').style.display = c? 'inline-block':'none';
@@ -1401,7 +1451,7 @@ async function salvarCliente(){
   const id = $('cl_id').value;
   const nome = $('cl_nome').value.trim();
   if(!nome){ $('clErr').textContent='Nome é obrigatório.'; return; }
-  const payload = { nome, whatsapp:$('cl_whatsapp').value.trim(),
+  const payload = { nome, whatsapp:$('cl_whatsapp').value.trim(), cep:$('cl_cep').value.trim(),
     cidade_uf:$('cl_cidade_uf').value.trim(), endereco:$('cl_endereco').value.trim() };
   if(!id) payload.criado_por = CURRENT_EMAIL;
   const q = id ? db.from('clientes').update(payload).eq('id',id) : db.from('clientes').insert(payload);
@@ -1494,6 +1544,10 @@ function abrirFornecedor(id, fromCompra){
   $('fo_whatsapp').value = f?.whatsapp||'';
   $('fo_cnpj_cpf').value = f?.cnpj_cpf||'';
   $('fo_contato').value = f?.contato||'';
+  $('fo_cep').value = f?.cep||'';
+  $('fo_cidade_uf').value = f?.cidade_uf||'';
+  $('fo_endereco').value = f?.endereco||'';
+  $('fo_cepStatus').textContent = '';
   $('fo_observacoes').value = f?.observacoes||'';
   $('btnExcluirFornecedor').style.display = f? 'inline-block':'none';
   $('mFornecedor').dataset.fromCompra = fromCompra? '1':'';
@@ -1505,6 +1559,7 @@ async function salvarFornecedor(){
   if(!nome){ $('foErr').textContent='Nome é obrigatório.'; return; }
   const payload = { nome, whatsapp:$('fo_whatsapp').value.trim(),
     cnpj_cpf:$('fo_cnpj_cpf').value.trim(), contato:$('fo_contato').value.trim(),
+    cep:$('fo_cep').value.trim(), cidade_uf:$('fo_cidade_uf').value.trim(), endereco:$('fo_endereco').value.trim(),
     observacoes:$('fo_observacoes').value.trim() };
   if(!id) payload.criado_por = CURRENT_EMAIL;
   const q = id ? db.from('fornecedores').update(payload).eq('id',id)
@@ -2356,19 +2411,51 @@ function renderRelatorioMargem(){
 }
 
 /* ---------- Exportação de relatórios em PDF (jsPDF) ---------- */
-function pdfCabecalho(doc, titulo){
-  doc.setFontSize(14); doc.setFont(undefined,'bold');
-  doc.text(EMPRESA?.nome || 'Rapadura TCG', 40, 40);
-  doc.setFontSize(10); doc.setFont(undefined,'normal');
-  doc.text(titulo, 40, 58);
-  doc.setFontSize(9); doc.setTextColor(120);
-  doc.text('Gerado em '+new Date().toLocaleString('pt-BR'), 40, 72);
+function pdfCabecalho(doc, titulo, subtitulo=''){
+  const largura = doc.internal.pageSize.getWidth();
+  doc.setFillColor(41,50,64); doc.rect(0,0,largura,31,'F');
+  doc.setFillColor(207,122,34); doc.rect(0,31,largura,2,'F');
+  doc.setFillColor(255,255,255); doc.roundedRect(14,9,14,14,3,3,'F');
+  doc.setTextColor(41,50,64); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('R',21,19,{align:'center'});
+  doc.setTextColor(255,255,255); doc.setFontSize(13); doc.text(EMPRESA?.nome || 'Rapadura TCG',34,16);
+  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(218,224,231); doc.text('GESTÃO · RELATÓRIO GERENCIAL',34,22);
+  doc.setTextColor(37,44,55); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text(titulo,14,47);
+  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(105,113,132);
+  doc.text(subtitulo || 'Dados consolidados para consulta e tomada de decisão.',14,54);
+  doc.text('Emitido em '+new Date().toLocaleString('pt-BR'),largura-14,54,{align:'right'});
+  doc.setDrawColor(226,229,234); doc.line(14,60,largura-14,60);
+  doc.setTextColor(37,44,55);
+  return 68;
+}
+function pdfNumero(valor){
+  const n = Number(String(valor).replace(/[^0-9,-]/g,'').replace(/\./g,'').replace(',','.'));
+  return Number.isFinite(n) ? n : 0;
+}
+function pdfResumo(tipo, body){
+  const somar = coluna => body.reduce((total,linha)=>total+pdfNumero(linha[coluna]),0);
+  const config = {
+    vendas:[['PEDIDOS',String(body.length)],['RECEITA',fmt(somar(5))]],
+    despesas:[['LANÇAMENTOS',String(body.length)],['VALOR REGISTRADO',fmt(somar(3))]],
+    estoque:[['ITENS LISTADOS',String(body.length)],['VALOR EM CUSTO',fmt(somar(4))]],
+    clientes:[['CLIENTES',String(body.length)],['TOTAL MOVIMENTADO',fmt(somar(2))]],
+    fornecedores:[['FORNECEDORES',String(body.length)],['TOTAL COMPRADO',fmt(somar(2))]],
+    produtos:[['PRODUTOS',String(body.length)],['RECEITA',fmt(somar(2))]],
+    margem:[['PRODUTOS',String(body.length)],['MARGEM APURADA',fmt(somar(4))]]
+  };
+  return config[tipo] || [['REGISTROS',String(body.length)]];
+}
+function pdfRodape(doc){
+  const paginas = doc.internal.getNumberOfPages(), largura = doc.internal.pageSize.getWidth(), altura = doc.internal.pageSize.getHeight();
+  for(let i=1;i<=paginas;i++){
+    doc.setPage(i); doc.setDrawColor(226,229,234); doc.line(14,altura-13,largura-14,altura-13);
+    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(119,127,141);
+    doc.text('Documento gerado pelo Rapadura TCG',14,altura-8);
+    doc.text(`Página ${i} de ${paginas}`,largura-14,altura-8,{align:'right'});
+  }
   doc.setTextColor(0);
-  return 90;
 }
 function exportarRelatorioPDF(tipo){
   const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
   let head, body, titulo, nomeArquivo;
 
   if(tipo==='vendas'){
@@ -2417,15 +2504,30 @@ function exportarRelatorioPDF(tipo){
     nomeArquivo = 'relatorio-margem';
   }
 
-  if(!body.length || body[0].length<=1){ toast('Nada para exportar neste relatório.'); return; }
+  body = body.filter(linha=>linha.length>1 && !/sem (vendas|dados|registros)/i.test(linha.join(' ')));
+  if(!body.length){ toast('Nada para exportar neste relatório.'); return; }
 
-  const y = pdfCabecalho(doc, titulo);
-  doc.autoTable({
-    head, body, startY:y,
-    styles:{ fontSize:8, cellPadding:5 },
-    headStyles:{ fillColor:[201,138,43], textColor:255 },
-    alternateRowStyles:{ fillColor:[251,243,227] },
+  const horizontal = head[0].length >= 6;
+  const doc = new jsPDF({orientation:horizontal?'landscape':'portrait',unit:'mm',format:'a4'});
+  const resumo = pdfResumo(tipo, body);
+  const subtitulo = `${body.length} registro${body.length===1?'':'s'} encontrado${body.length===1?'':'s'} · ${new Date().toLocaleDateString('pt-BR')}`;
+  const y = pdfCabecalho(doc, titulo, subtitulo);
+  const largura = doc.internal.pageSize.getWidth();
+  const cardW = (largura-28-6*(resumo.length-1))/resumo.length;
+  resumo.forEach(([rotulo,valor],i=>{
+    const x=14+i*(cardW+6); doc.setFillColor(247,248,250); doc.roundedRect(x,y,cardW,19,2,2,'F');
+    doc.setTextColor(116,124,139); doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.text(rotulo,x+4,y+6);
+    doc.setTextColor(37,44,55); doc.setFontSize(10); doc.text(String(valor),x+4,y+13);
   });
+
+  doc.autoTable({
+    head, body, startY:y+27, margin:{left:14,right:14,bottom:19},
+    styles:{font:'helvetica',fontSize:8,cellPadding:4,textColor:[47,55,68],lineColor:[231,233,237],lineWidth:.15},
+    headStyles:{fillColor:[41,50,64],textColor:255,fontStyle:'bold',cellPadding:4.5},
+    alternateRowStyles:{fillColor:[248,249,251]},
+    didDrawPage: data=>{ if(data.pageNumber>1) pdfCabecalho(doc,titulo,subtitulo); }
+  });
+  pdfRodape(doc);
   doc.save(nomeArquivo+'-'+new Date().toISOString().slice(0,10)+'.pdf');
   toast('PDF exportado');
 }
@@ -2435,6 +2537,23 @@ let SETS_CARREGADOS = false, CAMBIO_USD_BRL = null, CARTAS_SET = [], SET_ATUAL_N
 let SET_ATUAL_ID = '', PAGINA_CARTAS = 0, TOTAL_CARTAS_SET = 0, CARREGANDO_CARTAS = false;
 const TAMANHO_PAGINA_CARTAS = 48;
 const CACHE_CARTAS_SETS = new Map();
+
+/* Cache persistente (sobrevive a recarregar a página) para reduzir chamadas repetidas ao pokemontcg.io */
+const CACHE_TTL_SETS = 24*60*60*1000;   // 24h — lista de coleções muda raramente
+const CACHE_TTL_CARTAS = 6*60*60*1000;  // 6h — preços de mercado podem mudar
+function cacheLer(chave, ttl){
+  try{
+    const raw = localStorage.getItem(chave);
+    if(!raw) return null;
+    const {t, dados} = JSON.parse(raw);
+    if(Date.now()-t > ttl) return null;
+    return dados;
+  }catch(e){ return null; }
+}
+function cacheGravar(chave, dados){
+  try{ localStorage.setItem(chave, JSON.stringify({t:Date.now(), dados})); }
+  catch(e){ /* localStorage cheio ou indisponível — segue sem cache persistente */ }
+}
 const ERA_ORDEM = ['me','sv','swsh','sm','xy','bw','hgss','dp','pl','ex','base'];
 async function buscarCambio(){
   if(CAMBIO_USD_BRL) return CAMBIO_USD_BRL;
@@ -2448,6 +2567,14 @@ async function buscarCambio(){
 async function carregarSets(){
   SETS_CARREGADOS = true;
   const sel = $('co_set_sel');
+  const cache = cacheLer('rapadura_sets_v1', CACHE_TTL_SETS);
+  if(cache){
+    sel.innerHTML = '<option value="">Selecione uma coleção...</option>' +
+      cache.map(s=>`<option value="${s.id}">${s.name} (${s.series}) — ${s.total} cartas</option>`).join('');
+    await buscarCambio();
+    $('colCambioInfo').textContent = CAMBIO_USD_BRL ? `Câmbio de referência: US$ 1 = R$ ${CAMBIO_USD_BRL.toFixed(2)}` : '';
+    return;
+  }
   try{
     const r = await fetch('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate', {headers:headersPokemonTCG()});
     if(!r.ok) throw new Error('HTTP '+r.status);
@@ -2455,6 +2582,7 @@ async function carregarSets(){
     const sets = j.data||[];
     sel.innerHTML = '<option value="">Selecione uma coleção...</option>' +
       sets.map(s=>`<option value="${s.id}">${s.name} (${s.series}) — ${s.total} cartas</option>`).join('');
+    cacheGravar('rapadura_sets_v1', sets.map(s=>({id:s.id,name:s.name,series:s.series,total:s.total})));
   }catch(e){
     sel.innerHTML = '<option value="">Erro ao carregar coleções — tente novamente</option>';
     toast('Erro ao buscar coleções: '+(e.message==='Failed to fetch' ? 'sem conexão com pokemontcg.io (bloqueio de rede ou limite de requisições)' : e.message));
@@ -2481,6 +2609,15 @@ async function carregarCartasDoSet(){
     CARTAS_SET = cache.cartas;
     TOTAL_CARTAS_SET = cache.total;
     PAGINA_CARTAS = cache.ultimaPagina;
+    renderCartasSet();
+    return;
+  }
+  const cachePersistido = cacheLer('rapadura_cartas_'+setId, CACHE_TTL_CARTAS);
+  if(cachePersistido){
+    CACHE_CARTAS_SETS.set(setId, cachePersistido);
+    CARTAS_SET = cachePersistido.cartas;
+    TOTAL_CARTAS_SET = cachePersistido.total;
+    PAGINA_CARTAS = cachePersistido.ultimaPagina;
     renderCartasSet();
     return;
   }
@@ -2516,6 +2653,7 @@ async function carregarPaginaDeCartas(pagina){
     CARTAS_SET = cache.cartas;
     TOTAL_CARTAS_SET = cache.total;
     PAGINA_CARTAS = cache.ultimaPagina;
+    cacheGravar('rapadura_cartas_'+setId, cache); // localStorage pode falhar em sets muito grandes (limite ~5MB); segue funcionando só sem persistência
     renderCartasSet();
   }catch(e){
     if(setId!==SET_ATUAL_ID) return;
