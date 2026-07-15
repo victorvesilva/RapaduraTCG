@@ -191,13 +191,10 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 .stock-tabs button{border:0;border-radius:9px;padding:9px 12px;background:transparent;color:#6f7786;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;transition:background .2s,color .2s,box-shadow .2s}.stock-tabs button:hover{color:#3b4351;background:#f4f5f7}.stock-tabs button.on{background:#293240;color:#fff;box-shadow:0 3px 9px rgba(30,36,48,.18)}.stock-tabs span{display:inline-block;min-width:20px;margin-left:5px;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.16);font-size:11px}.stock-tabs button:not(.on) span{background:#eceef2;color:#697283}
 
 @media(max-width:640px){.top-inner{padding:11px 15px}.top-inner .brand{display:none}.top-inner .who{display:none}nav.tabs{padding:0 10px 9px}nav.tabs button{padding:8px 11px}main{padding:25px 14px 72px}.page h2{font-size:20px}.card{border-radius:14px;padding:17px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kpi{padding:14px}.kpi .v{font-size:20px}.grid2{gap:14px}.item-row{grid-template-columns:1fr 62px 92px 30px}.stock-tabs{display:flex;width:100%}.stock-tabs button{flex:1;padding:9px 8px;font-size:12px}}
-
-/* Relat\u00f3rios: leitura mais r\u00e1pida e entrada suave dos blocos. */
-#dashSub-relatorios .card{animation:reportReveal .45s cubic-bezier(.22,1,.36,1) both}
-#dashSub-relatorios .card:nth-child(2){animation-delay:.04s}#dashSub-relatorios .card:nth-child(3){animation-delay:.08s}#dashSub-relatorios .card:nth-child(4){animation-delay:.12s}#dashSub-relatorios .card:nth-child(5){animation-delay:.16s}#dashSub-relatorios .card:nth-child(6){animation-delay:.2s}#dashSub-relatorios .card:nth-child(7){animation-delay:.24s}
-@keyframes reportReveal{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-.subtab{position:relative;transition:color .2s ease,background .2s ease}.subtab:hover{color:var(--gold-deep)!important}.subtab.on{color:#293240!important}.subtab.on::after{content:'';position:absolute;right:16px;bottom:-1px;left:16px;height:3px;border-radius:3px;background:var(--gold)}
-@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
+.reports-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 20px;padding:25px 26px;border-radius:18px;color:#fff;background:linear-gradient(120deg,#283241,#394b5e 58%,#b9641d);box-shadow:0 16px 34px rgba(39,49,63,.2)}
+.reports-hero h3{margin:5px 0 4px;font-family:'Space Grotesk',sans-serif;font-size:23px;letter-spacing:-.04em}.reports-hero p{margin:0;color:#e0e5ea;font-size:14px}.reports-eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;color:#ffd09d}.reports-export{white-space:nowrap;background:#fff;color:#9e4b14;box-shadow:0 8px 20px rgba(0,0,0,.16)}.reports-export:hover{background:#fff5e9;color:#7b360b}
+#dashSub-relatorios .card{position:relative;overflow:hidden}#dashSub-relatorios .card>div:first-child h3{font-size:16px;letter-spacing:-.025em}
+@media(max-width:640px){.reports-hero{align-items:flex-start;flex-direction:column;padding:21px}.reports-hero h3{font-size:20px}.reports-export{width:100%}}
 </style>
 </head>
 <body>
@@ -269,6 +266,10 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
       </div>
 
       <div id="dashSub-relatorios" style="display:none">
+        <div class="reports-hero">
+          <div><span class="reports-eyebrow">CENTRAL DE INTELIGÊNCIA</span><h3>Relatório gerencial completo</h3><p>Uma visão única de vendas, operação, estoque e rentabilidade.</p></div>
+          <button class="btn reports-export" onclick="exportarRelatorioCompletoPDF()">Exportar relatório completo</button>
+        </div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">Evolução de vendas — Receita x Lucro</h3>
@@ -283,7 +284,6 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">Vendas por período</h3>
-            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('vendas')">Exportar PDF</button>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
             <div style="flex:1;min-width:140px"><label style="margin:0 0 5px">De</label><input id="rv_de" type="date"></div>
@@ -299,7 +299,6 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">Despesas por período</h3>
-            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('despesas')">Exportar PDF</button>
           </div>
           <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px">
             <div style="flex:1;min-width:140px"><label style="margin:0 0 5px">De</label><input id="rd_de" type="date"></div>
@@ -315,7 +314,6 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">Estoque atual</h3>
-            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('estoque')">Exportar PDF</button>
           </div>
           <label style="display:flex;align-items:center;gap:6px;margin:10px 0 0;text-transform:none;font-size:14px">
             <input type="checkbox" id="re_baixo" style="width:auto" onchange="renderRelatorioEstoque()"> Só estoque baixo
@@ -329,7 +327,6 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">Ranking de clientes</h3>
-            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('clientes')">Exportar PDF</button>
           </div>
           <div style="overflow-x:auto;margin-top:10px">
             <table class="tbl" id="tblRelClientes"><thead><tr><th>Cliente</th><th class="num">Pedidos</th><th class="num">Total comprado</th></tr></thead><tbody></tbody></table>
@@ -339,7 +336,6 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
             <h3 style="margin:0">Ranking de fornecedores</h3>
-            <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('fornecedores')">Exportar PDF</button>
           </div>
           <p class="muted" style="font-size:12px;margin:6px 0 0">Considera apenas compras registradas com fornecedor cadastrado. Compras antigas com fornecedor em texto livre não entram aqui.</p>
           <div style="overflow-x:auto;margin-top:10px">
@@ -357,7 +353,6 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
                 <option value="365">Último ano</option>
                 <option value="0">Tudo</option>
               </select>
-              <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('produtos')">Exportar PDF</button>
             </div>
           </div>
           <div style="overflow-x:auto;margin-top:10px">
@@ -375,12 +370,31 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
                 <option value="365">Último ano</option>
                 <option value="0">Tudo</option>
               </select>
-              <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('margem')">Exportar PDF</button>
             </div>
           </div>
           <p class="muted" style="font-size:12px;margin:6px 0 0">Margem realizada nas vendas do período (receita − custo, sobre unidades efetivamente vendidas). Ordenado do menor para o maior % — o que precisa de atenção aparece primeiro.</p>
           <div style="overflow-x:auto;margin-top:10px">
             <table class="tbl" id="tblRelMargem"><thead><tr><th>Produto</th><th class="num">Qtd vendida</th><th class="num">Receita</th><th class="num">Custo</th><th class="num">Margem</th><th class="num">Margem %</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Relatório contábil</h3>
+            <div style="display:flex;gap:10px;align-items:center">
+              <select id="rc_periodo" onchange="renderRelatorioContabil()" style="max-width:160px">
+                <option value="mes">Este mês</option>
+                <option value="mes_ant">Mês anterior</option>
+                <option value="ano">Este ano</option>
+                <option value="tudo">Tudo</option>
+              </select>
+              <button class="btn ghost" style="padding:7px 14px" onclick="exportarRelatorioPDF('contabil')">Exportar PDF</button>
+            </div>
+          </div>
+          <p class="muted" style="font-size:12px;margin:6px 0 0">Base de cálculo para seu contador: receita, CMV, despesas e NCM dos produtos vendidos. Os valores de imposto não são calculados aqui — use os dados abaixo com seu contador para apuração correta.</p>
+          <div id="rcResumo" style="margin:12px 0"></div>
+          <div style="overflow-x:auto;margin-top:10px">
+            <table class="tbl" id="tblRelContabil"><thead><tr><th>NCM</th><th>Produto</th><th class="num">Qtd</th><th class="num">Receita</th><th class="num">CMV</th><th class="num">Custo fiscal %</th><th class="num">Custo fiscal (R$)</th></tr></thead><tbody></tbody></table>
           </div>
         </div>
       </div>
@@ -470,18 +484,44 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <input type="hidden" id="pr_id">
         <div class="grid2">
           <div><label>Tipo</label>
-            <select id="pr_tipo"></select></div>
-          <div><label>SKU</label><input id="pr_sku" placeholder="Ex.: ETB-DRI-PT"></div>
+            <select id="pr_tipo" onchange="onTipoProdutoChange()"></select></div>
+          <div>
+            <label>SKU
+              <span id="pr_sku_badge" style="display:none;font-weight:400;text-transform:none;color:var(--gold-deep);font-size:11px;margin-left:6px">gerado automaticamente — editável</span>
+            </label>
+            <input id="pr_sku" placeholder="Ex.: ETB-DESPAL-001" oninput="$('pr_sku_badge').style.display='none'">
+          </div>
         </div>
-        <label>Nome</label><input id="pr_nome" placeholder="Ex.: ETB Destinos de Paldea">
+        <div id="pr_duplicata_aviso" style="display:none;background:#FFF8E1;border:1px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:4px"></div>
+        <label>Nome</label><input id="pr_nome" placeholder="Ex.: ETB Destinos de Paldea" oninput="onNomeProdutoChange()">
         <div class="grid2">
-          <div><label>Set / Coleção</label><input id="pr_set_nome" placeholder="Ex.: Destinos de Paldea"></div>
-          <div><label>Nº da carta <span style="font-weight:400;text-transform:none">(só cartas)</span></label><input id="pr_numero_carta" placeholder="Ex.: 245/193"></div>
+          <div>
+            <label>Set / Coleção</label>
+            <div style="position:relative">
+              <input id="pr_set_nome" placeholder="Ex.: Destinos de Paldea" oninput="onSetNomeChange()" autocomplete="off">
+              <div id="pr_set_sugestoes" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:0 0 8px 8px;box-shadow:var(--shadow);z-index:20;max-height:160px;overflow-y:auto"></div>
+            </div>
+          </div>
+          <div id="pr_numero_carta_wrapper">
+            <label>Nº da carta</label>
+            <input id="pr_numero_carta" placeholder="Ex.: 245/193">
+          </div>
         </div>
         <div class="grid2">
           <div><label>Preço de venda (R$)</label><input id="pr_preco_venda" type="number" step="0.01" min="0"></div>
           <div><label>Estoque mínimo (alerta)</label><input id="pr_estoque_minimo" type="number" step="1" min="0" value="0"></div>
         </div>
+        <div class="grid2">
+          <div>
+            <label>NCM <span style="font-weight:400;text-transform:none">(código fiscal — consulte seu contador)</span></label>
+            <input id="pr_ncm" placeholder="Ex.: 9504.40.00" maxlength="10">
+          </div>
+          <div>
+            <label>Custo fiscal % <span style="font-weight:400;text-transform:none">(% sobre custo total — informado pelo contador)</span></label>
+            <input id="pr_custo_fiscal_pct" type="number" step="0.01" min="0" max="100" value="0" placeholder="Ex.: 15.5">
+          </div>
+        </div>
+        <p class="muted" id="pr_fiscal_preview" style="font-size:12px;margin-top:-6px"></p>
         <label>Foto do produto</label>
         <div style="display:flex;align-items:center;gap:14px">
           <div id="pr_img_preview" style="width:84px;height:84px;border-radius:10px;border:1.5px dashed var(--line);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;color:var(--ink-soft);font-size:12px;text-align:center">sem foto</div>
@@ -824,6 +864,12 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
     <div class="page" id="p-config" style="display:none">
       <h2>Configurações</h2>
 
+      <div class="card" style="border-color:#E8C38B;background:linear-gradient(135deg,#FFF8EC,#FFFDF7)">
+        <h3 style="margin-bottom:4px">Modo Demo</h3>
+        <p class="muted">Carrega dados fictícios apenas nesta sessão para explorar dashboards, gráficos, relatórios e PDFs. Nenhuma informação da demonstração é salva no banco.</p>
+        <footer class="actions"><button class="btn" id="btnDemo" onclick="alternarDemo()">Ativar Modo Demo</button></footer>
+      </div>
+
       <div class="card">
         <h3 style="margin-bottom:4px">Dados da empresa</h3>
         <p class="muted">Usados no cabeçalho dos pedidos em PDF.</p>
@@ -953,7 +999,7 @@ function go(p){
   if(p==='dash'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(()=>{
     renderDash();
     if($('dashSub-relatorios').style.display!=='none'){
-      renderGraficoEvolucao(); renderRelatorioVendas(); renderRelatorioDespesas(); renderRelatorioEstoque(); renderRelatorioClientes(); renderRelatorioFornecedores(); renderRelatorioProdutos(); renderRelatorioMargem();
+      renderGraficoEvolucao(); renderRelatorioVendas(); renderRelatorioDespesas(); renderRelatorioEstoque(); renderRelatorioClientes(); renderRelatorioFornecedores(); renderRelatorioProdutos(); renderRelatorioMargem(); renderRelatorioContabil();
     }
   }); }
   if(p==='colecoes' && !SETS_CARREGADOS) carregarSets();
@@ -1081,6 +1127,7 @@ function setCategoriaEstoque(categoria){
 }
 
 async function carregarEstoque(){
+  if(MODO_DEMO){ renderEstoque(); return; }
   const {data,error} = await db.from('produtos').select('*').order('nome');
   if(error){ toast('Erro ao carregar estoque: '+error.message); return; }
   PRODUTOS = data;
@@ -1170,21 +1217,28 @@ function renderEstoque(){
 
 function abrirProduto(id){
   $('prErr').textContent='';
+  $('pr_duplicata_aviso').style.display='none';
+  $('pr_set_sugestoes').style.display='none';
   const p = id ? PRODUTOS.find(x=>x.id===id) : null;
   $('mProdutoTitulo').textContent = p? 'Editar produto' : 'Novo produto';
   $('pr_id').value = p?.id||'';
   $('pr_tipo').value = p?.tipo||'pack';
   $('pr_sku').value = p?.sku||'';
+  $('pr_sku_badge').style.display = 'none';
   $('pr_nome').value = p?.nome||'';
   $('pr_set_nome').value = p?.set_nome||'';
   $('pr_numero_carta').value = p?.numero_carta||'';
   $('pr_preco_venda').value = p?.preco_venda??'';
   $('pr_estoque_minimo').value = p?.estoque_minimo??0;
+  $('pr_ncm').value = p?.ncm||'';
+  $('pr_custo_fiscal_pct').value = p?.custo_fiscal_pct??0;
   $('pr_imagem_url').value = p?.imagem_url||'';
   atualizarPreviewImagem(p?.imagem_url||'');
   $('btnExcluirProduto').style.display = p? 'inline-block':'none';
   $('prHistorico').innerHTML = '';
   $('prHistoricoPreco').innerHTML = '';
+  onTipoProdutoChange();
+  atualizarPreviewFiscal();
   $('mProduto').classList.add('show');
   if(p){ carregarHistoricoCompras(p.id); carregarHistoricoPrecos(p.id); }
 }
@@ -1251,17 +1305,134 @@ async function excluirProduto(){
   fechar('mProduto'); toast('Produto excluído');
   carregarEstoque();
 }
+/* ---------- Automação do cadastro de produto ---------- */
+
+// D — campo Nº carta só aparece quando tipo = carta
+function onTipoProdutoChange(){
+  const isCarta = $('pr_tipo').value === 'carta';
+  $('pr_numero_carta_wrapper').style.display = isCarta ? 'block' : 'none';
+  if(!isCarta) $('pr_numero_carta').value = '';
+  // regenara SKU se não foi editado manualmente
+  if($('pr_sku_badge').style.display !== 'none' || !$('pr_sku').value){
+    gerarSkuAuto();
+  }
+}
+
+// A — geração automática de SKU
+const TIPO_PREFIXO = { pack:'PACK', blister3:'BL3', blister4:'BL4', etb:'ETB', tpc:'TPC', mini_bb:'MBOX', carta:'CARTA' };
+function gerarSkuAuto(){
+  const tipo = $('pr_tipo').value;
+  const set = $('pr_set_nome').value.trim();
+  const prefixo = TIPO_PREFIXO[tipo] || tipo.toUpperCase();
+  const setSlug = set
+    ? set.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]/g,'').toUpperCase().slice(0,6)
+    : '';
+  // próximo sequencial: conta quantos SKUs já começam com esse prefixo+set
+  const base = prefixo + (setSlug ? '-'+setSlug : '');
+  const existentes = PRODUTOS.filter(p=>{
+    if($('pr_id').value && p.id===$('pr_id').value) return false; // ignora o próprio ao editar
+    return p.sku && p.sku.startsWith(base+'-');
+  });
+  const seq = String(existentes.length + 1).padStart(3,'0');
+  const sku = base + '-' + seq;
+  $('pr_sku').value = sku;
+  $('pr_sku_badge').style.display = 'inline';
+}
+
+// B — normalizar SKU ao sair do campo (uppercase, sem espaços)
+$('pr_sku') && document.addEventListener('focusout', e=>{
+  if(e.target.id==='pr_sku'){
+    $('pr_sku').value = $('pr_sku').value.trim().toUpperCase().replace(/\s+/g,'-');
+  }
+});
+
+// C — alerta de possível duplicata por similaridade de nome
+let DUPLICATA_TIMER = null;
+function onNomeProdutoChange(){
+  // gera SKU junto se ele ainda é automático
+  if($('pr_sku_badge').style.display !== 'none' || !$('pr_sku').value) gerarSkuAuto();
+  clearTimeout(DUPLICATA_TIMER);
+  DUPLICATA_TIMER = setTimeout(()=>{
+    const nome = $('pr_nome').value.trim().toLowerCase();
+    if(nome.length < 4){ $('pr_duplicata_aviso').style.display='none'; return; }
+    const idAtual = $('pr_id').value;
+    const similar = PRODUTOS.filter(p=>{
+      if(p.id===idAtual) return false;
+      const n = p.nome.toLowerCase();
+      return n.includes(nome) || nome.includes(n) || levenshteinSimples(n, nome) <= 3;
+    });
+    if(!similar.length){ $('pr_duplicata_aviso').style.display='none'; return; }
+    $('pr_duplicata_aviso').style.display='block';
+    $('pr_duplicata_aviso').innerHTML = '⚠️ Produto parecido já cadastrado:<br>'+
+      similar.slice(0,3).map(p=>`<b>${p.nome}</b> (${p.sku}) — <button class="mini" onclick="fechar('mProduto');abrirProduto('${p.id}')">Abrir</button>`).join('<br>');
+  }, 400);
+}
+function levenshteinSimples(a, b){
+  if(Math.abs(a.length-b.length)>5) return 99;
+  const m=a.length, n=b.length, dp=Array.from({length:m+1},(_,i)=>[i,...Array(n).fill(0)]);
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++) for(let j=1;j<=n;j++)
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] : 1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+  return dp[m][n];
+}
+
+// E — autocomplete de set com sets já usados + busca nos sets do cache pokemontcg
+function onSetNomeChange(){
+  if($('pr_sku_badge').style.display !== 'none' || !$('pr_sku').value) gerarSkuAuto();
+  const q = $('pr_set_nome').value.trim().toLowerCase();
+  if(q.length < 2){ $('pr_set_sugestoes').style.display='none'; return; }
+  // coleta sets já usados em produtos cadastrados
+  const setsLocais = [...new Set(PRODUTOS.map(p=>p.set_nome).filter(Boolean))];
+  let sugestoes = setsLocais.filter(s=>s.toLowerCase().includes(q));
+  $('pr_set_sugestoes').innerHTML = sugestoes.slice(0,6).map(s=>
+    `<div onclick="selecionarSet('${s.replace(/'/g,"\\'")}'); $('pr_set_sugestoes').style.display='none'"
+      style="padding:9px 14px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--line)"
+      onmouseover="this.style.background='#F6E9CE'" onmouseout="this.style.background=''">${s}</div>`
+  ).join('');
+  $('pr_set_sugestoes').style.display = sugestoes.length ? 'block' : 'none';
+}
+function selecionarSet(nome){
+  $('pr_set_nome').value = nome;
+  $('pr_set_sugestoes').style.display = 'none';
+  gerarSkuAuto();
+}
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#pr_set_nome') && !e.target.closest('#pr_set_sugestoes'))
+    $('pr_set_sugestoes') && ($('pr_set_sugestoes').style.display='none');
+});
+
+// Fiscal — preview da margem real com custo fiscal
+function atualizarPreviewFiscal(){
+  const custo = Number($('pr_custo_fiscal_pct')?.value||0);
+  const preco = Number($('pr_preco_venda')?.value||0);
+  const el = $('pr_fiscal_preview');
+  if(!el) return;
+  if(!custo || !preco){ el.textContent=''; return; }
+  const custoRef = 100; // referência por unidade
+  const custoComFiscal = custoRef * (1 + custo/100);
+  el.textContent = `Com ${custo}% de custo fiscal: para cada R$100 de custo, o custo real sobe para ${fmt(custoComFiscal)}.`;
+}
+document.addEventListener('input', e=>{
+  if(e.target.id==='pr_custo_fiscal_pct' || e.target.id==='pr_preco_venda') atualizarPreviewFiscal();
+});
+
 async function salvarProduto(){
   const id = $('pr_id').value;
   const produtoAntigo = id ? PRODUTOS.find(x=>x.id===id) : null;
+  // B — normalização: SKU uppercase sem espaços, nome sem espaços duplos
+  const skuNorm = $('pr_sku').value.trim().toUpperCase().replace(/\s+/g,'-');
+  const nomeNorm = $('pr_nome').value.trim().replace(/\s+/g,' ');
+  const tipo = $('pr_tipo').value;
   const payload = {
-    tipo: $('pr_tipo').value,
-    sku: $('pr_sku').value.trim(),
-    nome: $('pr_nome').value.trim(),
-    set_nome: $('pr_set_nome').value.trim(),
-    numero_carta: $('pr_numero_carta').value.trim(),
+    tipo,
+    sku: skuNorm,
+    nome: nomeNorm,
+    set_nome: $('pr_set_nome').value.trim().replace(/\s+/g,' '),
+    numero_carta: tipo==='carta' ? $('pr_numero_carta').value.trim() : '',
     preco_venda: Number($('pr_preco_venda').value||0),
     estoque_minimo: parseInt($('pr_estoque_minimo').value||0),
+    ncm: $('pr_ncm').value.trim(),
+    custo_fiscal_pct: Number($('pr_custo_fiscal_pct').value||0),
     imagem_url: $('pr_imagem_url').value,
     atualizado_em: new Date().toISOString()
   };
@@ -1510,13 +1681,14 @@ function goClientesSub(sub){
 }
 
 async function carregarFornecedores(){
+  if(MODO_DEMO){ renderFornecedores(); return; }
   const {data,error} = await db.from('fornecedores').select('*').order('nome');
   if(error){ toast('Erro ao carregar fornecedores: '+error.message); return; }
   FORNECEDORES = data;
 }
 async function renderFornecedores(){
   // total comprado exige consultar compras direto no banco (não fica em cache local)
-  const {data:compras, error} = await db.from('compras').select('produto_id,fornecedor_id,qtd,custo_unit,estornada').eq('estornada',false);
+  const {data:compras, error} = MODO_DEMO ? {data:[{fornecedor_id:'demo-f1',qtd:8,custo_unit:520},{fornecedor_id:'demo-f2',qtd:3,custo_unit:410}],error:null} : await db.from('compras').select('produto_id,fornecedor_id,qtd,custo_unit,estornada').eq('estornada',false);
   const porFornecedor = {};
   if(!error){
     (compras||[]).forEach(c=>{
@@ -1588,6 +1760,7 @@ async function excluirFornecedor(){
 
 /* ---------- Pedidos ---------- */
 async function carregarPedidos(){
+  if(MODO_DEMO){ renderPedidos(); renderClientes(); return; }
   const [c,p,i] = await Promise.all([
     db.from('clientes').select('*').order('nome'),
     db.from('pedidos').select('*').order('numero',{ascending:false}),
@@ -1955,6 +2128,45 @@ function periodoRange(v){
 }
 const VENDIDO = ['pago','enviado','concluido'];
 let DESPESAS = [], DESPESAS_FIXAS = [];
+let MODO_DEMO = false, DADOS_REAIS = null;
+const dataDemo = dias => { const d=new Date(); d.setDate(d.getDate()-dias); return d.toISOString().slice(0,10); };
+function alternarDemo(){ MODO_DEMO ? encerrarDemo() : iniciarDemo(); }
+function iniciarDemo(){
+  DADOS_REAIS={produtos:PRODUTOS,clientes:CLIENTES,pedidos:PEDIDOS,itens:ITENS,fornecedores:FORNECEDORES,despesas:DESPESAS};
+  PRODUTOS=[
+    {id:'demo-p1',nome:'Booster Box Escarlate e Violeta',tipo:'pack',sku:'DEMO-001',qtd:12,estoque_minimo:4,custo_medio:520,preco_venda:679.9,ativo:true},
+    {id:'demo-p2',nome:'ETB Fagulhas Impetuosas',tipo:'etb',sku:'DEMO-002',qtd:2,estoque_minimo:3,custo_medio:265,preco_venda:349.9,ativo:true},
+    {id:'demo-p3',nome:'Charizard ex 223/197',tipo:'carta',sku:'DEMO-003',set_nome:'Fagulhas Impetuosas',numero_carta:'223/197',qtd:1,estoque_minimo:1,custo_medio:410,preco_venda:589.9,ativo:true},
+    {id:'demo-p4',nome:'Blister Triplo Jornada Juntos',tipo:'blister3',sku:'DEMO-004',qtd:18,estoque_minimo:5,custo_medio:48,preco_venda:69.9,ativo:true}
+  ];
+  CLIENTES=[{id:'demo-c1',nome:'Ana Souza',whatsapp:'(11) 99999-1111',cidade_uf:'São Paulo - SP'},{id:'demo-c2',nome:'Bruno Lima',whatsapp:'(21) 98888-2222',cidade_uf:'Rio de Janeiro - RJ'},{id:'demo-c3',nome:'Camila Alves',whatsapp:'(31) 97777-3333',cidade_uf:'Belo Horizonte - MG'}];
+  FORNECEDORES=[{id:'demo-f1',nome:'Distribuidora Poké Brasil',contato:'Comercial'},{id:'demo-f2',nome:'Cards & Colecionáveis',contato:'Atendimento'}];
+  PEDIDOS=[{id:'demo-o1',numero:1001,cliente_id:'demo-c1',data:dataDemo(2),status:'concluido',canal:'instagram',desconto:0,frete:0,taxas:18,valor_pago:349.9},{id:'demo-o2',numero:1002,cliente_id:'demo-c2',data:dataDemo(8),status:'enviado',canal:'whatsapp',desconto:10,frete:0,taxas:14,valor_pago:579.8},{id:'demo-o3',numero:1003,cliente_id:'demo-c3',data:dataDemo(12),status:'orcamento',canal:'direto',desconto:0,frete:15,taxas:0,valor_pago:0}];
+  ITENS=[{pedido_id:'demo-o1',descricao:'ETB Fagulhas Impetuosas',qtd:1,preco_unit:349.9,custo_unit:265},{pedido_id:'demo-o2',descricao:'Charizard ex 223/197',qtd:1,preco_unit:589.8,custo_unit:410},{pedido_id:'demo-o3',descricao:'Booster Box Escarlate e Violeta',qtd:1,preco_unit:679.9,custo_unit:520}];
+  // Histórico suficiente para dar vida aos gráficos semanais/mensais e rankings completos.
+  [18,25,34,42,51,63,74,88,102,119,138,160].forEach((dias,i)=>{
+    const prod=PRODUTOS[i%3], cliente=CLIENTES[i%CLIENTES.length], id='demo-h'+i;
+    const preco=prod.preco_venda-(i%3)*10, custo=prod.custo_medio;
+    PEDIDOS.push({id,numero:990-i,cliente_id:cliente.id,data:dataDemo(dias),status:i%4===0?'enviado':'concluido',canal:['instagram','whatsapp','direto'][i%3],desconto:i%3===0?5:0,frete:0,taxas:Math.round(preco*.055),valor_pago:preco});
+    ITENS.push({pedido_id:id,descricao:prod.nome,qtd:i%5===0?2:1,preco_unit:preco,custo_unit:custo});
+  });
+  DESPESAS=[{id:'demo-d1',data:dataDemo(4),categoria:'marketing',descricao:'Campanha de anúncios',valor:120},{id:'demo-d2',data:dataDemo(10),categoria:'embalagem',descricao:'Materiais de envio',valor:86.5}];
+  [22,47,76,108,142].forEach((dias,i)=>DESPESAS.push({id:'demo-dh'+i,data:dataDemo(dias),categoria:['marketing','embalagem','ferramentas'][i%3],descricao:['Anúncios de coleção','Caixas e sleeves','Assinatura de gestão'][i%3],valor:[95,64,49][i%3]}));
+  MODO_DEMO=true; document.body.classList.add('modo-demo'); $('btnDemo').textContent='Encerrar Modo Demo'; $('whoami').textContent='DEMO · dados fictícios';
+  renderEstoque(); renderPedidos(); renderClientes(); renderFornecedores(); renderDash(); go('dash'); goDashSub('relatorios'); toast('Modo Demo ativado — nenhum dado será gravado');
+}
+async function encerrarDemo(){
+  MODO_DEMO=false; document.body.classList.remove('modo-demo'); $('btnDemo').textContent='Ativar Modo Demo'; $('whoami').textContent=CURRENT_EMAIL;
+  PRODUTOS=DADOS_REAIS.produtos; CLIENTES=DADOS_REAIS.clientes; PEDIDOS=DADOS_REAIS.pedidos; ITENS=DADOS_REAIS.itens; FORNECEDORES=DADOS_REAIS.fornecedores; DESPESAS=DADOS_REAIS.despesas; DADOS_REAIS=null;
+  await Promise.all([carregarEstoque(),carregarPedidos(),carregarFornecedores()]); renderDash(); toast('Modo Demo encerrado — dados fictícios removidos');
+}
+// Durante a demonstração, apenas navegação e saída são permitidas: nenhuma ação de cadastro alcança o banco.
+document.addEventListener('click', e=>{
+  if(!MODO_DEMO) return;
+  const botao=e.target.closest('button');
+  if(!botao || botao.matches('#btnDemo, nav.tabs button, .subtab, [data-estoque], .reports-export')) return;
+  e.preventDefault(); e.stopImmediatePropagation(); toast('Ações de cadastro ficam desativadas no Modo Demo');
+},true);
 const CATEGORIA_LABEL = {embalagem:'Embalagem', frete_compra:'Frete (compra)', taxas_fixas:'Taxas fixas', marketing:'Marketing', aluguel:'Aluguel', ferramentas:'Ferramentas/assinaturas', outros:'Outros'};
 
 async function gerarDespesasFixasPendentes(){
@@ -1990,7 +2202,7 @@ async function carregarDespesasFixas(){
 }
 
 async function renderFinanceiro(){
-  await gerarDespesasFixasPendentes();
+  if(!MODO_DEMO) await gerarDespesasFixasPendentes();
   const [ini,fim] = periodoRange($('fi_periodo').value);
   const iniStr = ini.toISOString().slice(0,10), fimStr = fim.toISOString().slice(0,10);
   const vendidos = PEDIDOS.filter(p=>{
@@ -2009,7 +2221,7 @@ async function renderFinanceiro(){
   });
   const lucro = receita-cmv-taxas;
   const estoqueCusto = PRODUTOS.reduce((s,p)=>s+p.qtd*p.custo_medio,0);
-  const {data:despesasPeriodo} = await db.from('despesas').select('*').gte('data',iniStr).lt('data',fimStr).order('data',{ascending:false});
+  const {data:despesasPeriodo} = MODO_DEMO ? {data:DESPESAS.filter(d=>d.data>=iniStr && d.data<fimStr)} : await db.from('despesas').select('*').gte('data',iniStr).lt('data',fimStr).order('data',{ascending:false});
   DESPESAS = despesasPeriodo || [];
   const totalDespesas = DESPESAS.reduce((s,d)=>s+Number(d.valor),0);
   const lucroLiquido = lucro - totalDespesas;
@@ -2041,7 +2253,7 @@ async function renderFinanceiro(){
   $('despesasVazio').style.display = DESPESAS.length? 'none':'block';
   $('despesasTotais').textContent = DESPESAS.length? `${DESPESAS.length} despesa(s) · Total: ${fmt(totalDespesas)}` : '';
 
-  await renderMeta($('fi_periodo').value, receita, lucroLiquido);
+  if(MODO_DEMO) $('cardMeta').style.display='none'; else await renderMeta($('fi_periodo').value, receita, lucroLiquido);
 }
 
 /* ---------- Meta / Orçamento mensal ---------- */
@@ -2255,6 +2467,7 @@ function goDashSub(sub){
     renderRelatorioFornecedores();
     renderRelatorioProdutos();
     renderRelatorioMargem();
+    renderRelatorioContabil();
   }
 }
 
@@ -2324,10 +2537,9 @@ function renderRelatorioVendas(){
 
 async function renderRelatorioDespesas(){
   const de = $('rd_de').value, ate = $('rd_ate').value;
-  let q = db.from('despesas').select('*').order('data',{ascending:false});
-  if(de) q = q.gte('data',de);
-  if(ate) q = q.lte('data',ate);
-  const {data,error} = await q;
+  let data, error;
+  if(MODO_DEMO){ data=DESPESAS.filter(d=>(!de||d.data>=de)&&(!ate||d.data<=ate)).sort((a,b)=>b.data.localeCompare(a.data)); }
+  else { let q = db.from('despesas').select('*').order('data',{ascending:false}); if(de) q = q.gte('data',de); if(ate) q = q.lte('data',ate); ({data,error} = await q); }
   if(error){ document.querySelector('#tblRelDespesas tbody').innerHTML = '<tr><td colspan="4" class="muted">Erro ao carregar.</td></tr>'; return; }
   const lista = data||[];
   let tot=0;
@@ -2363,7 +2575,9 @@ function renderRelatorioClientes(){
 }
 
 async function renderRelatorioFornecedores(){
-  const {data:compras, error} = await db.from('compras').select('fornecedor_id,qtd,custo_unit,estornada').eq('estornada',false);
+  const {data:compras, error} = MODO_DEMO
+    ? {data:[{fornecedor_id:'demo-f1',qtd:8,custo_unit:520},{fornecedor_id:'demo-f1',qtd:12,custo_unit:48},{fornecedor_id:'demo-f2',qtd:3,custo_unit:410}],error:null}
+    : await db.from('compras').select('fornecedor_id,qtd,custo_unit,estornada').eq('estornada',false);
   if(error){ document.querySelector('#tblRelFornecedores tbody').innerHTML = '<tr><td colspan="3" class="muted">Erro ao carregar.</td></tr>'; return; }
   const porFornecedor = {};
   (compras||[]).forEach(c=>{
@@ -2410,52 +2624,53 @@ function renderRelatorioMargem(){
   ).join('') || '<tr><td colspan="6" class="muted">Sem vendas no período.</td></tr>';
 }
 
+function renderRelatorioContabil(){
+  const [ini,fim] = periodoRange($('rc_periodo').value);
+  const vendidos = PEDIDOS.filter(p=>{
+    const d=new Date(p.data+'T12:00'); return VENDIDO.includes(p.status) && d>=ini && d<fim;
+  });
+  // agrupa por produto_id (com dados fiscais)
+  const porProduto = {};
+  vendidos.forEach(p=> itensDe(p.id).forEach(i=>{
+    const prod = PRODUTOS.find(x=>x.id===i.produto_id);
+    const key = i.produto_id || i.descricao;
+    const v = porProduto[key] ||= {
+      descricao:i.descricao, ncm:prod?.ncm||'—', custo_fiscal_pct:prod?.custo_fiscal_pct||0, q:0, r:0, c:0
+    };
+    v.q+=i.qtd; v.r+=i.qtd*i.preco_unit; v.c+=i.qtd*i.custo_unit;
+  }));
+  const lista = Object.values(porProduto).sort((a,b)=>b.r-a.r);
+  let totRec=0, totCMV=0, totFiscal=0;
+  document.querySelector('#tblRelContabil tbody').innerHTML = lista.map(d=>{
+    const fiscal = d.c * (d.custo_fiscal_pct/100);
+    totRec+=d.r; totCMV+=d.c; totFiscal+=fiscal;
+    return `<tr><td>${d.ncm}</td><td>${d.descricao}</td><td class="num">${d.q}</td><td class="num">${fmt(d.r)}</td><td class="num">${fmt(d.c)}</td><td class="num">${d.custo_fiscal_pct}%</td><td class="num">${fmt(fiscal)}</td></tr>`;
+  }).join('') || '<tr><td colspan="7" class="muted">Sem vendas no período.</td></tr>';
+  // despesas do período
+  const despPeriodo = typeof DESPESAS !== 'undefined' ? DESPESAS.reduce((s,d)=>s+Number(d.valor),0) : 0;
+  $('rcResumo').innerHTML = [
+    ['Receita bruta', fmt(totRec)],
+    ['CMV (custo de mercadoria vendida)', fmt(totCMV)],
+    ['Lucro bruto', fmt(totRec-totCMV)],
+    ['Custo fiscal estimado (base do contador)', fmt(totFiscal)],
+    ['Despesas do período', fmt(despPeriodo)],
+  ].map(([l,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px"><span class="muted">${l}</span><b>${v}</b></div>`).join('');
+}
+
 /* ---------- Exportação de relatórios em PDF (jsPDF) ---------- */
-function pdfCabecalho(doc, titulo, subtitulo=''){
-  const largura = doc.internal.pageSize.getWidth();
-  doc.setFillColor(41,50,64); doc.rect(0,0,largura,31,'F');
-  doc.setFillColor(207,122,34); doc.rect(0,31,largura,2,'F');
-  doc.setFillColor(255,255,255); doc.roundedRect(14,9,14,14,3,3,'F');
-  doc.setTextColor(41,50,64); doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.text('R',21,19,{align:'center'});
-  doc.setTextColor(255,255,255); doc.setFontSize(13); doc.text(EMPRESA?.nome || 'Rapadura TCG',34,16);
-  doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(218,224,231); doc.text('GESTÃO · RELATÓRIO GERENCIAL',34,22);
-  doc.setTextColor(37,44,55); doc.setFont('helvetica','bold'); doc.setFontSize(16); doc.text(titulo,14,47);
-  doc.setFont('helvetica','normal'); doc.setFontSize(8.5); doc.setTextColor(105,113,132);
-  doc.text(subtitulo || 'Dados consolidados para consulta e tomada de decisão.',14,54);
-  doc.text('Emitido em '+new Date().toLocaleString('pt-BR'),largura-14,54,{align:'right'});
-  doc.setDrawColor(226,229,234); doc.line(14,60,largura-14,60);
-  doc.setTextColor(37,44,55);
-  return 68;
-}
-function pdfNumero(valor){
-  const n = Number(String(valor).replace(/[^0-9,-]/g,'').replace(/\./g,'').replace(',','.'));
-  return Number.isFinite(n) ? n : 0;
-}
-function pdfResumo(tipo, body){
-  const somar = coluna => body.reduce((total,linha)=>total+pdfNumero(linha[coluna]),0);
-  const config = {
-    vendas:[['PEDIDOS',String(body.length)],['RECEITA',fmt(somar(5))]],
-    despesas:[['LANÇAMENTOS',String(body.length)],['VALOR REGISTRADO',fmt(somar(3))]],
-    estoque:[['ITENS LISTADOS',String(body.length)],['VALOR EM CUSTO',fmt(somar(4))]],
-    clientes:[['CLIENTES',String(body.length)],['TOTAL MOVIMENTADO',fmt(somar(2))]],
-    fornecedores:[['FORNECEDORES',String(body.length)],['TOTAL COMPRADO',fmt(somar(2))]],
-    produtos:[['PRODUTOS',String(body.length)],['RECEITA',fmt(somar(2))]],
-    margem:[['PRODUTOS',String(body.length)],['MARGEM APURADA',fmt(somar(4))]]
-  };
-  return config[tipo] || [['REGISTROS',String(body.length)]];
-}
-function pdfRodape(doc){
-  const paginas = doc.internal.getNumberOfPages(), largura = doc.internal.pageSize.getWidth(), altura = doc.internal.pageSize.getHeight();
-  for(let i=1;i<=paginas;i++){
-    doc.setPage(i); doc.setDrawColor(226,229,234); doc.line(14,altura-13,largura-14,altura-13);
-    doc.setFont('helvetica','normal'); doc.setFontSize(7.5); doc.setTextColor(119,127,141);
-    doc.text('Documento gerado pelo Rapadura TCG',14,altura-8);
-    doc.text(`Página ${i} de ${paginas}`,largura-14,altura-8,{align:'right'});
-  }
+function pdfCabecalho(doc, titulo){
+  doc.setFontSize(14); doc.setFont(undefined,'bold');
+  doc.text(EMPRESA?.nome || 'Rapadura TCG', 40, 40);
+  doc.setFontSize(10); doc.setFont(undefined,'normal');
+  doc.text(titulo, 40, 58);
+  doc.setFontSize(9); doc.setTextColor(120);
+  doc.text('Gerado em '+new Date().toLocaleString('pt-BR'), 40, 72);
   doc.setTextColor(0);
+  return 90;
 }
 function exportarRelatorioPDF(tipo){
   const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
   let head, body, titulo, nomeArquivo;
 
   if(tipo==='vendas'){
@@ -2502,37 +2717,46 @@ function exportarRelatorioPDF(tipo){
     body = [...document.querySelectorAll('#tblRelMargem tbody tr')].map(tr=>
       [...tr.children].map(td=>td.textContent.trim()));
     nomeArquivo = 'relatorio-margem';
+  } else if(tipo==='contabil'){
+    const labPeriodo = {mes:'Este mês',mes_ant:'Mês anterior',ano:'Este ano',tudo:'Todo o período'}[$('rc_periodo').value];
+    titulo = 'Relatório Contábil — '+labPeriodo;
+    head = [['NCM','Produto','Qtd','Receita','CMV','Custo Fiscal %','Custo Fiscal R$']];
+    body = [...document.querySelectorAll('#tblRelContabil tbody tr')].map(tr=>
+      [...tr.children].map(td=>td.textContent.trim()));
+    nomeArquivo = 'relatorio-contabil';
   }
 
-  body = body.filter(linha=>linha.length>1 && !/sem (vendas|dados|registros)/i.test(linha.join(' ')));
-  if(!body.length){ toast('Nada para exportar neste relatório.'); return; }
+  if(!body.length || body[0].length<=1){ toast('Nada para exportar neste relatório.'); return; }
 
-  const horizontal = head[0].length >= 6;
-  const doc = new jsPDF({orientation:horizontal?'landscape':'portrait',unit:'mm',format:'a4'});
-  const resumo = pdfResumo(tipo, body);
-  const subtitulo = `${body.length} registro${body.length===1?'':'s'} encontrado${body.length===1?'':'s'} · ${new Date().toLocaleDateString('pt-BR')}`;
-  const y = pdfCabecalho(doc, titulo, subtitulo);
-  const largura = doc.internal.pageSize.getWidth();
-  const cardW = (largura-28-6*(resumo.length-1))/resumo.length;
-  resumo.forEach(([rotulo,valor],i=>{
-    const x=14+i*(cardW+6); doc.setFillColor(247,248,250); doc.roundedRect(x,y,cardW,19,2,2,'F');
-    doc.setTextColor(116,124,139); doc.setFont('helvetica','bold'); doc.setFontSize(7); doc.text(rotulo,x+4,y+6);
-    doc.setTextColor(37,44,55); doc.setFontSize(10); doc.text(String(valor),x+4,y+13);
-  });
-
+  const y = pdfCabecalho(doc, titulo);
   doc.autoTable({
-    head, body, startY:y+27, margin:{left:14,right:14,bottom:19},
-    styles:{font:'helvetica',fontSize:8,cellPadding:4,textColor:[47,55,68],lineColor:[231,233,237],lineWidth:.15},
-    headStyles:{fillColor:[41,50,64],textColor:255,fontStyle:'bold',cellPadding:4.5},
-    alternateRowStyles:{fillColor:[248,249,251]},
-    didDrawPage: data=>{ if(data.pageNumber>1) pdfCabecalho(doc,titulo,subtitulo); }
+    head, body, startY:y,
+    styles:{ fontSize:8, cellPadding:5 },
+    headStyles:{ fillColor:[201,138,43], textColor:255 },
+    alternateRowStyles:{ fillColor:[251,243,227] },
   });
-  pdfRodape(doc);
   doc.save(nomeArquivo+'-'+new Date().toISOString().slice(0,10)+'.pdf');
   toast('PDF exportado');
 }
 
 /* ---------- Coleções (pokemontcg.io + câmbio) ---------- */
+function exportarRelatorioCompletoPDF(){
+  const { jsPDF } = window.jspdf, doc = new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const secoes=[['Vendas por período','tblRelVendas'],['Despesas por período','tblRelDespesas'],['Estoque atual','tblRelEstoque'],['Ranking de clientes','tblRelClientes'],['Ranking de fornecedores','tblRelFornecedores'],['Produtos mais vendidos','tblRelProdutos'],['Margem por produto','tblRelMargem']];
+  const largura=doc.internal.pageSize.getWidth(),altura=doc.internal.pageSize.getHeight();
+  doc.setFillColor(40,50,65);doc.rect(0,0,largura,altura,'F');doc.setFillColor(207,122,34);doc.rect(0,0,largura,5,'F');
+  doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(28);doc.text(EMPRESA?.nome||'Rapadura TCG',18,48);doc.setFontSize(16);doc.text('Relatório gerencial completo',18,61);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(220,226,233);doc.text('Vendas, operação, estoque e rentabilidade em um único documento.',18,72);doc.text('Gerado em '+new Date().toLocaleString('pt-BR'),18,80);
+  secoes.forEach(([titulo,id])=>{
+    const tabela=$(id),head=[...tabela.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+    const body=[...tabela.querySelectorAll('tbody tr')].map(tr=>[...tr.children].map(td=>td.textContent.trim())).filter(l=>l.length>1&&!/nenhum|sem vendas|erro ao carregar/i.test(l.join(' ')));
+    if(!body.length)return;
+    doc.addPage();doc.setTextColor(40,50,65);doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text(titulo,14,20);doc.setDrawColor(207,122,34);doc.setLineWidth(1);doc.line(14,25,58,25);
+    doc.autoTable({head:[head],body,startY:33,margin:{left:14,right:14,bottom:17},styles:{fontSize:8,cellPadding:4},headStyles:{fillColor:[40,50,65],textColor:255},alternateRowStyles:{fillColor:[247,248,250]}});
+  });
+  const paginas=doc.internal.getNumberOfPages();for(let p=1;p<=paginas;p++){doc.setPage(p);doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(115,125,138);doc.text(`Rapadura TCG · Página ${p} de ${paginas}`,largura-14,altura-8,{align:'right'});}
+  doc.save(`relatorio-gerencial-${new Date().toISOString().slice(0,10)}.pdf`);toast('Relatório completo exportado');
+}
+
 let SETS_CARREGADOS = false, CAMBIO_USD_BRL = null, CARTAS_SET = [], SET_ATUAL_NOME = '', POKEMONTCG_KEY = '';
 let SET_ATUAL_ID = '', PAGINA_CARTAS = 0, TOTAL_CARTAS_SET = 0, CARREGANDO_CARTAS = false;
 const TAMANHO_PAGINA_CARTAS = 48;
