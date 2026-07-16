@@ -2440,6 +2440,7 @@ async function salvarPedido(){
 /* ---------- Detalhe / status / estoque ---------- */
 function verPedido(id){
   const p = PEDIDOS.find(x=>x.id===id);
+  const cli = CLIENTES.find(c=>c.id===p?.cliente_id)||{};
   const its = itensDe(id);
   const total = totalPedido(p);
   const pago = Math.min(p.valor_pago||0, total);
