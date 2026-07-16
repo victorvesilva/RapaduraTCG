@@ -2932,9 +2932,21 @@ async function carregarPaginaDeCartas(pagina){
     botao.textContent = 'Carregar mais cartas';
   }
 }
+/* Ordenação natural do número da carta: "2" antes de "10"; sufixos/prefixos
+   alfabéticos (TG01, 177a, SWSH001) ordenados após a parte numérica. */
+function compararNumeroCarta(a,b){
+  const pa = String(a.number||'').match(/^([A-Za-z]*)(\d*)(.*)$/);
+  const pb = String(b.number||'').match(/^([A-Za-z]*)(\d*)(.*)$/);
+  const prefCmp = pa[1].localeCompare(pb[1]);
+  if(prefCmp) return prefCmp;
+  const na = pa[2]===''?Infinity:parseInt(pa[2],10);
+  const nb = pb[2]===''?Infinity:parseInt(pb[2],10);
+  if(na!==nb) return na-nb;
+  return pa[3].localeCompare(pb[3]);
+}
 function renderCartasSet(){
   const busca = ($('co_cartas_busca').value||'').toLowerCase();
-  const lista = CARTAS_SET.filter(c=>!busca || c.name.toLowerCase().includes(busca));
+  const lista = CARTAS_SET.filter(c=>!busca || c.name.toLowerCase().includes(busca)).slice().sort(compararNumeroCarta);
   const grid = $('colecoesGrid');
   grid.innerHTML = lista.map((c,i)=>{
     const usd = c.tcgplayer?.prices?.holofoil?.market || c.tcgplayer?.prices?.normal?.market || c.cardmarket?.prices?.averageSellPrice || null;
