@@ -646,6 +646,10 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <div><label>Endereço</label><input id="cl_endereco"></div>
           <div><label>Cidade / UF</label><input id="cl_cidade_uf"></div>
         </div>
+        <div class="grid2">
+          <div><label>Número</label><input id="cl_numero"></div>
+          <div><label>Complemento</label><input id="cl_complemento" placeholder="Apto, bloco, referência…"></div>
+        </div>
         <p class="muted" id="cl_cepStatus" style="font-size:12px;margin-top:-8px"></p>
         <div class="msg-err" id="clErr"></div>
         <footer class="actions">
@@ -672,6 +676,10 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <div><label>Cidade / UF</label><input id="fo_cidade_uf"></div>
         </div>
         <label>Endereço</label><input id="fo_endereco">
+        <div class="grid2">
+          <div><label>Número</label><input id="fo_numero"></div>
+          <div><label>Complemento</label><input id="fo_complemento" placeholder="Sala, galpão, referência…"></div>
+        </div>
         <p class="muted" id="fo_cepStatus" style="font-size:12px;margin-top:-8px"></p>
         <label>Observações</label><input id="fo_observacoes">
         <div class="msg-err" id="foErr"></div>
@@ -886,6 +894,10 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <div><label>Endereço</label><input id="e_endereco"></div>
           <div><label>Cidade / UF</label><input id="e_cidade_uf"></div>
         </div>
+        <div class="grid2">
+          <div><label>Número</label><input id="e_numero"></div>
+          <div><label>Complemento</label><input id="e_complemento" placeholder="Sala, loja, referência…"></div>
+        </div>
         <label>Observações padrão do pedido (rodapé do PDF)</label>
         <textarea id="e_observacoes_pedido" rows="2" placeholder="Ex.: Prazo de envio de 2 dias úteis após confirmação do pagamento."></textarea>
         <footer class="actions"><button class="btn" onclick="salvarEmpresa()">Salvar dados</button></footer>
@@ -1035,7 +1047,17 @@ async function carregarLogsSistema(){
 }
 
 /* ---------- Empresa ---------- */
-const CAMPOS_EMPRESA = ['nome','cnpj_cpf','contato','whatsapp','email','cep','endereco','cidade_uf','observacoes_pedido'];
+const CAMPOS_EMPRESA = ['nome','cnpj_cpf','contato','whatsapp','email','cep','endereco','numero','complemento','cidade_uf','observacoes_pedido'];
+
+/* Monta endereço completo a partir de campos separados. Compatível com
+   registros antigos que têm número embutido no campo endereco. */
+function enderecoCompleto(o){
+  if(!o) return '';
+  let s = (o.endereco||'').trim();
+  if((o.numero||'').trim()) s += (s?', ':'') + o.numero.trim();
+  if((o.complemento||'').trim()) s += (s?' — ':'') + o.complemento.trim();
+  return s;
+}
 async function carregarEmpresa(){
   const {data,error} = await db.from('empresa').select('*').eq('id',1).single();
   if(error){ toast('Erro ao carregar empresa: '+error.message); return; }
@@ -1615,6 +1637,8 @@ function abrirCliente(id){
   $('cl_cep').value = c?.cep||'';
   $('cl_cidade_uf').value = c?.cidade_uf||'';
   $('cl_endereco').value = c?.endereco||'';
+  $('cl_numero').value = c?.numero||'';
+  $('cl_complemento').value = c?.complemento||'';
   $('btnExcluirCliente').style.display = c? 'inline-block':'none';
   $('mCliente').classList.add('show');
 }
@@ -1623,11 +1647,17 @@ async function salvarCliente(){
   const nome = $('cl_nome').value.trim();
   if(!nome){ $('clErr').textContent='Nome é obrigatório.'; return; }
   const payload = { nome, whatsapp:$('cl_whatsapp').value.trim(), cep:$('cl_cep').value.trim(),
-    cidade_uf:$('cl_cidade_uf').value.trim(), endereco:$('cl_endereco').value.trim() };
+    cidade_uf:$('cl_cidade_uf').value.trim(), endereco:$('cl_endereco').value.trim(),
+    numero:$('cl_numero').value.trim(), complemento:$('cl_complemento').value.trim() };
   if(!id) payload.criado_por = CURRENT_EMAIL;
   const q = id ? db.from('clientes').update(payload).eq('id',id) : db.from('clientes').insert(payload);
   const {error} = await q;
-  if(error){ $('clErr').textContent=error.message; return; }
+  if(error){
+    $('clErr').textContent = /numero|complemento/.test(error.message) && /column/i.test(error.message)
+      ? 'Faltam as colunas "numero" e "complemento" na tabela clientes. Rode o ALTER TABLE no Supabase (veja Configurações → instruções).'
+      : error.message;
+    return;
+  }
   fechar('mCliente'); toast(id?'Cliente atualizado':'Cliente salvo'); carregarPedidos();
 }
 async function excluirCliente(){
@@ -1719,6 +1749,8 @@ function abrirFornecedor(id, fromCompra){
   $('fo_cep').value = f?.cep||'';
   $('fo_cidade_uf').value = f?.cidade_uf||'';
   $('fo_endereco').value = f?.endereco||'';
+  $('fo_numero').value = f?.numero||'';
+  $('fo_complemento').value = f?.complemento||'';
   $('fo_cepStatus').textContent = '';
   $('fo_observacoes').value = f?.observacoes||'';
   $('btnExcluirFornecedor').style.display = f? 'inline-block':'none';
@@ -1732,12 +1764,18 @@ async function salvarFornecedor(){
   const payload = { nome, whatsapp:$('fo_whatsapp').value.trim(),
     cnpj_cpf:$('fo_cnpj_cpf').value.trim(), contato:$('fo_contato').value.trim(),
     cep:$('fo_cep').value.trim(), cidade_uf:$('fo_cidade_uf').value.trim(), endereco:$('fo_endereco').value.trim(),
+    numero:$('fo_numero').value.trim(), complemento:$('fo_complemento').value.trim(),
     observacoes:$('fo_observacoes').value.trim() };
   if(!id) payload.criado_por = CURRENT_EMAIL;
   const q = id ? db.from('fornecedores').update(payload).eq('id',id)
                : db.from('fornecedores').insert(payload).select().single();
   const {data,error} = await q;
-  if(error){ $('foErr').textContent=error.message; return; }
+  if(error){
+    $('foErr').textContent = /numero|complemento/.test(error.message) && /column/i.test(error.message)
+      ? 'Faltam as colunas "numero" e "complemento" na tabela fornecedores. Rode o ALTER TABLE no Supabase.'
+      : error.message;
+    return;
+  }
   const veioDaCompra = $('mFornecedor').dataset.fromCompra==='1';
   fechar('mFornecedor'); toast(id?'Fornecedor atualizado':'Fornecedor salvo');
   await carregarFornecedores();
@@ -2041,10 +2079,10 @@ function imprimirPedido(id){
   $('printArea').innerHTML = `
     <div class="ph"><img src="${logo}">
       <div><h2 style="margin:0">${EMPRESA.nome||'Rapadura TCG'}</h2>
-      <div style="font-size:13px">${[EMPRESA.cnpj_cpf&&('CNPJ/CPF: '+EMPRESA.cnpj_cpf),EMPRESA.whatsapp,EMPRESA.email,EMPRESA.endereco,EMPRESA.cidade_uf].filter(Boolean).join(' · ')}</div></div>
+      <div style="font-size:13px">${[EMPRESA.cnpj_cpf&&('CNPJ/CPF: '+EMPRESA.cnpj_cpf),EMPRESA.whatsapp,EMPRESA.email,enderecoCompleto(EMPRESA),EMPRESA.cidade_uf].filter(Boolean).join(' · ')}</div></div>
     </div>
     <h3>Pedido #${p.numero} — ${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')} (${ST_LABEL[p.status]})</h3>
-    <p style="font-size:14px"><b>Cliente:</b> ${cli.nome||'—'}${cli.whatsapp?' · '+cli.whatsapp:''}${cli.endereco?'<br>'+cli.endereco+(cli.cidade_uf?' — '+cli.cidade_uf:''):''}</p>
+    <p style="font-size:14px"><b>Cliente:</b> ${cli.nome||'—'}${cli.whatsapp?' · '+cli.whatsapp:''}${enderecoCompleto(cli)?'<br>'+enderecoCompleto(cli)+(cli.cidade_uf?' — '+cli.cidade_uf:''):''}</p>
     <table>
       <thead><tr><th>Item</th><th>Qtd</th><th>Valor unit.</th><th>Subtotal</th></tr></thead>
       <tbody>
@@ -2072,7 +2110,7 @@ function imprimirEtiqueta(id){
   doc.setFontSize(11); doc.setTextColor(0); doc.setFont(undefined,'bold');
   doc.text(EMPRESA.nome||'Rapadura TCG', 8, y); y+=5;
   doc.setFont(undefined,'normal'); doc.setFontSize(9);
-  if(EMPRESA.endereco){ doc.text(EMPRESA.endereco, 8, y); y+=4.5; }
+  if(enderecoCompleto(EMPRESA)){ doc.text(enderecoCompleto(EMPRESA), 8, y); y+=4.5; }
   if(EMPRESA.cidade_uf){ doc.text(EMPRESA.cidade_uf, 8, y); y+=4.5; }
   if(EMPRESA.whatsapp){ doc.text(EMPRESA.whatsapp, 8, y); y+=4.5; }
   y+=4;
@@ -2083,7 +2121,7 @@ function imprimirEtiqueta(id){
   doc.setFontSize(13); doc.setTextColor(0); doc.setFont(undefined,'bold');
   doc.text(cli.nome||'—', 8, y); y+=7;
   doc.setFont(undefined,'normal'); doc.setFontSize(10);
-  if(cli.endereco){ const linhas = doc.splitTextToSize(cli.endereco, 84); doc.text(linhas, 8, y); y += linhas.length*5; }
+  if(enderecoCompleto(cli)){ const linhas = doc.splitTextToSize(enderecoCompleto(cli), 84); doc.text(linhas, 8, y); y += linhas.length*5; }
   if(cli.cidade_uf){ doc.text(cli.cidade_uf, 8, y); y+=5.5; }
   if(cli.whatsapp){ doc.text('Tel: '+cli.whatsapp, 8, y); y+=5.5; }
 
