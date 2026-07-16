@@ -414,7 +414,11 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 
       <div class="card" style="padding:14px">
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <input id="f_busca" placeholder="Buscar por nome, SKU ou set…" style="flex:2;min-width:200px" oninput="renderEstoque()">
+          <input id="f_busca" placeholder="Buscar por nome ou SKU…" style="flex:2;min-width:180px" oninput="renderEstoque()">
+          <input id="f_numero_carta" placeholder="Nº da carta (ex: 177)" style="flex:1;min-width:120px" oninput="renderEstoque()">
+          <select id="f_set" style="flex:2;min-width:180px" onchange="renderEstoque()">
+            <option value="">Todos os sets</option>
+          </select>
           <select id="f_tipo" style="flex:1;min-width:140px" onchange="renderEstoque()">
             <option value="">Todos os tipos</option>
           </select>
@@ -441,7 +445,11 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
       <h2>Coleções</h2>
       <p class="muted" style="margin-bottom:16px">Navegue pelas cartas de um set e adicione ao estoque com um clique. Preço de referência convertido de USD para BRL — não é seu preço de venda, é ponto de partida.</p>
       <div class="card" style="padding:14px">
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <div class="stock-tabs" style="flex:none" role="tablist">
+            <button class="on" id="btnFonteEN" onclick="alternarFonteColecoes('en')">🇺🇸 Internacional</button>
+            <button id="btnFonteJP" onclick="alternarFonteColecoes('jp')">🇯🇵 Japonês</button>
+          </div>
           <select id="co_set_sel" style="flex:2;min-width:220px" onchange="carregarCartasDoSet()">
             <option value="">Carregando coleções…</option>
           </select>
@@ -534,6 +542,13 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         </div>
         <input type="hidden" id="pr_imagem_url">
         <p class="muted" style="margin-top:12px">Quantidade e custo entram por <b>Registrar compra</b> — assim o custo médio fica sempre correto.</p>
+        <div id="prVariantes" style="margin-top:16px;display:none">
+          <label style="display:flex;justify-content:space-between;align-items:center">
+            <span>Variantes <span class="muted" style="font-weight:400;text-transform:none">(holo, reverse, PSA 9…)</span></span>
+            <button class="btn ghost" style="padding:5px 12px;font-size:13px" onclick="abrirVariante(null,$('pr_id').value)">+ Adicionar variante</button>
+          </label>
+          <div id="prVariantesList" style="margin-top:8px"></div>
+        </div>
         <div id="prHistorico" style="margin-top:10px"></div>
         <div id="prHistoricoPreco" style="margin-top:10px"></div>
         <div class="msg-err" id="prErr"></div>
@@ -545,12 +560,38 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
       </div>
     </div>
 
+    <!-- MODAL VARIANTE -->
+    <div class="overlay" id="mVariante">
+      <div class="modal">
+        <h3 id="mVarianteTitulo">Nova variante</h3>
+        <input type="hidden" id="va_id">
+        <input type="hidden" id="va_produto_id">
+        <label>Nome da variante</label>
+        <input id="va_nome" placeholder="Ex.: Holo, Reverse Holo, PSA 9, CGC 10…">
+        <div class="grid2">
+          <div><label>Preço de venda (R$)</label><input id="va_preco_venda" type="number" step="0.01" min="0"></div>
+          <div><label>Estoque mínimo</label><input id="va_estoque_minimo" type="number" step="1" min="0" value="0"></div>
+        </div>
+        <p class="muted" style="font-size:13px">Quantidade e custo entram por <b>Registrar compra</b>, selecionando a variante.</p>
+        <div class="msg-err" id="vaErr"></div>
+        <footer class="actions">
+          <button class="btn" onclick="salvarVariante()">Salvar variante</button>
+          <button class="btn ghost" onclick="fechar('mVariante')">Cancelar</button>
+          <button class="btn ghost" id="btnExcluirVariante" style="display:none;color:var(--warn);border-color:var(--warn);margin-left:auto" onclick="excluirVariante()">Excluir variante</button>
+        </footer>
+      </div>
+    </div>
+
     <!-- MODAL COMPRA -->
     <div class="overlay" id="mCompra">
       <div class="modal">
         <h3>Registrar compra (entrada de estoque)</h3>
         <label>Produto</label>
-        <select id="co_produto"></select>
+        <select id="co_produto" onchange="onCompraProdutoChange()"></select>
+        <div id="co_variante_wrapper" style="display:none">
+          <label>Variante</label>
+          <select id="co_variante"></select>
+        </div>
         <div class="grid2">
           <div><label>Quantidade</label><input id="co_qtd" type="number" step="1" min="1" value="1"></div>
           <div><label>Custo unitário (R$)</label><input id="co_custo" type="number" step="0.01" min="0"></div>
@@ -697,7 +738,12 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <h3 id="mPedidoTitulo">Novo pedido</h3>
         <input type="hidden" id="pe_id">
         <div class="grid2">
-          <div><label>Cliente</label><select id="pe_cliente"></select></div>
+          <div style="position:relative">
+            <label>Cliente</label>
+            <input id="pe_cliente_busca" placeholder="Buscar por nome ou WhatsApp…" autocomplete="off" oninput="clienteAutoComplete()" onfocus="clienteAutoComplete()">
+            <input type="hidden" id="pe_cliente">
+            <div id="pe_cliente_sugestoes" style="display:none;position:absolute;z-index:99;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);width:100%;max-height:200px;overflow-y:auto;top:calc(100% + 4px);left:0"></div>
+          </div>
           <div><label>Canal</label>
             <select id="pe_canal">
               <option value="direto">Venda direta</option>
@@ -718,7 +764,28 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <div><label>Taxas de marketplace (R$)</label><input id="pe_taxas" type="number" step="0.01" min="0" value="0" oninput="totPedido()"></div>
           <div><label>Data</label><input id="pe_data" type="date"></div>
         </div>
-        <label>Observações</label><input id="pe_obs">
+        <div class="grid2">
+          <div><label>Observações</label><input id="pe_obs"></div>
+          <div><label>Código de rastreio</label><input id="pe_rastreio" placeholder="Ex.: BR123456789BR"></div>
+        </div>
+        <div class="grid2" style="margin-top:6px">
+          <div>
+            <label>Status do envio</label>
+            <select id="pe_status_envio">
+              <option value="aguardando">Aguardando envio</option>
+              <option value="enviado">Enviado</option>
+              <option value="entregue">Entregue</option>
+            </select>
+          </div>
+          <div>
+            <label>Status do pagamento</label>
+            <select id="pe_status_pagamento">
+              <option value="pendente">Pendente</option>
+              <option value="parcial">Parcial</option>
+              <option value="pago">Pago</option>
+            </select>
+          </div>
+        </div>
         <p class="muted" style="margin-top:12px;font-size:16px">Total do pedido: <b id="peTotal">R$ 0,00</b></p>
         <div class="msg-err" id="peErr"></div>
         <footer class="actions">
@@ -744,6 +811,11 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         </select>
       </div>
       <div class="kpis" id="fiKpis"></div>
+
+      <div class="card" id="cardProjecao" style="display:none">
+        <h3 style="margin:0 0 12px">Projeção do mês</h3>
+        <div id="projecaoConteudo"></div>
+      </div>
 
       <div class="card" id="cardMeta" style="display:none">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
@@ -775,6 +847,7 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <div id="despesasVazio" class="soon" style="display:none;border:none">Nenhuma despesa no período.</div>
         </div>
         <p class="muted" id="despesasTotais" style="margin-top:8px"></p>
+        <div id="despesasPorCategoria" style="margin-top:14px"></div>
       </div>
 
       <p class="muted">Receita e lucro consideram pedidos <b>pagos, enviados ou concluídos</b>. Lucro bruto = receita − custo dos produtos (custo congelado na venda) − taxas de venda. Lucro líquido = lucro bruto − despesas do período. Frete de venda não entra na receita (repasse).</p>
@@ -921,6 +994,13 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
       </div>
 
       <div class="card">
+        <h3 style="margin-bottom:4px">Melhor Envio — Cálculo de frete</h3>
+        <p class="muted">Token de acesso gerado em <a href="https://melhorenvio.com.br" target="_blank" style="color:var(--gold-deep)">melhorenvio.com.br</a> → Integrações → Tokens. Necessário para calcular frete nos pedidos.</p>
+        <label>Token</label><input id="e_melhorenvio_token" type="password" placeholder="Cole seu token aqui">
+        <footer class="actions"><button class="btn ghost" onclick="salvarMelhorEnvioToken()">Salvar token</button></footer>
+      </div>
+
+      <div class="card">
         <h3 style="margin-bottom:4px">Conexão</h3>
         <p class="muted"><span class="status-dot" id="connDot"></span><span id="connTxt">Verificando…</span></p>
       </div>
@@ -982,7 +1062,7 @@ async function showApp(session){
   CURRENT_EMAIL = session.user.email;
   popularSelectsTipos();
   await carregarEmpresa();
-  await Promise.all([carregarEstoque(), carregarPedidos(), carregarFornecedores()]);
+  await Promise.all([carregarEstoque(), carregarPedidos(), carregarFornecedores(), carregarVariantes()]);
   gerarDespesasFixasPendentes(); // roda em segundo plano, não bloqueia a tela inicial
   renderDash();
   checarConexao();
@@ -1063,9 +1143,136 @@ async function carregarEmpresa(){
   if(error){ toast('Erro ao carregar empresa: '+error.message); return; }
   EMPRESA = data;
   POKEMONTCG_KEY = data.pokemontcg_key || '';
+  MELHORENVIO_TOKEN = data.melhorenvio_token || '';
   $('e_pokemontcg_key').value = POKEMONTCG_KEY;
+  if($('e_melhorenvio_token')) $('e_melhorenvio_token').value = MELHORENVIO_TOKEN;
   CAMPOS_EMPRESA.forEach(c=>{ $('e_'+c).value = data[c]||''; });
 }
+let MELHORENVIO_TOKEN = '';
+
+async function salvarMelhorEnvioToken(){
+  MELHORENVIO_TOKEN = $('e_melhorenvio_token').value.trim();
+  const {error} = await db.from('empresa').update({melhorenvio_token: MELHORENVIO_TOKEN}).eq('id',1);
+  if(error){ toast('Erro ao salvar token: '+error.message); return; }
+  toast('Token Melhor Envio salvo');
+}
+
+function toggleCalcularFrete(pedidoId){
+  const panel = $('fretePanel');
+  if(!panel) return;
+  panel.style.display = panel.style.display==='none' ? 'block' : 'none';
+  $('freteResultados').innerHTML = '';
+}
+
+async function executarCalculoFrete(pedidoId){
+  const p = PEDIDOS.find(x=>x.id===pedidoId);
+  const cli = CLIENTES.find(c=>c.id===p?.cliente_id)||{};
+  const cepOrigem = (EMPRESA.cep||'').replace(/\D/g,'');
+  const cepDestino = (cli.cep||'').replace(/\D/g,'');
+  const el = $('freteResultados');
+
+  if(!MELHORENVIO_TOKEN){ el.innerHTML='<p class="muted" style="color:var(--warn)">Token Melhor Envio não configurado. Acesse Configurações.</p>'; return; }
+  if(!cepOrigem||cepOrigem.length!==8){ el.innerHTML='<p class="muted" style="color:var(--warn)">CEP da empresa não cadastrado. Acesse Configurações.</p>'; return; }
+  if(!cepDestino||cepDestino.length!==8){ el.innerHTML='<p class="muted" style="color:var(--warn)">CEP do cliente não cadastrado.</p>'; return; }
+
+  el.innerHTML='<p class="muted">Consultando fretes…</p>';
+
+  // Dominaria — entrega local Fortaleza (CEP começa com 60)
+  const isFortaleza = cepDestino.startsWith('60');
+  const embalagem = document.querySelector('input[name="frete_embalagem"]:checked')?.value || 'envelope';
+  const pkg = embalagem==='envelope'
+    ? {width:11, height:1, length:16, weight:0.1}
+    : {width:20, height:8, length:20, weight:0.4};
+
+  const totalPedidoVal = totalPedido(p);
+
+  const body = {
+    from: {postal_code: cepOrigem},
+    to:   {postal_code: cepDestino},
+    products: [{
+      id: 'rapadura-pkg',
+      ...pkg,
+      insurance_value: Math.max(totalPedidoVal, 1),
+      quantity: 1
+    }],
+    options: {
+      insurance_value: Math.max(totalPedidoVal, 1),
+      receipt: false,
+      own_hand: false
+    },
+    services: '1,2,3,4,7,8,9,10,15,17' // PAC, SEDEX e principais transportadoras
+  };
+
+  try{
+    const r = await fetch('https://www.melhorenvio.com.br/api/v2/me/shipment/calculate', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer '+MELHORENVIO_TOKEN,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if(!r.ok){
+      const txt = await r.text();
+      throw new Error(`HTTP ${r.status}: ${txt.slice(0,120)}`);
+    }
+
+    const servicos = await r.json();
+    const disponiveis = Array.isArray(servicos)
+      ? servicos.filter(s=>!s.error && s.price)
+      : [];
+
+    let html = '';
+
+    // Opção Dominaria primeiro se for Fortaleza
+    if(isFortaleza){
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;background:#FBF3E3;border-radius:8px;margin-bottom:6px;border:1.5px solid var(--gold)">
+        <div><b>📬 Envelope Dominaria</b><br><span class="muted" style="font-size:12px">Entrega local Fortaleza · Prazo combinado</span></div>
+        <div style="text-align:right">
+          <b style="font-size:16px;color:var(--gold-deep)">R$ 2,00</b><br>
+          <button class="mini" onclick="aplicarFrete(2,'${pedidoId}')">Usar este</button>
+        </div>
+      </div>`;
+    }
+
+    if(!disponiveis.length && !isFortaleza){
+      el.innerHTML='<p class="muted" style="color:var(--warn)">Nenhum serviço disponível para este trecho.</p>';
+      return;
+    }
+
+    disponiveis.sort((a,b)=>a.price-b.price).forEach(s=>{
+      html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:6px">
+        <div><b>${s.company?.name||''} ${s.name}</b><br>
+          <span class="muted" style="font-size:12px">Prazo: ${s.delivery_range?.min||'?'}–${s.delivery_range?.max||'?'} dias úteis</span></div>
+        <div style="text-align:right">
+          <b style="font-size:16px">${fmt(Number(s.price))}</b><br>
+          <button class="mini" onclick="aplicarFrete(${Number(s.price).toFixed(2)},'${pedidoId}')">Usar este</button>
+        </div>
+      </div>`;
+    });
+
+    el.innerHTML = html || '<p class="muted">Nenhum resultado.</p>';
+
+  }catch(e){
+    const msg = e.message.includes('Failed to fetch') || e.message.includes('CORS')
+      ? 'Bloqueio CORS — a API do Melhor Envio não permite chamadas diretas do browser. Tente abrir o app em um servidor local (não file://).'
+      : 'Erro: '+e.message;
+    el.innerHTML = `<p class="muted" style="color:var(--warn)">${msg}</p>`;
+  }
+}
+
+async function aplicarFrete(valor, pedidoId){
+  const {error} = await db.from('pedidos').update({
+    frete: Number(valor), atualizado_em: new Date().toISOString()
+  }).eq('id', pedidoId);
+  if(error){ toast('Erro ao aplicar frete: '+error.message); return; }
+  toast(`Frete de ${fmt(Number(valor))} aplicado ao pedido`);
+  await carregarPedidos();
+  verPedido(pedidoId); // re-render detalhe com novo frete
+}
+
 async function salvarPokemonKey(){
   POKEMONTCG_KEY = $('e_pokemontcg_key').value.trim();
   const {error} = await db.from('empresa').update({pokemontcg_key:POKEMONTCG_KEY}).eq('id',1);
@@ -1153,6 +1360,7 @@ async function carregarEstoque(){
   const {data,error} = await db.from('produtos').select('*').order('nome');
   if(error){ toast('Erro ao carregar estoque: '+error.message); return; }
   PRODUTOS = data;
+  popularFiltroSets();
   renderEstoque();
   verificarAlertasEstoque();
 }
@@ -1190,8 +1398,18 @@ function atualizarSininho(n){
   el.textContent = n>9 ? '9+' : n;
 }
 
+function popularFiltroSets(){
+  const sel = $('f_set');
+  if(!sel) return;
+  const atual = sel.value;
+  const sets = [...new Set(PRODUTOS.filter(p=>p.set_nome).map(p=>p.set_nome))].sort((a,b)=>a.localeCompare(b));
+  sel.innerHTML = '<option value="">Todos os sets</option>' + sets.map(s=>`<option value="${s}">${s}</option>`).join('');
+  if(sets.includes(atual)) sel.value = atual;
+}
 function renderEstoque(){
   const busca = ($('f_busca').value||'').toLowerCase();
+  const numeroCarta = ($('f_numero_carta').value||'').trim().toLowerCase();
+  const setFiltro = $('f_set').value;
   const tipo = $('f_tipo').value;
   const soBaixo = $('f_baixo').checked;
   const tb = document.querySelector('#tblEstoque tbody');
@@ -1204,7 +1422,9 @@ function renderEstoque(){
     if(CATEGORIA_ESTOQUE==='lacrados' && p.tipo==='carta') return false;
     if(tipo && p.tipo!==tipo) return false;
     if(soBaixo && !(p.qtd <= p.estoque_minimo)) return false;
-    if(busca && !((p.nome+' '+p.sku+' '+p.set_nome).toLowerCase().includes(busca))) return false;
+    if(setFiltro && p.set_nome !== setFiltro) return false;
+    if(numeroCarta && !(p.numero_carta||'').toLowerCase().includes(numeroCarta)) return false;
+    if(busca && !((p.nome+' '+p.sku).toLowerCase().includes(busca))) return false;
     return p.ativo;
   });
   tb.innerHTML = lista.map(p=>{
@@ -1261,6 +1481,13 @@ function abrirProduto(id){
   $('prHistoricoPreco').innerHTML = '';
   onTipoProdutoChange();
   atualizarPreviewFiscal();
+  // variantes só disponíveis após o produto ser salvo pela primeira vez
+  if(p && p.tipo==='carta'){
+    $('prVariantes').style.display='block';
+    renderVariantesList(p.id);
+  } else {
+    $('prVariantes').style.display='none';
+  }
   $('mProduto').classList.add('show');
   if(p){ carregarHistoricoCompras(p.id); carregarHistoricoPrecos(p.id); }
 }
@@ -1510,6 +1737,7 @@ function abrirCompra(prodId){
   if(!ativos.length){ toast('Cadastre um produto antes de registrar compra.'); return; }
   $('co_produto').innerHTML = ativos.map(p=>`<option value="${p.id}">${p.nome} (${p.sku})</option>`).join('');
   if(prodId) $('co_produto').value = prodId;
+  onCompraProdutoChange();
   preencherSelectFornecedores();
   $('co_qtd').value=1; $('co_custo').value='';
   $('co_data').value = new Date().toISOString().slice(0,10);
@@ -1539,18 +1767,30 @@ async function salvarCompra(){
   if(!p || qtd<1 || custo<0 || $('co_custo').value===''){ $('coErr').textContent='Informe quantidade e custo unitário válidos.'; return; }
   const fornecedorId = $('co_fornecedor_sel').value || null;
   const fornecedorNome = fornecedorId ? FORNECEDORES.find(f=>f.id===fornecedorId)?.nome || '' : '';
+  const varianteId = $('co_variante_wrapper').style.display!=='none' ? ($('co_variante').value||null) : null;
+
   const {error:e1} = await db.from('compras').insert({
-    produto_id:p.id, qtd, custo_unit:custo,
+    produto_id:p.id, variante_id:varianteId, qtd, custo_unit:custo,
     data:$('co_data').value, fornecedor:fornecedorNome, fornecedor_id:fornecedorId,
     criado_por: CURRENT_EMAIL
   });
   if(e1){ $('coErr').textContent=e1.message; return; }
-  const novoQtd = p.qtd+qtd;
-  const novoCusto = (p.qtd*p.custo_medio + qtd*custo)/novoQtd;
-  const {error:e2} = await db.from('produtos')
-    .update({qtd:novoQtd, custo_medio:novoCusto.toFixed(2), atualizado_em:new Date().toISOString()})
-    .eq('id',p.id).eq('qtd',p.qtd);   // proteção: falha se outro PC alterou a qtd no meio
-  if(e2){ $('coErr').textContent=e2.message; return; }
+
+  if(varianteId){
+    // Atualiza qtd e custo_medio da variante
+    const v = VARIANTES.find(x=>x.id===varianteId);
+    const novaQtd = (v?.qtd||0)+qtd;
+    const novoCusto = ((v?.qtd||0)*(v?.custo_medio||0)+qtd*custo)/novaQtd;
+    await db.from('produto_variantes').update({qtd:novaQtd, custo_medio:novoCusto.toFixed(2)}).eq('id',varianteId);
+    await carregarVariantes();
+  } else {
+    const novoQtd = p.qtd+qtd;
+    const novoCusto = (p.qtd*p.custo_medio + qtd*custo)/novoQtd;
+    const {error:e2} = await db.from('produtos')
+      .update({qtd:novoQtd, custo_medio:novoCusto.toFixed(2), atualizado_em:new Date().toISOString()})
+      .eq('id',p.id).eq('qtd',p.qtd);
+    if(e2){ $('coErr').textContent=e2.message; return; }
+  }
   fechar('mCompra'); toast('Entrada registrada');
   carregarEstoque();
 }
@@ -1623,6 +1863,248 @@ function irParaProdutoBusca(id){ fechar('mBusca'); go('estoque'); setTimeout(()=
 function irParaPedidoBusca(id){ fechar('mBusca'); go('pedidos'); setTimeout(()=>verPedido(id), 150); }
 function irParaClienteBusca(id){ fechar('mBusca'); go('clientes'); setTimeout(()=>abrirCliente(id), 150); }
 function irParaFornecedorBusca(id){ fechar('mBusca'); go('clientes'); setTimeout(()=>{ goClientesSub('fornecedores'); abrirFornecedor(id); }, 150); }
+
+/* ============================================================
+   VARIANTES DE PRODUTO
+   ============================================================ */
+let VARIANTES = [];
+async function carregarVariantes(){
+  if(MODO_DEMO){ return; }
+  const {data,error} = await db.from('produto_variantes').select('*').order('nome');
+  if(!error && data) VARIANTES = data;
+}
+
+function variantesDoProduto(produtoId){
+  return VARIANTES.filter(v=>v.produto_id===produtoId);
+}
+
+function renderVariantesList(produtoId){
+  const lista = variantesDoProduto(produtoId);
+  if(!lista.length){
+    $('prVariantesList').innerHTML = '<p class="muted" style="font-size:13px">Nenhuma variante cadastrada.</p>';
+    return;
+  }
+  $('prVariantesList').innerHTML = `<table class="tbl"><thead><tr><th>Variante</th><th class="num">Qtd</th><th class="num">Custo médio</th><th class="num">Preço venda</th><th></th></tr></thead><tbody>
+    ${lista.map(v=>`<tr>
+      <td><b>${v.nome}</b></td>
+      <td class="num">${v.qtd||0}</td>
+      <td class="num">${fmt(v.custo_medio||0)}</td>
+      <td class="num">${fmt(v.preco_venda||0)}</td>
+      <td><button class="mini" onclick="abrirVariante('${v.id}','${produtoId}')">Editar</button></td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+function abrirVariante(id, produtoId){
+  const v = id ? VARIANTES.find(x=>x.id===id) : null;
+  $('vaErr').textContent='';
+  $('mVarianteTitulo').textContent = v ? 'Editar variante' : 'Nova variante';
+  $('va_id').value = v?.id||'';
+  $('va_produto_id').value = produtoId;
+  $('va_nome').value = v?.nome||'';
+  $('va_preco_venda').value = v?.preco_venda||'';
+  $('va_estoque_minimo').value = v?.estoque_minimo||0;
+  $('btnExcluirVariante').style.display = v ? 'inline-block':'none';
+  $('mVariante').classList.add('show');
+}
+
+async function salvarVariante(){
+  const id = $('va_id').value;
+  const produtoId = $('va_produto_id').value;
+  const nome = $('va_nome').value.trim();
+  if(!nome){ $('vaErr').textContent='Nome é obrigatório.'; return; }
+  const payload = { produto_id:produtoId, nome, preco_venda:Number($('va_preco_venda').value||0), estoque_minimo:parseInt($('va_estoque_minimo').value||0) };
+  const q = id ? db.from('produto_variantes').update(payload).eq('id',id) : db.from('produto_variantes').insert(payload);
+  const {error} = await q;
+  if(error){ $('vaErr').textContent=error.message; return; }
+  fechar('mVariante');
+  toast(id?'Variante atualizada':'Variante criada');
+  await carregarVariantes();
+  renderVariantesList(produtoId);
+}
+
+async function excluirVariante(){
+  const id = $('va_id').value;
+  const produtoId = $('va_produto_id').value;
+  if(!confirm('Excluir esta variante?')) return;
+  const {error} = await db.from('produto_variantes').delete().eq('id',id);
+  if(error){ toast('Erro: '+error.message); return; }
+  fechar('mVariante');
+  toast('Variante excluída');
+  await carregarVariantes();
+  renderVariantesList(produtoId);
+}
+
+function onCompraProdutoChange(){
+  const prodId = $('co_produto').value;
+  const vars = variantesDoProduto(prodId);
+  const wrapper = $('co_variante_wrapper');
+  if(vars.length){
+    $('co_variante').innerHTML = vars.map(v=>`<option value="${v.id}">${v.nome} (qtd: ${v.qtd||0})</option>`).join('');
+    wrapper.style.display='block';
+  } else {
+    wrapper.style.display='none';
+  }
+  previewCompra();
+}
+
+/* ============================================================
+   COLEÇÕES JAPONESAS (TCGdex)
+   ============================================================ */
+let FONTE_COLECOES = 'en';
+let SETS_JP_CARREGADOS = false;
+
+function alternarFonteColecoes(fonte){
+  FONTE_COLECOES = fonte;
+  $('btnFonteEN').classList.toggle('on', fonte==='en');
+  $('btnFonteJP').classList.toggle('on', fonte==='jp');
+  CARTAS_SET=[]; TOTAL_CARTAS_SET=0; SET_ATUAL_ID='';
+  $('colecoesGrid').innerHTML='';
+  $('colecoesVazio').style.display='block';
+  $('colecoesPaginacao').style.display='none';
+  $('co_cartas_busca').value='';
+  if(fonte==='jp'){
+    $('colCambioInfo').textContent='Cartas japonesas via TCGdex — sem preço de referência disponível.';
+    carregarSetsJP();
+  } else {
+    $('colCambioInfo').textContent = CAMBIO_USD_BRL ? `Câmbio de referência: US$ 1 = R$ ${CAMBIO_USD_BRL.toFixed(2)}` : '';
+    carregarSets();
+  }
+}
+
+async function carregarSetsJP(){
+  const sel = $('co_set_sel');
+  sel.innerHTML = '<option value="">Carregando sets japoneses…</option>';
+  const cache = cacheLer('rapadura_sets_jp_v1', CACHE_TTL_SETS);
+  if(cache){
+    sel.innerHTML = '<option value="">Selecione uma coleção...</option>' +
+      cache.map(s=>`<option value="${s.id}">${s.name} — ${s.cardCount} cartas</option>`).join('');
+    SETS_JP_CARREGADOS = true; return;
+  }
+  try{
+    const r = await fetch('https://api.tcgdex.net/v2/ja/sets');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const sets = await r.json();
+    const mapped = sets.map(s=>({id:s.id, name:s.name, cardCount:s.cardCount?.total||s.cardCount||0}))
+      .sort((a,b)=>b.id.localeCompare(a.id));
+    sel.innerHTML = '<option value="">Selecione uma coleção...</option>' +
+      mapped.map(s=>`<option value="${s.id}">${s.name} — ${s.cardCount} cartas</option>`).join('');
+    cacheGravar('rapadura_sets_jp_v1', mapped);
+    SETS_JP_CARREGADOS = true;
+  }catch(e){
+    sel.innerHTML = '<option value="">Erro ao carregar sets japoneses</option>';
+    toast('Erro TCGdex: '+e.message);
+  }
+}
+
+async function carregarCartasDoSetJP(){
+  const setId = $('co_set_sel').value;
+  const grid = $('colecoesGrid');
+  if(!setId){ CARTAS_SET=[]; grid.innerHTML=''; $('colecoesVazio').style.display='block'; return; }
+  SET_ATUAL_ID = setId;
+  $('colecoesVazio').style.display='none';
+  grid.innerHTML = Array.from({length:10}).map(()=>`<div class="colecao-card"><div class="skeleton" style="aspect-ratio:5/7"></div></div>`).join('');
+  $('colecoesPaginacao').style.display='none';
+
+  const cacheKey = 'rapadura_cartas_jp_'+setId;
+  const cached = cacheLer(cacheKey, CACHE_TTL_CARTAS);
+  if(cached){ CARTAS_SET=cached; TOTAL_CARTAS_SET=cached.length; renderCartasSet(); return; }
+
+  try{
+    const r = await fetch(`https://api.tcgdex.net/v2/ja/sets/${setId}`);
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const data = await r.json();
+    // Normalise to same shape used by renderCartasSet
+    CARTAS_SET = (data.cards||[]).map(c=>({
+      id: c.id||`${setId}-${c.localId}`,
+      name: c.name||'—',
+      number: String(c.localId||''),
+      _jp: true,
+      images: { small: c.image ? c.image+'/low.png' : '', large: c.image ? c.image+'/high.png' : '' },
+      set: { id:setId, name:data.name||setId, total:data.cardCount?.total||0, printedTotal:data.cardCount?.official||data.cardCount?.total||0 },
+      tcgplayer: null, cardmarket: null
+    }));
+    TOTAL_CARTAS_SET = CARTAS_SET.length;
+    cacheGravar(cacheKey, CARTAS_SET);
+    renderCartasSet();
+  }catch(e){
+    grid.innerHTML=''; $('colecoesVazio').style.display='block';
+    $('colecoesVazio').textContent='Erro ao buscar cartas: '+e.message;
+    toast('Erro TCGdex: '+e.message);
+  }
+}
+
+/* ============================================================
+   FINANCEIRO — PROJEÇÃO E DESPESAS POR CATEGORIA
+   ============================================================ */
+function renderProjecaoMensal(vendidos, receita, lucroLiquido){
+  const periodo = $('fi_periodo').value;
+  if(periodo !== 'mes'){ $('cardProjecao').style.display='none'; return; }
+  const hoje = new Date();
+  const diaAtual = hoje.getDate();
+  const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
+  const fator = diasNoMes / diaAtual;
+  const receitaProj = receita * fator;
+  const lucroProj = lucroLiquido * fator;
+  const pace = (receita / diaAtual).toFixed(2);
+  $('cardProjecao').style.display='block';
+  $('projecaoConteudo').innerHTML = `
+    <div class="kpis" style="margin:0">
+      <div class="kpi"><div class="l">Pace diário</div><div class="v">${fmt(Number(pace))}</div></div>
+      <div class="kpi"><div class="l">Receita projetada</div><div class="v">${fmt(receitaProj)}</div></div>
+      <div class="kpi"><div class="l">Lucro líq. projetado</div><div class="v">${fmt(lucroProj)}</div></div>
+      <div class="kpi"><div class="l">Dias restantes</div><div class="v">${diasNoMes - diaAtual}</div></div>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:10px">Baseado no pace de ${diaAtual} dias (${diaAtual}/${diasNoMes} do mês). Estimativa linear — não considera sazonalidade.</p>`;
+}
+
+function renderDespesasPorCategoria(despesas){
+  const el = $('despesasPorCategoria');
+  if(!despesas.length){ el.innerHTML=''; return; }
+  const por = {};
+  despesas.forEach(d=>{ por[d.categoria||'outros'] = (por[d.categoria||'outros']||0)+Number(d.valor); });
+  const total = Object.values(por).reduce((s,v)=>s+v,0);
+  const sorted = Object.entries(por).sort((a,b)=>b[1]-a[1]);
+  el.innerHTML = `<label style="margin-top:0">Despesas por categoria</label>` +
+    sorted.map(([cat,val])=>{
+      const pct = total>0 ? (val/total*100) : 0;
+      return `<div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px">
+          <span>${CATEGORIA_LABEL[cat]||cat}</span>
+          <span><b>${fmt(val)}</b> <span class="muted">(${pct.toFixed(0)}%)</span></span>
+        </div>
+        <div style="background:#F1E6CB;border-radius:20px;height:7px;overflow:hidden">
+          <div style="width:${pct}%;height:100%;background:var(--gold-deep);border-radius:20px"></div>
+        </div>
+      </div>`;
+    }).join('');
+}
+
+/* ---------- Autocomplete cliente no pedido ---------- */
+function clienteAutoComplete(){
+  const q = ($('pe_cliente_busca').value||'').toLowerCase().trim();
+  const box = $('pe_cliente_sugestoes');
+  const lista = q
+    ? CLIENTES.filter(c=>(c.nome+' '+(c.whatsapp||'')).toLowerCase().includes(q)).slice(0,8)
+    : CLIENTES.slice(0,8);
+  if(!lista.length){ box.style.display='none'; return; }
+  box.innerHTML = lista.map(c=>`
+    <div onclick="selecionarCliente('${c.id}','${c.nome.replace(/'/g,"\\'")}')"
+         style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--line)"
+         onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <b style="font-size:14px">${c.nome}</b>${c.whatsapp?`<span class="muted" style="font-size:12px;margin-left:8px">${c.whatsapp}</span>`:''}
+    </div>`).join('');
+  box.style.display = 'block';
+}
+function selecionarCliente(id, nome){
+  $('pe_cliente').value = id;
+  $('pe_cliente_busca').value = nome;
+  $('pe_cliente_sugestoes').style.display = 'none';
+}
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#pe_cliente_sugestoes') && e.target.id!=='pe_cliente_busca')
+    ($('pe_cliente_sugestoes')||{}).style && ($('pe_cliente_sugestoes').style.display='none');
+});
 
 /* ---------- Clientes ---------- */
 let CLIENTES = [], PEDIDOS = [], ITENS = [], FORNECEDORES = [];
@@ -1829,7 +2311,10 @@ function renderPedidos(){
       <td>${nomeCliente(p.cliente_id)}</td>
       <td>${CANAL_LABEL[p.canal]||p.canal}</td>
       <td class="num"><b>${fmt(total)}</b>${p.status!=='cancelado'&&saldo>0?`<br><span class="muted" style="font-size:12px">saldo ${fmt(saldo)}</span>`:''}</td>
-      <td><span class="st st-${p.status}">${ST_LABEL[p.status]}</span></td>
+      <td>
+        <span class="st st-${p.status}">${ST_LABEL[p.status]}</span><br>
+        <span class="st ${{pendente:'st-orcamento',parcial:'st-pago',pago:'st-concluido'}[p.status_pagamento||'pendente']}" style="margin-top:3px;display:inline-block">${{pendente:'Pgto. pendente',parcial:'Pgto. parcial',pago:'Pago'}[p.status_pagamento||'pendente']}</span>
+      </td>
       <td><button class="mini" onclick="verPedido('${p.id}')">Abrir</button></td>
     </tr>`;
   }).join('');
@@ -1846,13 +2331,18 @@ function abrirPedido(id){
   $('pe_id').value = p?.id||'';
   $('mPedidoTitulo').textContent = p? `Editar pedido #${p.numero}` : 'Novo pedido';
   $('btnSalvarPedido').textContent = p? 'Salvar alterações' : 'Criar pedido (orçamento)';
-  $('pe_cliente').innerHTML = CLIENTES.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');
-  $('pe_cliente').value = p?.cliente_id || CLIENTES[0]?.id;
+  const clienteInicial = p ? CLIENTES.find(c=>c.id===p.cliente_id) : CLIENTES[0];
+  $('pe_cliente').value = clienteInicial?.id || '';
+  $('pe_cliente_busca').value = clienteInicial?.nome || '';
+  $('pe_cliente_sugestoes').style.display = 'none';
   $('pe_canal').value = p?.canal || 'direto';
   $('pe_desconto').value = p?.desconto ?? 0;
   $('pe_frete').value = p?.frete ?? 0;
   $('pe_taxas').value = p?.taxas ?? 0;
   $('pe_obs').value = p?.observacoes || '';
+  $('pe_rastreio').value = p?.rastreio || '';
+  $('pe_status_envio').value = p?.status_envio || 'aguardando';
+  $('pe_status_pagamento').value = p?.status_pagamento || 'pendente';
   $('pe_data').value = p?.data || new Date().toISOString().slice(0,10);
   $('peItens').innerHTML = '';
   if(p){
@@ -1911,11 +2401,15 @@ async function salvarPedido(){
     const p = PRODUTOS.find(x=>x.id===pid);
     if(!p || q>p.qtd){ $('peErr').textContent=`Estoque insuficiente de ${p?.nome||'produto'} (disponível: ${p?.qtd??0}).`; return; }
   }
+  if(!$('pe_cliente').value){ $('peErr').textContent='Selecione um cliente.'; $('pe_cliente_busca').focus(); return; }
   const payload = {
     cliente_id:$('pe_cliente').value, canal:$('pe_canal').value,
     desconto:Number($('pe_desconto').value||0), frete:Number($('pe_frete').value||0),
     taxas:Number($('pe_taxas').value||0), observacoes:$('pe_obs').value.trim(),
-    data:$('pe_data').value
+    data:$('pe_data').value,
+    rastreio:$('pe_rastreio').value.trim(),
+    status_envio:$('pe_status_envio').value,
+    status_pagamento:$('pe_status_pagamento').value
   };
   let pedidoId = id;
   if(id){
@@ -1953,8 +2447,19 @@ function verPedido(id){
   const prox = { orcamento:['cancelado'], pago:['enviado','cancelado'],
                  enviado:['concluido','cancelado'], concluido:[], cancelado:[] }[p.status];
   const stPag = saldo<=0.004 ? {l:'Quitado',c:'st-concluido'} : pago>0 ? {l:'Parcial',c:'st-pago'} : {l:'Pendente',c:'st-orcamento'};
+  const ENVIO_LABEL = {aguardando:'Aguardando envio', enviado:'Enviado', entregue:'Entregue'};
+  const PGTO_LABEL  = {pendente:'Pagto. pendente', parcial:'Pagto. parcial', pago:'Pago'};
+  const PGTO_COR    = {pendente:'st-orcamento', parcial:'st-pago', pago:'st-concluido'};
+  const ENVIO_COR   = {aguardando:'st-orcamento', enviado:'st-pago', entregue:'st-concluido'};
+  const rastreioLink = p.rastreio
+    ? `<a href="https://rastreamento.correios.com.br/app/index.php?objeto=${p.rastreio}" target="_blank"
+         style="font-size:12px;color:var(--gold-deep);margin-left:8px">📦 ${p.rastreio}</a>` : '';
   $('detBody').innerHTML = `
-    <h3>Pedido #${p.numero} <span class="st st-${p.status}">${ST_LABEL[p.status]}</span></h3>
+    <h3>Pedido #${p.numero} <span class="st st-${p.status}">${ST_LABEL[p.status]}</span>
+      <span class="st ${PGTO_COR[p.status_pagamento||'pendente']}" style="margin-left:6px">${PGTO_LABEL[p.status_pagamento||'pendente']}</span>
+      <span class="st ${ENVIO_COR[p.status_envio||'aguardando']}" style="margin-left:6px">${ENVIO_LABEL[p.status_envio||'aguardando']}</span>
+      ${rastreioLink}
+    </h3>
     <p class="muted">${nomeCliente(p.cliente_id)} · ${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')} · ${CANAL_LABEL[p.canal]||p.canal}</p>
     <table class="tbl" style="margin-top:12px">
       <thead><tr><th>Item</th><th class="num">Qtd</th><th class="num">Unit.</th><th class="num">Subtotal</th></tr></thead>
@@ -1986,9 +2491,23 @@ function verPedido(id){
       <button class="btn ghost" onclick="duplicarPedido('${p.id}')">Duplicar pedido</button>
       <button class="btn ghost" onclick="imprimirPedido('${p.id}')">Imprimir PDF</button>
       <button class="btn ghost" onclick="imprimirEtiqueta('${p.id}')">Imprimir etiqueta</button>
+      ${cli.cep && EMPRESA.cep ? `<button class="btn ghost" onclick="toggleCalcularFrete('${p.id}')">📦 Calcular frete</button>` : ''}
       ${!p.estoque_baixado?`<button class="btn ghost" style="color:var(--warn);border-color:var(--warn)" onclick="excluirPedido('${p.id}')">Excluir pedido</button>`:''}
       <button class="btn ghost" onclick="fechar('mDetalhe')">Fechar</button>
-    </footer>`;
+    </footer>
+    <div id="fretePanel" style="display:none;margin-top:16px;border:1px solid var(--line);border-radius:12px;padding:16px">
+      <b style="font-size:14px">Calcular frete</b>
+      <div style="display:flex;gap:8px;margin:10px 0;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;font-size:14px;cursor:pointer">
+          <input type="radio" name="frete_embalagem" value="envelope" checked> Envelope bubble (cartas, ~100g)
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;margin:0;text-transform:none;font-size:14px;cursor:pointer">
+          <input type="radio" name="frete_embalagem" value="caixa"> Caixa pequena (lacrados, ~400g)
+        </label>
+      </div>
+      <button class="btn ghost" style="padding:7px 16px" onclick="executarCalculoFrete('${p.id}')">Calcular</button>
+      <div id="freteResultados" style="margin-top:12px"></div>
+    </div>`;
   $('mDetalhe').classList.add('show');
 }
 async function registrarPagamento(id){
@@ -2122,8 +2641,9 @@ function imprimirEtiqueta(id){
   doc.text(cli.nome||'—', 8, y); y+=7;
   doc.setFont(undefined,'normal'); doc.setFontSize(10);
   if(enderecoCompleto(cli)){ const linhas = doc.splitTextToSize(enderecoCompleto(cli), 84); doc.text(linhas, 8, y); y += linhas.length*5; }
-  if(cli.cidade_uf){ doc.text(cli.cidade_uf, 8, y); y+=5.5; }
+  if(cli.cidade_uf){ doc.text(cli.cidade_uf+(cli.cep?' — CEP '+cli.cep:''), 8, y); y+=5.5; }
   if(cli.whatsapp){ doc.text('Tel: '+cli.whatsapp, 8, y); y+=5.5; }
+  if(p.rastreio){ y+=3; doc.setFontSize(9); doc.setTextColor(100); doc.text('Rastreio: '+p.rastreio, 8, y); y+=5; }
 
   y = 138;
   doc.setLineWidth(0.3); doc.line(8,y,92,y); y+=6;
@@ -2292,6 +2812,8 @@ async function renderFinanceiro(){
   $('despesasTotais').textContent = DESPESAS.length? `${DESPESAS.length} despesa(s) · Total: ${fmt(totalDespesas)}` : '';
 
   if(MODO_DEMO) $('cardMeta').style.display='none'; else await renderMeta($('fi_periodo').value, receita, lucroLiquido);
+  renderProjecaoMensal(vendidos, receita, lucroLiquido);
+  renderDespesasPorCategoria(DESPESAS);
 }
 
 /* ---------- Meta / Orçamento mensal ---------- */
@@ -2853,6 +3375,7 @@ async function carregarSets(){
   $('colCambioInfo').textContent = CAMBIO_USD_BRL ? `Câmbio de referência: US$ 1 = R$ ${CAMBIO_USD_BRL.toFixed(2)}` : '';
 }
 async function carregarCartasDoSet(){
+  if(FONTE_COLECOES==='jp'){ await carregarCartasDoSetJP(); return; }
   const setId = $('co_set_sel').value;
   const grid = $('colecoesGrid');
   if(!setId){
