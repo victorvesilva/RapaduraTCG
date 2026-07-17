@@ -1021,6 +1021,31 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
       </div>
 
       <div class="card">
+        <h3 style="margin-bottom:4px">Notificação de pedido por e-mail (EmailJS + Gmail)</h3>
+        <p class="muted">Cadastre grátis em <a href="https://www.emailjs.com" target="_blank" style="color:var(--gold-deep)">emailjs.com</a>, conecte seu Gmail em <b>Email Services</b>, e crie 4 templates em <b>Email Templates</b> (confirmação, envio, erro de pagamento, feedback). Cole os IDs abaixo.</p>
+        <div class="grid2">
+          <div><label>Service ID</label><input id="e_emailjs_service" placeholder="ex: service_xxxxx"></div>
+          <div><label>Public Key</label><input id="e_emailjs_pubkey" placeholder="Account → API Keys"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Template — Pedido confirmado/pago</label><input id="e_emailjs_t_confirmado" placeholder="template_xxxxx"></div>
+          <div><label>Template — Pedido enviado</label><input id="e_emailjs_t_enviado" placeholder="template_xxxxx"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Template — Erro de pagamento</label><input id="e_emailjs_t_erro" placeholder="template_xxxxx"></div>
+          <div><label>Template — Pedido de feedback</label><input id="e_emailjs_t_feedback" placeholder="template_xxxxx"></div>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;margin-top:10px;text-transform:none;font-size:14px">
+          <input type="checkbox" id="e_emailjs_auto" style="width:auto"> Enviar confirmação e envio automaticamente ao mudar o status do pedido
+        </label>
+        <footer class="actions">
+          <button class="btn ghost" onclick="salvarEmailJSConfig()">Salvar configuração</button>
+          <button class="btn ghost" onclick="testarEmailJS()">Enviar e-mail de teste (confirmação)</button>
+        </footer>
+        <p class="muted" id="emailjsTestStatus" style="font-size:12px;margin-top:6px"></p>
+      </div>
+
+      <div class="card">
         <h3 style="margin-bottom:4px">Conexão</h3>
         <p class="muted"><span class="status-dot" id="connDot"></span><span id="connTxt">Verificando…</span></p>
       </div>
@@ -1052,6 +1077,7 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 const SUPABASE_URL = "https://gqhwrwkuaegmydbiiprd.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxaHdyd2t1YWVnbXlkYmlpcHJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMzE2NTUsImV4cCI6MjA5OTYwNzY1NX0.bL_oob4K4F9cVwA-_IyxNvBEjcjNE_EG6PQ_QNzY4TQ";
@@ -1166,9 +1192,136 @@ async function carregarEmpresa(){
   MELHORENVIO_TOKEN = data.melhorenvio_token || '';
   $('e_pokemontcg_key').value = POKEMONTCG_KEY;
   if($('e_melhorenvio_token')) $('e_melhorenvio_token').value = MELHORENVIO_TOKEN;
+  EMAILJS_SERVICE = data.emailjs_service_id || '';
+  EMAILJS_PUBKEY = data.emailjs_pubkey || '';
+  EMAILJS_AUTO = !!data.emailjs_auto;
+  EMAILJS_TEMPLATES = {
+    confirmado: data.emailjs_t_confirmado || '',
+    enviado: data.emailjs_t_enviado || '',
+    erro: data.emailjs_t_erro || '',
+    feedback: data.emailjs_t_feedback || ''
+  };
+  if($('e_emailjs_service')) $('e_emailjs_service').value = EMAILJS_SERVICE;
+  if($('e_emailjs_pubkey')) $('e_emailjs_pubkey').value = EMAILJS_PUBKEY;
+  if($('e_emailjs_auto')) $('e_emailjs_auto').checked = EMAILJS_AUTO;
+  if($('e_emailjs_t_confirmado')) $('e_emailjs_t_confirmado').value = EMAILJS_TEMPLATES.confirmado;
+  if($('e_emailjs_t_enviado')) $('e_emailjs_t_enviado').value = EMAILJS_TEMPLATES.enviado;
+  if($('e_emailjs_t_erro')) $('e_emailjs_t_erro').value = EMAILJS_TEMPLATES.erro;
+  if($('e_emailjs_t_feedback')) $('e_emailjs_t_feedback').value = EMAILJS_TEMPLATES.feedback;
+  inicializarEmailJS();
   CAMPOS_EMPRESA.forEach(c=>{ $('e_'+c).value = data[c]||''; });
 }
 let MELHORENVIO_TOKEN = '';
+let EMAILJS_SERVICE = '', EMAILJS_PUBKEY = '', EMAILJS_AUTO = false;
+let EMAILJS_TEMPLATES = { confirmado:'', enviado:'', erro:'', feedback:'' };
+
+function inicializarEmailJS(){
+  if(EMAILJS_PUBKEY && window.emailjs) emailjs.init({publicKey: EMAILJS_PUBKEY});
+}
+
+async function salvarEmailJSConfig(){
+  EMAILJS_SERVICE = $('e_emailjs_service').value.trim();
+  EMAILJS_PUBKEY = $('e_emailjs_pubkey').value.trim();
+  EMAILJS_AUTO = $('e_emailjs_auto').checked;
+  EMAILJS_TEMPLATES = {
+    confirmado: $('e_emailjs_t_confirmado').value.trim(),
+    enviado: $('e_emailjs_t_enviado').value.trim(),
+    erro: $('e_emailjs_t_erro').value.trim(),
+    feedback: $('e_emailjs_t_feedback').value.trim()
+  };
+  const {error} = await db.from('empresa').update({
+    emailjs_service_id: EMAILJS_SERVICE, emailjs_pubkey: EMAILJS_PUBKEY, emailjs_auto: EMAILJS_AUTO,
+    emailjs_t_confirmado: EMAILJS_TEMPLATES.confirmado, emailjs_t_enviado: EMAILJS_TEMPLATES.enviado,
+    emailjs_t_erro: EMAILJS_TEMPLATES.erro, emailjs_t_feedback: EMAILJS_TEMPLATES.feedback
+  }).eq('id',1);
+  if(error){ toast('Erro ao salvar: '+error.message); return; }
+  inicializarEmailJS();
+  toast('Configuração EmailJS salva');
+}
+
+async function testarEmailJS(){
+  const status = $('emailjsTestStatus');
+  if(!EMAILJS_SERVICE||!EMAILJS_TEMPLATES.confirmado||!EMAILJS_PUBKEY){ status.textContent='Preencha Service ID, Public Key e o template de confirmação antes de testar.'; status.style.color='var(--warn)'; return; }
+  status.textContent='Enviando teste para '+EMPRESA.email+'…'; status.style.color='';
+  try{
+    inicializarEmailJS();
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATES.confirmado, {
+      to_email: EMPRESA.email || '',
+      to_name: 'Teste',
+      loja_nome: EMPRESA.nome || 'Rapadura TCG',
+      pedido_numero: '0000',
+      pedido_total: 'R$ 0,00',
+      pedido_itens: 'Este é um e-mail de teste — se você recebeu, a integração está funcionando.',
+      rastreio: '', mensagem_erro: ''
+    });
+    status.textContent = 'Teste enviado! Confira a caixa de entrada de '+(EMPRESA.email||'—');
+    status.style.color = 'var(--ok, green)';
+  }catch(e){
+    status.textContent = 'Erro: '+(e.text||e.message||JSON.stringify(e));
+    status.style.color = 'var(--warn)';
+  }
+}
+
+/* Dispatcher central de e-mails de pedido. tipo: 'confirmado'|'enviado'|'erro'|'feedback'.
+   extras permite passar campos específicos (ex.: mensagem_erro). Retorna true/false. */
+async function enviarEmailPedido(tipo, pedidoId, extras={}){
+  const p = PEDIDOS.find(x=>x.id===pedidoId);
+  const cli = CLIENTES.find(c=>c.id===p?.cliente_id);
+  if(!cli?.email) return false;
+  const templateId = EMAILJS_TEMPLATES[tipo];
+  if(!EMAILJS_SERVICE||!templateId||!EMAILJS_PUBKEY) return false;
+
+  const its = itensDe(pedidoId);
+  const itensTexto = its.map(i=>`${i.qtd}x ${i.descricao} — ${fmt(i.preco_unit*i.qtd)}`).join('\n');
+  const total = totalPedido(p);
+
+  try{
+    inicializarEmailJS();
+    await emailjs.send(EMAILJS_SERVICE, templateId, {
+      to_email: cli.email, to_name: cli.nome, loja_nome: EMPRESA.nome || 'Rapadura TCG',
+      pedido_numero: String(p.numero), pedido_total: fmt(total), pedido_itens: itensTexto,
+      rastreio: p.rastreio || 'Ainda não disponível', mensagem_erro: extras.mensagem_erro || ''
+    });
+    await logEvento('email_enviado', `E-mail (${tipo}) enviado para ${cli.nome} (${cli.email}) — pedido #${p.numero}`);
+    return true;
+  }catch(e){
+    console.error('Erro EmailJS:', e);
+    return false;
+  }
+}
+
+/* Botão manual — notificação genérica de confirmação, usado no detalhe do pedido */
+async function notificarCliente(pedidoId){
+  const p = PEDIDOS.find(x=>x.id===pedidoId);
+  const cli = CLIENTES.find(c=>c.id===p?.cliente_id);
+  if(!cli?.email){ toast('Este cliente não tem e-mail cadastrado.'); return; }
+  if(!EMAILJS_SERVICE||!EMAILJS_PUBKEY){ toast('Configure o EmailJS em Configurações antes de notificar.'); return; }
+  const tipo = p.status==='enviado' ? 'enviado' : 'confirmado';
+  if(!EMAILJS_TEMPLATES[tipo]){ toast('Template de e-mail não configurado para este status.'); return; }
+  const btn = event?.target;
+  if(btn){ btn.disabled = true; btn.textContent = 'Enviando…'; }
+  const ok = await enviarEmailPedido(tipo, pedidoId);
+  toast(ok ? 'Cliente notificado por e-mail' : 'Erro ao enviar e-mail — confira a configuração do EmailJS');
+  if(btn){ btn.disabled = false; btn.textContent = '✉️ Notificar cliente'; }
+}
+
+async function notificarErroPagamento(pedidoId){
+  const cli = CLIENTES.find(c=>c.id===PEDIDOS.find(x=>x.id===pedidoId)?.cliente_id);
+  if(!cli?.email){ toast('Este cliente não tem e-mail cadastrado.'); return; }
+  if(!EMAILJS_TEMPLATES.erro){ toast('Configure o template de erro de pagamento em Configurações.'); return; }
+  const msg = prompt('Mensagem sobre a pendência (aparece no e-mail):', 'Não conseguimos confirmar o pagamento via PIX. Poderia verificar?');
+  if(msg===null) return;
+  const ok = await enviarEmailPedido('erro', pedidoId, {mensagem_erro: msg});
+  toast(ok ? 'Cliente notificado sobre a pendência' : 'Erro ao enviar e-mail — confira a configuração do EmailJS');
+}
+
+async function notificarFeedback(pedidoId){
+  const cli = CLIENTES.find(c=>c.id===PEDIDOS.find(x=>x.id===pedidoId)?.cliente_id);
+  if(!cli?.email){ toast('Este cliente não tem e-mail cadastrado.'); return; }
+  if(!EMAILJS_TEMPLATES.feedback){ toast('Configure o template de feedback em Configurações.'); return; }
+  const ok = await enviarEmailPedido('feedback', pedidoId);
+  toast(ok ? 'Pedido de feedback enviado' : 'Erro ao enviar e-mail — confira a configuração do EmailJS');
+}
 
 async function salvarMelhorEnvioToken(){
   MELHORENVIO_TOKEN = $('e_melhorenvio_token').value.trim();
@@ -2475,6 +2628,9 @@ function verPedido(id){
       <button class="btn ghost" onclick="duplicarPedido('${p.id}')">Duplicar pedido</button>
       <button class="btn ghost" onclick="imprimirPedido('${p.id}')">Imprimir PDF</button>
       <button class="btn ghost" onclick="imprimirEtiqueta('${p.id}')">Imprimir etiqueta</button>
+      ${cli.email ? `<button class="btn ghost" onclick="notificarCliente('${p.id}')">✉️ Notificar cliente</button>` : ''}
+      ${cli.email && (p.status_pagamento||'pendente')!=='pago' ? `<button class="btn ghost" onclick="notificarErroPagamento('${p.id}')">⚠️ Avisar pendência</button>` : ''}
+      ${cli.email && (p.status==='enviado'||p.status==='concluido') ? `<button class="btn ghost" onclick="notificarFeedback('${p.id}')">⭐ Pedir feedback</button>` : ''}
       ${cli.cep && EMPRESA.cep ? `<button class="btn ghost" onclick="toggleCalcularFrete('${p.id}')">📦 Calcular frete</button>` : ''}
       ${!p.estoque_baixado?`<button class="btn ghost" style="color:var(--warn);border-color:var(--warn)" onclick="excluirPedido('${p.id}')">Excluir pedido</button>`:''}
       <button class="btn ghost" onclick="fechar('mDetalhe')">Fechar</button>
@@ -2526,6 +2682,7 @@ async function registrarPagamento(id){
       atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL
     }).eq('id',id);
     if(error){ $('pgErr').textContent=error.message; return; }
+    if(EMAILJS_AUTO) enviarEmailPedido('confirmado', id);
   } else {
     const {error} = await db.from('pedidos').update({
       valor_pago:novoValorPago, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL
@@ -2564,6 +2721,7 @@ async function mudarStatus(id, novo){
       }
     }
     await db.from('pedidos').update({status:novo, estoque_baixado:true, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL}).eq('id',id);
+    if(EMAILJS_AUTO) enviarEmailPedido('confirmado', id);
   } else if(novo==='cancelado' && p.estoque_baixado){
     if(!confirm('Cancelar devolve os itens ao estoque. Confirmar?')) return;
     for(const i of itensDe(id).filter(x=>x.produto_id)){
@@ -2576,6 +2734,8 @@ async function mudarStatus(id, novo){
     await db.from('pedidos').update({status:novo, estoque_baixado:false, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL}).eq('id',id);
   } else {
     await db.from('pedidos').update({status:novo, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL}).eq('id',id);
+    if(EMAILJS_AUTO && novo==='enviado') enviarEmailPedido('enviado', id);
+    if(EMAILJS_AUTO && novo==='concluido') enviarEmailPedido('feedback', id);
   }
   fechar('mDetalhe'); toast('Pedido atualizado');
   await carregarEstoque(); carregarPedidos();
