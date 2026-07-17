@@ -419,6 +419,12 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <select id="f_set" style="flex:2;min-width:180px" onchange="renderEstoque()">
             <option value="">Todos os sets</option>
           </select>
+          <select id="f_idioma" style="flex:1;min-width:130px" onchange="renderEstoque()">
+            <option value="">Todos idiomas</option>
+            <option value="ENG">🇺🇸 Inglês</option>
+            <option value="PT-BR">🇧🇷 PT-BR</option>
+            <option value="JAP">🇯🇵 Japonês</option>
+          </select>
           <select id="f_tipo" style="flex:1;min-width:140px" onchange="renderEstoque()">
             <option value="">Todos os tipos</option>
           </select>
@@ -445,11 +451,7 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
       <h2>Coleções</h2>
       <p class="muted" style="margin-bottom:16px">Navegue pelas cartas de um set e adicione ao estoque com um clique. Preço de referência convertido de USD para BRL — não é seu preço de venda, é ponto de partida.</p>
       <div class="card" style="padding:14px">
-        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
-          <div class="stock-tabs" style="flex:none" role="tablist">
-            <button class="on" id="btnFonteEN" onclick="alternarFonteColecoes('en')">🇺🇸 Internacional</button>
-            <button id="btnFonteJP" onclick="alternarFonteColecoes('jp')">🇯🇵 Japonês</button>
-          </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
           <select id="co_set_sel" style="flex:2;min-width:220px" onchange="carregarCartasDoSet()">
             <option value="">Carregando coleções…</option>
           </select>
@@ -476,6 +478,12 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         </div>
         <label>Preço de venda (R$) <span style="font-weight:400;text-transform:none" id="ac_ref"></span></label>
         <input id="ac_preco" type="number" step="0.01" min="0">
+        <label>Idioma / edição</label>
+        <select id="ac_idioma">
+          <option value="ENG">🇺🇸 Inglês</option>
+          <option value="PT-BR">🇧🇷 Português (BR)</option>
+          <option value="JAP">🇯🇵 Japonês</option>
+        </select>
         <p class="muted" style="margin-top:10px">Cria o produto (se novo) e já registra a primeira entrada de compra.</p>
         <div class="msg-err" id="acErr"></div>
         <footer class="actions">
@@ -514,6 +522,14 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
             <label>Nº da carta</label>
             <input id="pr_numero_carta" placeholder="Ex.: 245/193">
           </div>
+        </div>
+        <div id="pr_idioma_wrapper">
+          <label>Idioma / edição</label>
+          <select id="pr_idioma">
+            <option value="ENG">🇺🇸 Inglês</option>
+            <option value="PT-BR">🇧🇷 Português (BR)</option>
+            <option value="JAP">🇯🇵 Japonês</option>
+          </select>
         </div>
         <div class="grid2">
           <div><label>Preço de venda (R$)</label><input id="pr_preco_venda" type="number" step="0.01" min="0"></div>
@@ -681,11 +697,15 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
         <label>Nome</label><input id="cl_nome">
         <div class="grid2">
           <div><label>WhatsApp</label><input id="cl_whatsapp"></div>
+          <div><label>E-mail</label><input id="cl_email" type="email" placeholder="cliente@exemplo.com"></div>
+        </div>
+        <div class="grid2">
           <div><label>CEP</label><input id="cl_cep" maxlength="9" placeholder="00000-000" oninput="mascaraCep(this); buscarCepAuto(this.value,'cl')"></div>
+          <div><label>Cidade / UF</label><input id="cl_cidade_uf"></div>
         </div>
         <div class="grid2">
           <div><label>Endereço</label><input id="cl_endereco"></div>
-          <div><label>Cidade / UF</label><input id="cl_cidade_uf"></div>
+          <div></div>
         </div>
         <div class="grid2">
           <div><label>Número</label><input id="cl_numero"></div>
@@ -1410,6 +1430,7 @@ function renderEstoque(){
   const busca = ($('f_busca').value||'').toLowerCase();
   const numeroCarta = ($('f_numero_carta').value||'').trim().toLowerCase();
   const setFiltro = $('f_set').value;
+  const idiomaFiltro = $('f_idioma').value;
   const tipo = $('f_tipo').value;
   const soBaixo = $('f_baixo').checked;
   const tb = document.querySelector('#tblEstoque tbody');
@@ -1423,6 +1444,7 @@ function renderEstoque(){
     if(tipo && p.tipo!==tipo) return false;
     if(soBaixo && !(p.qtd <= p.estoque_minimo)) return false;
     if(setFiltro && p.set_nome !== setFiltro) return false;
+    if(idiomaFiltro && (p.idioma||'ENG') !== idiomaFiltro) return false;
     if(numeroCarta && !(p.numero_carta||'').toLowerCase().includes(numeroCarta)) return false;
     if(busca && !((p.nome+' '+p.sku).toLowerCase().includes(busca))) return false;
     return p.ativo;
@@ -1434,7 +1456,7 @@ function renderEstoque(){
     return `<tr class="${baixo?'baixo':''}">
       <td style="display:flex;align-items:center;gap:10px">
         ${p.imagem_url?`<img src="${p.imagem_url}" style="width:38px;height:38px;object-fit:cover;border-radius:6px;flex-shrink:0">`:`<div style="width:38px;height:38px;border-radius:6px;background:#F1E6CB;flex-shrink:0"></div>`}
-        <div><b>${p.nome}</b>${p.set_nome?`<br><span class="muted" style="font-size:13px">${p.set_nome}${p.numero_carta?' · '+p.numero_carta:''}</span>`:''}</div>
+        <div><b>${p.nome}</b> ${{ENG:'🇺🇸','PT-BR':'🇧🇷',JAP:'🇯🇵'}[p.idioma]||''}${p.set_nome?`<br><span class="muted" style="font-size:13px">${p.set_nome}${p.numero_carta?' · '+p.numero_carta:''}</span>`:''}</div>
       </td>
       <td><span class="tag">${TIPOS[p.tipo]||p.tipo}</span></td>
       <td>${p.sku}</td>
@@ -1470,6 +1492,7 @@ function abrirProduto(id){
   $('pr_nome').value = p?.nome||'';
   $('pr_set_nome').value = p?.set_nome||'';
   $('pr_numero_carta').value = p?.numero_carta||'';
+  $('pr_idioma').value = p?.idioma||'ENG';
   $('pr_preco_venda').value = p?.preco_venda??'';
   $('pr_estoque_minimo').value = p?.estoque_minimo??0;
   $('pr_ncm').value = p?.ncm||'';
@@ -1678,6 +1701,7 @@ async function salvarProduto(){
     nome: nomeNorm,
     set_nome: $('pr_set_nome').value.trim().replace(/\s+/g,' '),
     numero_carta: tipo==='carta' ? $('pr_numero_carta').value.trim() : '',
+    idioma: $('pr_idioma').value,
     preco_venda: Number($('pr_preco_venda').value||0),
     estoque_minimo: parseInt($('pr_estoque_minimo').value||0),
     ncm: $('pr_ncm').value.trim(),
@@ -1761,6 +1785,27 @@ function previewCompra(){
 ['co_produto','co_qtd','co_custo'].forEach(id=>{
   document.addEventListener('input', e=>{ if(e.target.id===id) previewCompra(); });
 });
+/* Ajusta qtd em +delta ou -delta com a mesma proteção contra concorrência.
+   Usado para baixa de estoque (venda) e estorno (cancelamento). Para delta
+   negativo, reconfirma que há estoque suficiente a cada tentativa — o
+   estoque pode ter mudado entre a leitura original e agora. */
+async function ajustarQtdComRetry(tabela, id, delta){
+  for(let tentativa=0; tentativa<3; tentativa++){
+    const {data:atual, error:eLeitura} = await db.from(tabela).select('qtd').eq('id',id).single();
+    if(eLeitura || !atual) return {ok:false, motivo:'leitura'};
+    const qtdAtual = atual.qtd||0;
+    const novaQtd = qtdAtual + delta;
+    if(novaQtd < 0) return {ok:false, motivo:'insuficiente'};
+    const {data:linhas, error:eEscrita} = await db.from(tabela)
+      .update({qtd:novaQtd, atualizado_em:new Date().toISOString()})
+      .eq('id',id).eq('qtd',qtdAtual)
+      .select('id');
+    if(eEscrita) return {ok:false, motivo:'escrita'};
+    if(linhas && linhas.length>0) return {ok:true};
+  }
+  return {ok:false, motivo:'conflito'};
+}
+
 async function salvarCompra(){
   const p = PRODUTOS.find(x=>x.id===$('co_produto').value);
   const qtd = parseInt($('co_qtd').value||0), custo = Number($('co_custo').value||0);
@@ -1776,23 +1821,43 @@ async function salvarCompra(){
   });
   if(e1){ $('coErr').textContent=e1.message; return; }
 
-  if(varianteId){
-    // Atualiza qtd e custo_medio da variante
-    const v = VARIANTES.find(x=>x.id===varianteId);
-    const novaQtd = (v?.qtd||0)+qtd;
-    const novoCusto = ((v?.qtd||0)*(v?.custo_medio||0)+qtd*custo)/novaQtd;
-    await db.from('produto_variantes').update({qtd:novaQtd, custo_medio:novoCusto.toFixed(2)}).eq('id',varianteId);
-    await carregarVariantes();
-  } else {
-    const novoQtd = p.qtd+qtd;
-    const novoCusto = (p.qtd*p.custo_medio + qtd*custo)/novoQtd;
-    const {error:e2} = await db.from('produtos')
-      .update({qtd:novoQtd, custo_medio:novoCusto.toFixed(2), atualizado_em:new Date().toISOString()})
-      .eq('id',p.id).eq('qtd',p.qtd);
-    if(e2){ $('coErr').textContent=e2.message; return; }
+  // A compra já está registrada no histórico neste ponto. A partir daqui,
+  // qualquer falha em atualizar qtd/custo_medio precisa ser corrigida com
+  // retry — nunca falhar em silêncio, pois a compra não pode "sumir".
+  const atualizado = varianteId
+    ? await aplicarEntradaComRetry('produto_variantes', varianteId, qtd, custo)
+    : await aplicarEntradaComRetry('produtos', p.id, qtd, custo);
+
+  if(!atualizado){
+    $('coErr').textContent = 'Compra registrada, mas não foi possível atualizar o estoque após 3 tentativas (conflito de concorrência). Recarregue a página e confira o estoque deste item manualmente.';
+    return;
   }
+
+  if(varianteId) await carregarVariantes();
   fechar('mCompra'); toast('Entrada registrada');
   carregarEstoque();
+}
+
+/* Atualiza qtd/custo_medio com proteção contra concorrência: relê o registro
+   atual do banco antes de cada tentativa e só considera sucesso se alguma
+   linha foi de fato afetada. Até 3 tentativas — cobre o caso de duas compras
+   quase simultâneas no mesmo produto/variante. */
+async function aplicarEntradaComRetry(tabela, id, qtd, custo){
+  for(let tentativa=0; tentativa<3; tentativa++){
+    const {data:atual, error:eLeitura} = await db.from(tabela).select('qtd,custo_medio').eq('id',id).single();
+    if(eLeitura || !atual) return false;
+    const qtdAtual = atual.qtd||0, custoAtual = atual.custo_medio||0;
+    const novaQtd = qtdAtual + qtd;
+    const novoCusto = (qtdAtual*custoAtual + qtd*custo) / novaQtd;
+    const {data:linhas, error:eEscrita} = await db.from(tabela)
+      .update({qtd:novaQtd, custo_medio:novoCusto.toFixed(2), atualizado_em:new Date().toISOString()})
+      .eq('id',id).eq('qtd',qtdAtual)
+      .select('id');
+    if(eEscrita) return false;
+    if(linhas && linhas.length>0) return true; // sucesso — a condição bateu e a linha foi atualizada
+    // 0 linhas afetadas = outro processo alterou qtd entre a leitura e a escrita — tenta de novo
+  }
+  return false;
 }
 
 function fechar(id){ $(id).classList.remove('show'); }
@@ -1951,89 +2016,6 @@ function onCompraProdutoChange(){
 /* ============================================================
    COLEÇÕES JAPONESAS (TCGdex)
    ============================================================ */
-let FONTE_COLECOES = 'en';
-let SETS_JP_CARREGADOS = false;
-
-function alternarFonteColecoes(fonte){
-  FONTE_COLECOES = fonte;
-  $('btnFonteEN').classList.toggle('on', fonte==='en');
-  $('btnFonteJP').classList.toggle('on', fonte==='jp');
-  CARTAS_SET=[]; TOTAL_CARTAS_SET=0; SET_ATUAL_ID='';
-  $('colecoesGrid').innerHTML='';
-  $('colecoesVazio').style.display='block';
-  $('colecoesPaginacao').style.display='none';
-  $('co_cartas_busca').value='';
-  if(fonte==='jp'){
-    $('colCambioInfo').textContent='Cartas japonesas via TCGdex — sem preço de referência disponível.';
-    carregarSetsJP();
-  } else {
-    $('colCambioInfo').textContent = CAMBIO_USD_BRL ? `Câmbio de referência: US$ 1 = R$ ${CAMBIO_USD_BRL.toFixed(2)}` : '';
-    carregarSets();
-  }
-}
-
-async function carregarSetsJP(){
-  const sel = $('co_set_sel');
-  sel.innerHTML = '<option value="">Carregando sets japoneses…</option>';
-  const cache = cacheLer('rapadura_sets_jp_v1', CACHE_TTL_SETS);
-  if(cache){
-    sel.innerHTML = '<option value="">Selecione uma coleção...</option>' +
-      cache.map(s=>`<option value="${s.id}">${s.name} — ${s.cardCount} cartas</option>`).join('');
-    SETS_JP_CARREGADOS = true; return;
-  }
-  try{
-    const r = await fetch('https://api.tcgdex.net/v2/ja/sets');
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const sets = await r.json();
-    const mapped = sets.map(s=>({id:s.id, name:s.name, cardCount:s.cardCount?.total||s.cardCount||0}))
-      .sort((a,b)=>b.id.localeCompare(a.id));
-    sel.innerHTML = '<option value="">Selecione uma coleção...</option>' +
-      mapped.map(s=>`<option value="${s.id}">${s.name} — ${s.cardCount} cartas</option>`).join('');
-    cacheGravar('rapadura_sets_jp_v1', mapped);
-    SETS_JP_CARREGADOS = true;
-  }catch(e){
-    sel.innerHTML = '<option value="">Erro ao carregar sets japoneses</option>';
-    toast('Erro TCGdex: '+e.message);
-  }
-}
-
-async function carregarCartasDoSetJP(){
-  const setId = $('co_set_sel').value;
-  const grid = $('colecoesGrid');
-  if(!setId){ CARTAS_SET=[]; grid.innerHTML=''; $('colecoesVazio').style.display='block'; return; }
-  SET_ATUAL_ID = setId;
-  $('colecoesVazio').style.display='none';
-  grid.innerHTML = Array.from({length:10}).map(()=>`<div class="colecao-card"><div class="skeleton" style="aspect-ratio:5/7"></div></div>`).join('');
-  $('colecoesPaginacao').style.display='none';
-
-  const cacheKey = 'rapadura_cartas_jp_'+setId;
-  const cached = cacheLer(cacheKey, CACHE_TTL_CARTAS);
-  if(cached){ CARTAS_SET=cached; TOTAL_CARTAS_SET=cached.length; renderCartasSet(); return; }
-
-  try{
-    const r = await fetch(`https://api.tcgdex.net/v2/ja/sets/${setId}`);
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const data = await r.json();
-    // Normalise to same shape used by renderCartasSet
-    CARTAS_SET = (data.cards||[]).map(c=>({
-      id: c.id||`${setId}-${c.localId}`,
-      name: c.name||'—',
-      number: String(c.localId||''),
-      _jp: true,
-      images: { small: c.image ? c.image+'/low.png' : '', large: c.image ? c.image+'/high.png' : '' },
-      set: { id:setId, name:data.name||setId, total:data.cardCount?.total||0, printedTotal:data.cardCount?.official||data.cardCount?.total||0 },
-      tcgplayer: null, cardmarket: null
-    }));
-    TOTAL_CARTAS_SET = CARTAS_SET.length;
-    cacheGravar(cacheKey, CARTAS_SET);
-    renderCartasSet();
-  }catch(e){
-    grid.innerHTML=''; $('colecoesVazio').style.display='block';
-    $('colecoesVazio').textContent='Erro ao buscar cartas: '+e.message;
-    toast('Erro TCGdex: '+e.message);
-  }
-}
-
 /* ============================================================
    FINANCEIRO — PROJEÇÃO E DESPESAS POR CATEGORIA
    ============================================================ */
@@ -2116,6 +2098,7 @@ function abrirCliente(id){
   $('cl_id').value = c?.id||'';
   $('cl_nome').value = c?.nome||'';
   $('cl_whatsapp').value = c?.whatsapp||'';
+  $('cl_email').value = c?.email||'';
   $('cl_cep').value = c?.cep||'';
   $('cl_cidade_uf').value = c?.cidade_uf||'';
   $('cl_endereco').value = c?.endereco||'';
@@ -2128,7 +2111,7 @@ async function salvarCliente(){
   const id = $('cl_id').value;
   const nome = $('cl_nome').value.trim();
   if(!nome){ $('clErr').textContent='Nome é obrigatório.'; return; }
-  const payload = { nome, whatsapp:$('cl_whatsapp').value.trim(), cep:$('cl_cep').value.trim(),
+  const payload = { nome, whatsapp:$('cl_whatsapp').value.trim(), email:$('cl_email').value.trim(), cep:$('cl_cep').value.trim(),
     cidade_uf:$('cl_cidade_uf').value.trim(), endereco:$('cl_endereco').value.trim(),
     numero:$('cl_numero').value.trim(), complemento:$('cl_complemento').value.trim() };
   if(!id) payload.criado_por = CURRENT_EMAIL;
@@ -2530,8 +2513,13 @@ async function registrarPagamento(id){
     }
     for(const i of itensDe(id).filter(x=>x.produto_id)){
       const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      const {error} = await db.from('produtos').update({qtd:prod.qtd-i.qtd}).eq('id',prod.id).eq('qtd',prod.qtd);
-      if(error){ $('pgErr').textContent='Falha na baixa de estoque: '+error.message; return; }
+      const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd);
+      if(!r.ok){
+        $('pgErr').textContent = r.motivo==='insuficiente'
+          ? `Estoque de ${prod?.nome||'item'} mudou e ficou insuficiente — pagamento não confirmado.`
+          : 'Falha na baixa de estoque (conflito de concorrência) — tente novamente.';
+        return;
+      }
     }
     const {error} = await db.from('pedidos').update({
       status:'pago', estoque_baixado:true, valor_pago:novoValorPago,
@@ -2567,15 +2555,23 @@ async function mudarStatus(id, novo){
     }
     for(const i of itensDe(id).filter(x=>x.produto_id)){
       const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      const {error} = await db.from('produtos').update({qtd:prod.qtd-i.qtd}).eq('id',prod.id).eq('qtd',prod.qtd);
-      if(error){ toast('Falha na baixa de estoque: '+error.message); return; }
+      const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd);
+      if(!r.ok){
+        toast(r.motivo==='insuficiente'
+          ? `Estoque de ${prod?.nome||'item'} mudou e ficou insuficiente — pedido não pode ser pago.`
+          : 'Falha na baixa de estoque (conflito de concorrência) — tente novamente.');
+        return;
+      }
     }
     await db.from('pedidos').update({status:novo, estoque_baixado:true, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL}).eq('id',id);
   } else if(novo==='cancelado' && p.estoque_baixado){
     if(!confirm('Cancelar devolve os itens ao estoque. Confirmar?')) return;
     for(const i of itensDe(id).filter(x=>x.produto_id)){
       const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      if(prod) await db.from('produtos').update({qtd:prod.qtd+i.qtd}).eq('id',prod.id);
+      if(prod){
+        const r = await ajustarQtdComRetry('produtos', i.produto_id, i.qtd);
+        if(!r.ok) toast(`Aviso: não foi possível estornar ${prod.nome} ao estoque automaticamente — ajuste manualmente.`);
+      }
     }
     await db.from('pedidos').update({status:novo, estoque_baixado:false, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL}).eq('id',id);
   } else {
@@ -3376,7 +3372,6 @@ async function carregarSets(){
   $('colCambioInfo').textContent = CAMBIO_USD_BRL ? `Câmbio de referência: US$ 1 = R$ ${CAMBIO_USD_BRL.toFixed(2)}` : '';
 }
 async function carregarCartasDoSet(){
-  if(FONTE_COLECOES==='jp'){ await carregarCartasDoSetJP(); return; }
   const setId = $('co_set_sel').value;
   const grid = $('colecoesGrid');
   if(!setId){
@@ -3500,6 +3495,7 @@ function abrirAddCarta(cardId){
   $('addCartaHeader').innerHTML = `<img src="${c.images.small}" style="width:64px;border-radius:6px">
     <div><b>${c.name}</b><br><span class="muted">${c.set.name} · ${c.number}/${c.set.printedTotal||c.set.total}</span></div>`;
   $('ac_qtd').value=1; $('ac_custo').value='';
+  $('ac_idioma').value='ENG';
   $('ac_preco').value = brl? brl.toFixed(2) : '';
   $('ac_ref').textContent = brl ? `(referência de mercado: ${fmt(brl)})` : '(sem referência de mercado disponível)';
   $('mAddCarta').dataset.cardId = cardId;
@@ -3508,13 +3504,14 @@ function abrirAddCarta(cardId){
 async function confirmarAddCarta(){
   const c = CARTAS_SET.find(x=>x.id===$('mAddCarta').dataset.cardId);
   const qtd = parseInt($('ac_qtd').value||0), custo = Number($('ac_custo').value||0), preco = Number($('ac_preco').value||0);
+  const idioma = $('ac_idioma').value;
   if(qtd<1 || $('ac_custo').value===''){ $('acErr').textContent='Informe quantidade e custo válidos.'; return; }
-  const sku = 'CARTA-'+c.set.id.toUpperCase()+'-'+c.number.replace(/\W/g,'');
+  const sku = 'CARTA-'+c.set.id.toUpperCase()+'-'+c.number.replace(/\W/g,'')+(idioma!=='ENG'?'-'+idioma:'');
   let prod = PRODUTOS.find(p=>p.sku===sku);
   if(!prod){
     const {data,error} = await db.from('produtos').insert({
       sku, tipo:'carta', nome:c.name, set_nome:c.set.name, numero_carta:c.number+'/'+(c.set.printedTotal||c.set.total),
-      imagem_url:c.images.large||c.images.small, preco_venda:preco, estoque_minimo:0, criado_por:CURRENT_EMAIL
+      imagem_url:c.images.large||c.images.small, preco_venda:preco, estoque_minimo:0, idioma, criado_por:CURRENT_EMAIL
     }).select().single();
     if(error){ $('acErr').textContent=error.message; return; }
     prod = data;
