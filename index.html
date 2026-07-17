@@ -253,6 +253,10 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 
       <div id="dashSub-visao">
         <div class="kpis" id="dashKpis"></div>
+        <div class="card" style="margin-bottom:18px">
+          <h3 style="margin:0 0 4px">Receita e margem por canal <span class="muted" style="font-weight:400;text-transform:none;font-size:13px">(últimos 30 dias)</span></h3>
+          <canvas id="graficoCanalDash" height="90" style="margin-top:10px"></canvas>
+        </div>
         <div class="grid2" style="align-items:start">
           <div class="card" style="padding:0;overflow-x:auto">
             <h3 style="padding:16px 16px 0">Top produtos (30 dias)</h3>
@@ -268,7 +272,10 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
       <div id="dashSub-relatorios" style="display:none">
         <div class="reports-hero">
           <div><span class="reports-eyebrow">CENTRAL DE INTELIGÊNCIA</span><h3>Relatório gerencial completo</h3><p>Uma visão única de vendas, operação, estoque e rentabilidade.</p></div>
-          <button class="btn reports-export" onclick="exportarRelatorioCompletoPDF()">Exportar relatório completo</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn reports-export" onclick="exportarRelatorioCompletoPDF()">Exportar PDF</button>
+            <button class="btn ghost" onclick="exportarRelatorioExcel()">Exportar Excel</button>
+          </div>
         </div>
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
@@ -330,6 +337,21 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           </div>
           <div style="overflow-x:auto;margin-top:10px">
             <table class="tbl" id="tblRelClientes"><thead><tr><th>Cliente</th><th class="num">Pedidos</th><th class="num">Total comprado</th></tr></thead><tbody></tbody></table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+            <h3 style="margin:0">Clientes inativos</h3>
+            <div style="display:flex;align-items:center;gap:6px">
+              <span class="muted" style="font-size:13px">Sem comprar há mais de</span>
+              <input id="ci_dias" type="number" value="60" min="1" style="width:70px" onchange="renderRelatorioClientes()">
+              <span class="muted" style="font-size:13px">dias</span>
+            </div>
+          </div>
+          <p class="muted" style="font-size:12px;margin:6px 0 0">Só considera clientes que já compraram pelo menos uma vez — clientes novos sem pedido não aparecem aqui.</p>
+          <div style="overflow-x:auto;margin-top:10px">
+            <table class="tbl" id="tblRelClientesInativos"><thead><tr><th>Cliente</th><th>WhatsApp</th><th>Última compra</th><th class="num">Dias sem comprar</th><th class="num">Total histórico</th></tr></thead><tbody></tbody></table>
           </div>
         </div>
 
@@ -403,6 +425,7 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
     <div class="page" id="p-estoque" style="display:none">
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
         <h2 style="margin:0;flex:1">Estoque</h2>
+        <button class="btn ghost" onclick="abrirSimuladorPreco()">🧮 Simular preço mínimo</button>
         <button class="btn ghost" onclick="abrirCompra()">Registrar compra</button>
         <button class="btn" onclick="abrirProduto()">Novo produto</button>
       </div>
@@ -598,6 +621,32 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
       </div>
     </div>
 
+    <!-- MODAL SIMULADOR DE PREÇO -->
+    <div class="overlay" id="mSimuladorPreco">
+      <div class="modal">
+        <h3>Simulador de preço mínimo</h3>
+        <p class="muted" style="font-size:13px;margin-top:-6px">Calcula o preço abaixo do qual a venda dá prejuízo, e o preço para atingir a margem desejada.</p>
+        <label>Produto (opcional — preenche custo e imposto automaticamente)</label>
+        <select id="sp_produto" onchange="preencherSimuladorDoProduto()">
+          <option value="">— Digitar valores manualmente —</option>
+        </select>
+        <div class="grid2">
+          <div><label>Custo unitário (R$)</label><input id="sp_custo" type="number" step="0.01" min="0" oninput="calcularSimuladorPreco()"></div>
+          <div><label>Custo fiscal (%)</label><input id="sp_fiscal" type="number" step="0.1" min="0" value="0" oninput="calcularSimuladorPreco()"></div>
+        </div>
+        <div class="grid2">
+          <div><label>Frete médio por unidade (R$)</label><input id="sp_frete" type="number" step="0.01" min="0" value="0" oninput="calcularSimuladorPreco()"></div>
+          <div><label>Taxa da plataforma (%) <span class="muted" style="font-weight:400;text-transform:none">ex: Mercado Livre</span></label><input id="sp_taxa" type="number" step="0.1" min="0" value="0" oninput="calcularSimuladorPreco()"></div>
+        </div>
+        <label>Margem de lucro desejada (%)</label>
+        <input id="sp_margem" type="number" step="1" min="0" value="20" oninput="calcularSimuladorPreco()">
+        <div id="spResultado" style="margin-top:16px;padding:16px;background:var(--bg);border-radius:10px"></div>
+        <footer class="actions">
+          <button class="btn ghost" onclick="fechar('mSimuladorPreco')">Fechar</button>
+        </footer>
+      </div>
+    </div>
+
     <!-- MODAL COMPRA -->
     <div class="overlay" id="mCompra">
       <div class="modal">
@@ -770,6 +819,7 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
               <option value="whatsapp">WhatsApp</option>
               <option value="instagram">Instagram</option>
               <option value="mercado_livre">Mercado Livre</option>
+              <option value="jamble">Jamble</option>
               <option value="outro">Outro</option>
             </select></div>
         </div>
@@ -830,6 +880,7 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
           <option value="tudo">Tudo</option>
         </select>
       </div>
+      <div id="alertaDespesasVencendo"></div>
       <div class="kpis" id="fiKpis"></div>
 
       <div class="card" id="cardProjecao" style="display:none">
@@ -1078,12 +1129,13 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
 const SUPABASE_URL = "https://gqhwrwkuaegmydbiiprd.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxaHdyd2t1YWVnbXlkYmlpcHJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMzE2NTUsImV4cCI6MjA5OTYwNzY1NX0.bL_oob4K4F9cVwA-_IyxNvBEjcjNE_EG6PQ_QNzY4TQ";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-const TABELAS = ['empresa','produtos','compras','clientes','fornecedores','pedidos','pedido_itens','despesas_fixas','despesas','historico_precos','metas','log_eventos'];
+const TABELAS = ['empresa','produtos','produto_variantes','compras','clientes','fornecedores','pedidos','pedido_itens','despesas_fixas','despesas','historico_precos','metas','log_eventos'];
 const $ = id => document.getElementById(id);
 let CURRENT_EMAIL = '';
 let LOGS_SISTEMA = [];
@@ -1486,11 +1538,11 @@ async function importBackup(ev){
     const dump = JSON.parse(await file.text());
     if(dump.app!=='rapadura-tcg') throw new Error('Arquivo não é um backup válido.');
     // ordem inversa para apagar filhos antes dos pais
-    for(const t of ['pedido_itens','pedidos','clientes','compras','produtos','fornecedores','despesas','despesas_fixas','historico_precos','metas','log_eventos']){
+    for(const t of ['pedido_itens','pedidos','clientes','compras','produto_variantes','produtos','fornecedores','despesas','despesas_fixas','historico_precos','metas','log_eventos']){
       const {error} = await db.from(t).delete().not('id','is',null);
       if(error) throw new Error('limpar '+t+': '+error.message);
     }
-    for(const t of ['produtos','fornecedores','compras','clientes','pedidos','pedido_itens','despesas_fixas','despesas','historico_precos','metas','log_eventos','empresa']){
+    for(const t of ['produtos','produto_variantes','fornecedores','compras','clientes','pedidos','pedido_itens','despesas_fixas','despesas','historico_precos','metas','log_eventos','empresa']){
       const rows = dump.tabelas[t]||[];
       if(!rows.length) continue;
       const {error} = await db.from(t).upsert(rows);
@@ -1569,6 +1621,56 @@ function atualizarSininho(n){
   if(!el) return;
   el.style.display = n>0 ? 'inline-flex' : 'none';
   el.textContent = n>9 ? '9+' : n;
+}
+
+/* ---------- Simulador de preço mínimo ---------- */
+function abrirSimuladorPreco(){
+  const sel = $('sp_produto');
+  sel.innerHTML = '<option value="">— Digitar valores manualmente —</option>' +
+    PRODUTOS.filter(p=>p.ativo).sort((a,b)=>a.nome.localeCompare(b.nome))
+      .map(p=>`<option value="${p.id}">${p.nome}${p.set_nome?' — '+p.set_nome:''}</option>`).join('');
+  $('sp_custo').value=''; $('sp_fiscal').value=0; $('sp_frete').value=0; $('sp_taxa').value=0; $('sp_margem').value=20;
+  $('spResultado').innerHTML='';
+  $('mSimuladorPreco').classList.add('show');
+}
+function preencherSimuladorDoProduto(){
+  const p = PRODUTOS.find(x=>x.id===$('sp_produto').value);
+  if(!p){ calcularSimuladorPreco(); return; }
+  $('sp_custo').value = p.custo_medio||0;
+  $('sp_fiscal').value = p.custo_fiscal_pct||0;
+  calcularSimuladorPreco();
+}
+function calcularSimuladorPreco(){
+  const custo = Number($('sp_custo').value||0);
+  const fiscalPct = Number($('sp_fiscal').value||0);
+  const frete = Number($('sp_frete').value||0);
+  const taxaPct = Number($('sp_taxa').value||0);
+  const margemPct = Number($('sp_margem').value||0);
+
+  const custoFiscal = custo * fiscalPct/100;
+  const custoBase = custo + custoFiscal + frete;
+
+  const divisorTaxa = 1 - taxaPct/100;
+  if(divisorTaxa <= 0){ $('spResultado').innerHTML = '<p style="color:var(--warn)">Taxa da plataforma inválida (≥100%).</p>'; return; }
+  const precoEquilibrio = custoBase / divisorTaxa;
+
+  const divisorMargem = 1 - (margemPct/100) - (taxaPct/100);
+  const precoAlvo = divisorMargem > 0 ? custoBase / divisorMargem : null;
+
+  $('spResultado').innerHTML = `
+    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)">
+      <span class="muted">Custo total (produto + imposto + frete)</span><b>${fmt(custoBase)}</b>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)">
+      <span>Preço de equilíbrio <span class="muted" style="font-size:12px">(lucro zero)</span></span>
+      <b style="color:var(--warn)">${fmt(precoEquilibrio)}</b>
+    </div>
+    <div style="display:flex;justify-content:space-between;padding:10px 0">
+      <span>Preço para ${margemPct}% de margem</span>
+      <b style="font-size:18px;color:var(--gold-deep)">${precoAlvo!==null ? fmt(precoAlvo) : 'Margem inviável com essa taxa'}</b>
+    </div>
+    <p class="muted" style="font-size:12px;margin-top:10px">Vender abaixo de ${fmt(precoEquilibrio)} dá prejuízo nessa carta considerando os custos informados.</p>
+  `;
 }
 
 function popularFiltroSets(){
@@ -2430,7 +2532,7 @@ const itensDe = pid => ITENS.filter(x=>x.pedido_id===pid);
 const totalPedido = p => itensDe(p.id).reduce((s,x)=>s+x.qtd*x.preco_unit,0) - p.desconto + p.frete;
 const nomeCliente = id => CLIENTES.find(c=>c.id===id)?.nome || '—';
 const ST_LABEL = {orcamento:'Orçamento',pago:'Pago',enviado:'Enviado',concluido:'Concluído',cancelado:'Cancelado'};
-const CANAL_LABEL = {direto:'Venda direta',whatsapp:'WhatsApp',instagram:'Instagram',mercado_livre:'Mercado Livre',outro:'Outro'};
+const CANAL_LABEL = {direto:'Venda direta',whatsapp:'WhatsApp',instagram:'Instagram',mercado_livre:'Mercado Livre',jamble:'Jamble',outro:'Outro'};
 
 function renderPedidos(){
   const st=$('fp_status').value, busca=($('fp_busca').value||'').toLowerCase();
@@ -2916,8 +3018,32 @@ async function carregarDespesasFixas(){
   if(!error) DESPESAS_FIXAS = data;
 }
 
+const DIAS_ALERTA_VENCIMENTO = 5;
+function renderAlertaDespesasVencendo(){
+  const el = $('alertaDespesasVencendo');
+  if(!el) return;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const vencendo = DESPESAS_FIXAS.filter(f=>f.ativa).map(f=>{
+    const dia = Math.min(f.dia_referencia||1, 28);
+    let venc = new Date(hoje.getFullYear(), hoje.getMonth(), dia);
+    if(venc < hoje) venc = new Date(hoje.getFullYear(), hoje.getMonth()+1, dia);
+    const diasRestantes = Math.round((venc-hoje)/86400000);
+    return {...f, venc, diasRestantes};
+  }).filter(f=>f.diasRestantes <= DIAS_ALERTA_VENCIMENTO).sort((a,b)=>a.diasRestantes-b.diasRestantes);
+
+  if(!vencendo.length){ el.innerHTML=''; return; }
+  el.innerHTML = `<div class="card" style="border-left:4px solid var(--warn);margin-bottom:16px">
+    <h3 style="margin:0 0 8px;font-size:15px">⏰ Despesas fixas vencendo</h3>
+    ${vencendo.map(f=>`<p style="margin:4px 0;font-size:14px">
+      <b>${f.nome}</b> — ${fmt(f.valor)} — ${f.diasRestantes===0?'vence hoje':f.diasRestantes===1?'vence amanhã':'vence em '+f.diasRestantes+' dias'}
+      (${f.venc.toLocaleDateString('pt-BR')})
+    </p>`).join('')}
+  </div>`;
+}
+
 async function renderFinanceiro(){
   if(!MODO_DEMO) await gerarDespesasFixasPendentes();
+  renderAlertaDespesasVencendo();
   const [ini,fim] = periodoRange($('fi_periodo').value);
   const iniStr = ini.toISOString().slice(0,10), fimStr = fim.toISOString().slice(0,10);
   const vendidos = PEDIDOS.filter(p=>{
@@ -3161,6 +3287,44 @@ function renderDash(){
   document.querySelector('#tblBaixo tbody').innerHTML = baixos.map(p=>
     `<tr class="baixo"><td>${p.nome}</td><td class="num"><b>${p.qtd}</b></td><td class="num">${p.estoque_minimo}</td></tr>`
   ).join('') || '<tr><td colspan="3" class="muted">Nenhum alerta.</td></tr>';
+  renderGraficoCanalDash(d30);
+}
+
+let CHART_CANAL_DASH = null;
+function renderGraficoCanalDash(d30){
+  const canais = {};
+  PEDIDOS.filter(p=>VENDIDO.includes(p.status) && new Date(p.data+'T12:00')>=d30).forEach(p=>{
+    const its = itensDe(p.id);
+    const rec = its.reduce((s,i)=>s+i.qtd*i.preco_unit,0) - p.desconto;
+    const custo = its.reduce((s,i)=>s+i.qtd*i.custo_unit,0);
+    const c = canais[p.canal] ||= {rec:0, lucro:0};
+    c.rec += rec; c.lucro += rec-custo-p.taxas;
+  });
+  const entradas = Object.entries(canais).sort((a,b)=>b[1].rec-a[1].rec);
+  const ctx = $('graficoCanalDash');
+  if(!ctx) return;
+  if(CHART_CANAL_DASH) CHART_CANAL_DASH.destroy();
+  if(!entradas.length){
+    ctx.parentElement.querySelector('canvas + p')?.remove();
+    const p = document.createElement('p'); p.className='muted'; p.textContent='Sem vendas nos últimos 30 dias.'; p.style.marginTop='10px';
+    ctx.after(p);
+    return;
+  }
+  CHART_CANAL_DASH = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: entradas.map(([c])=>CANAL_LABEL[c]||c),
+      datasets: [
+        { label:'Receita', data: entradas.map(([,d])=>d.rec.toFixed(2)), backgroundColor:'#C98A2B' },
+        { label:'Lucro bruto', data: entradas.map(([,d])=>d.lucro.toFixed(2)), backgroundColor:'#2B3241' }
+      ]
+    },
+    options: {
+      responsive:true,
+      plugins:{ legend:{position:'bottom'} },
+      scales:{ y:{ ticks:{ callback:v=>fmt(v) } } }
+    }
+  });
 }
 
 /* ---------- Relatórios (dentro do Dashboard) ---------- */
@@ -3282,13 +3446,25 @@ function renderRelatorioClientes(){
   const porCliente = {};
   PEDIDOS.filter(p=>VENDIDO.includes(p.status)).forEach(p=>{
     const {receita} = receitaLucroPedido(p);
-    const c = porCliente[p.cliente_id] ||= {n:0,total:0};
+    const c = porCliente[p.cliente_id] ||= {n:0,total:0,ultimaData:null};
     c.n++; c.total+=receita;
+    if(!c.ultimaData || p.data>c.ultimaData) c.ultimaData = p.data;
   });
   const lista = Object.entries(porCliente).sort((a,b)=>b[1].total-a[1].total);
   document.querySelector('#tblRelClientes tbody').innerHTML = lista.map(([cid,d])=>
     `<tr><td>${nomeCliente(cid)}</td><td class="num">${d.n}</td><td class="num">${fmt(d.total)}</td></tr>`
   ).join('') || '<tr><td colspan="3" class="muted">Nenhum cliente com compras.</td></tr>';
+
+  const limiteDias = parseInt($('ci_dias')?.value||60);
+  const hoje = new Date();
+  const inativos = lista.map(([cid,d])=>{
+    const diasSemComprar = Math.floor((hoje - new Date(d.ultimaData+'T12:00')) / 86400000);
+    return {cid, ...d, diasSemComprar};
+  }).filter(x=>x.diasSemComprar >= limiteDias).sort((a,b)=>b.diasSemComprar-a.diasSemComprar);
+  document.querySelector('#tblRelClientesInativos tbody').innerHTML = inativos.map(x=>{
+    const cli = CLIENTES.find(c=>c.id===x.cid)||{};
+    return `<tr><td>${nomeCliente(x.cid)}</td><td>${cli.whatsapp||'—'}</td><td>${new Date(x.ultimaData+'T12:00').toLocaleDateString('pt-BR')}</td><td class="num">${x.diasSemComprar}</td><td class="num">${fmt(x.total)}</td></tr>`;
+  }).join('') || '<tr><td colspan="5" class="muted">Nenhum cliente inativo nesse período.</td></tr>';
 }
 
 async function renderRelatorioFornecedores(){
@@ -3457,9 +3633,30 @@ function exportarRelatorioPDF(tipo){
 }
 
 /* ---------- Coleções (pokemontcg.io + câmbio) ---------- */
+function exportarRelatorioExcel(){
+  const secoes=[['Vendas por período','tblRelVendas'],['Despesas por período','tblRelDespesas'],['Estoque atual','tblRelEstoque'],['Ranking de clientes','tblRelClientes'],['Clientes inativos','tblRelClientesInativos'],['Ranking de fornecedores','tblRelFornecedores'],['Produtos mais vendidos','tblRelProdutos'],['Margem por produto','tblRelMargem']];
+  const wb = XLSX.utils.book_new();
+  let algumaAba = false;
+  secoes.forEach(([titulo,id])=>{
+    const tabela = $(id);
+    if(!tabela) return;
+    const head = [...tabela.querySelectorAll('thead th')].map(th=>th.textContent.trim());
+    const body = [...tabela.querySelectorAll('tbody tr')].map(tr=>[...tr.children].map(td=>td.textContent.trim()))
+      .filter(l=>l.length>1 && !/nenhum|sem vendas|erro ao carregar|sem clientes inativos/i.test(l.join(' ')));
+    if(!body.length) return;
+    const ws = XLSX.utils.aoa_to_sheet([head, ...body]);
+    ws['!cols'] = head.map(()=>({wch:18}));
+    XLSX.utils.book_append_sheet(wb, ws, titulo.slice(0,31)); // Excel limita nome de aba a 31 caracteres
+    algumaAba = true;
+  });
+  if(!algumaAba){ toast('Nenhum dado para exportar — gere os relatórios primeiro.'); return; }
+  XLSX.writeFile(wb, `relatorio-gerencial-${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Excel exportado');
+}
+
 function exportarRelatorioCompletoPDF(){
   const { jsPDF } = window.jspdf, doc = new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-  const secoes=[['Vendas por período','tblRelVendas'],['Despesas por período','tblRelDespesas'],['Estoque atual','tblRelEstoque'],['Ranking de clientes','tblRelClientes'],['Ranking de fornecedores','tblRelFornecedores'],['Produtos mais vendidos','tblRelProdutos'],['Margem por produto','tblRelMargem']];
+  const secoes=[['Vendas por período','tblRelVendas'],['Despesas por período','tblRelDespesas'],['Estoque atual','tblRelEstoque'],['Ranking de clientes','tblRelClientes'],['Clientes inativos','tblRelClientesInativos'],['Ranking de fornecedores','tblRelFornecedores'],['Produtos mais vendidos','tblRelProdutos'],['Margem por produto','tblRelMargem']];
   const largura=doc.internal.pageSize.getWidth(),altura=doc.internal.pageSize.getHeight();
   doc.setFillColor(40,50,65);doc.rect(0,0,largura,altura,'F');doc.setFillColor(207,122,34);doc.rect(0,0,largura,5,'F');
   doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(28);doc.text(EMPRESA?.nome||'Rapadura TCG',18,48);doc.setFontSize(16);doc.text('Relatório gerencial completo',18,61);doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(220,226,233);doc.text('Vendas, operação, estoque e rentabilidade em um único documento.',18,72);doc.text('Gerado em '+new Date().toLocaleString('pt-BR'),18,80);
