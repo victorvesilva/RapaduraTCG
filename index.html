@@ -195,6 +195,83 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 .reports-hero h3{margin:5px 0 4px;font-family:'Space Grotesk',sans-serif;font-size:23px;letter-spacing:-.04em}.reports-hero p{margin:0;color:#e0e5ea;font-size:14px}.reports-eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;color:#ffd09d}.reports-export{white-space:nowrap;background:#fff;color:#9e4b14;box-shadow:0 8px 20px rgba(0,0,0,.16)}.reports-export:hover{background:#fff5e9;color:#7b360b}
 #dashSub-relatorios .card{position:relative;overflow:hidden}#dashSub-relatorios .card>div:first-child h3{font-size:16px;letter-spacing:-.025em}
 @media(max-width:640px){.reports-hero{align-items:flex-start;flex-direction:column;padding:21px}.reports-hero h3{font-size:20px}.reports-export{width:100%}}
+
+/* ---------- Interface clean + tema escuro ---------- */
+:root{
+  color-scheme:light;
+  --bg:#f6f7f9;--card:#ffffff;--ink:#171a21;--ink-soft:#6b7280;
+  --gold:#c96f24;--gold-deep:#9b4d16;--line:#e5e7eb;
+  --surface-soft:#f7f8fa;--surface-hover:#f1f3f5;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.06);
+}
+html{background:var(--bg);scrollbar-color:#c6cad1 transparent}
+body{background:var(--bg);transition:background-color .25s ease,color .25s ease}
+body::before{display:none}
+header.top{background:color-mix(in srgb,var(--card) 92%,transparent);border-color:var(--line);box-shadow:none}
+.top-inner{min-height:68px}.top-inner .brand,.page h2,.card h3,.kpi .v{color:var(--ink)}
+main{max-width:1320px}
+.card,.kpi,.colecao-card,.modal,.login-card{background:var(--card);border-color:var(--line);box-shadow:var(--shadow)}
+.kpi{background:var(--card)}.kpi::after{opacity:.7}
+input,textarea,select{background:var(--card);border-color:var(--line);color:var(--ink)}
+input::placeholder,textarea::placeholder{color:#9ca3af}
+.tbl th{background:var(--surface-soft);color:var(--ink-soft)}
+.tbl td{border-color:var(--line)}.tbl tbody tr:hover{background:var(--surface-hover)}
+.btn.ghost{background:var(--card);border-color:var(--line);color:var(--ink-soft)}
+.btn.ghost:hover{background:var(--surface-hover);color:var(--ink);border-color:#cfd4dc}
+nav.tabs button:hover{background:var(--surface-hover);color:var(--ink)}
+nav.tabs button.on{background:var(--ink);color:var(--card);box-shadow:none}
+.stock-tabs{background:var(--card);border-color:var(--line);box-shadow:none}
+.stock-tabs button:hover{background:var(--surface-hover);color:var(--ink)}
+.stock-tabs button.on{background:var(--ink);color:var(--card);box-shadow:none}
+.pill,.tag{background:#fff4e8;border-color:#f4d3b2;color:#9b4d16}
+.theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink-soft);font-size:17px;transition:background .2s,color .2s,border-color .2s,transform .15s}
+.theme-toggle:hover{background:var(--surface-hover);color:var(--ink);border-color:#cfd4dc}.theme-toggle:active{transform:scale(.95)}
+.demo-card{display:flex;align-items:center;justify-content:space-between;gap:28px;padding:20px 22px;border-color:#edd8c2;background:linear-gradient(135deg,#fffaf4,#fff);box-shadow:0 1px 2px rgba(155,77,22,.04)}
+.demo-card__content{display:flex;align-items:flex-start;gap:15px;min-width:0}
+.demo-card__icon{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border-radius:12px;background:#fff0df;color:#ad591c;font-size:18px;font-weight:800}
+.demo-card__eyebrow{display:inline-flex;align-items:center;gap:7px;margin-bottom:5px;color:var(--gold-deep);font-size:10px;font-weight:800;letter-spacing:.11em;text-transform:uppercase}
+.demo-card__eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--gold)}
+.demo-card h3{margin:0 0 4px;font-size:15px}.demo-card p{max-width:850px;margin:0}
+.demo-card footer.actions{flex:0 0 auto;margin:0}.demo-card .btn{white-space:nowrap;box-shadow:none}
+.dash-chart-card{position:relative;min-height:310px;margin-bottom:18px}
+.dash-chart-card h3{margin:0}.dash-chart-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.dash-chart-sub{display:block;margin-top:4px;color:var(--ink-soft);font-size:12px;font-weight:400}
+.dash-chart-wrap{position:relative;height:245px}.dash-chart-wrap--wide{height:270px}
+.dash-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.dash-chart-grid .dash-chart-card{min-width:0}
+
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0f1115;--card:#171a20;--ink:#f3f4f6;--ink-soft:#9ba3b1;
+  --gold:#e38a3d;--gold-deep:#f1a35f;--line:#2a2f39;
+  --surface-soft:#1d2129;--surface-hover:#232832;
+  --ok:#49bd82;--warn:#ef6a6a;
+  --shadow:0 1px 2px rgba(0,0,0,.22),0 12px 32px rgba(0,0,0,.18);
+}
+html[data-theme="dark"] .top-inner img{filter:brightness(.96) drop-shadow(0 3px 6px rgba(0,0,0,.3))}
+html[data-theme="dark"] .top-inner .who{background:var(--surface-soft);color:var(--ink-soft)}
+html[data-theme="dark"] .theme-toggle:hover,html[data-theme="dark"] .btn.ghost:hover{border-color:#444b58}
+html[data-theme="dark"] .kpi{background:linear-gradient(145deg,#191c22,#15181e)}
+html[data-theme="dark"] .kpi::after{background:linear-gradient(135deg,rgba(227,138,61,.22),transparent)}
+html[data-theme="dark"] .pill,html[data-theme="dark"] .tag{background:#352518;border-color:#5b3a20;color:#f0a867}
+html[data-theme="dark"] .st-orcamento{background:#332e22;color:#d8c493}
+html[data-theme="dark"] .st-pago{background:#173427;color:#72d39e}
+html[data-theme="dark"] .st-enviado{background:#182d45;color:#79ace8}
+html[data-theme="dark"] .st-concluido{background:#2b2142;color:#b89de9}
+html[data-theme="dark"] .st-cancelado{background:#401f22;color:#f58b92}
+html[data-theme="dark"] .overlay{background:rgba(3,5,8,.72)}
+html[data-theme="dark"] .reports-hero{background:linear-gradient(120deg,#1c222b,#252f3b 58%,#7c3e16)}
+html[data-theme="dark"] .reports-export{background:#f7f7f8;color:#7e3e14}
+html[data-theme="dark"] .toast{background:#f3f4f6;color:#171a21}
+html[data-theme="dark"] .skeleton{background:linear-gradient(90deg,#222731 25%,#2c323d 37%,#222731 63%);background-size:400% 100%}
+html[data-theme="dark"] .demo-card{border-color:#3a3028;background:linear-gradient(135deg,#1c1b1a,#191b20);box-shadow:none}
+html[data-theme="dark"] .demo-card__icon{background:#33251a;color:#eea15e}
+html[data-theme="dark"] .demo-card__eyebrow{color:#eea15e}
+html[data-theme="dark"] [style*="background:#fff"],html[data-theme="dark"] [style*="background: #fff"]{background:var(--card)!important}
+html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
+@media(max-width:720px){.demo-card{align-items:stretch;flex-direction:column;gap:17px}.demo-card footer.actions,.demo-card .btn{width:100%}}
+@media(max-width:780px){.dash-chart-grid{grid-template-columns:1fr}.dash-chart-card{min-height:285px}.dash-chart-wrap,.dash-chart-wrap--wide{height:225px}}
+@media(max-width:640px){.theme-toggle{width:36px;height:36px}.top-inner{gap:8px}.top-inner>button[title^="Buscar"]{padding:7px!important;font-size:0!important}.top-inner>button[title^="Buscar"] span{display:none}.demo-card{padding:17px}.demo-card__icon{display:none}}
 </style>
 </head>
 <body>
@@ -229,6 +306,7 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
       </button>
       <button id="sininhoAlerta" onclick="go('dash')" title="Estoque baixo" style="display:none;align-items:center;justify-content:center;background:var(--warn);color:#fff;font-size:11px;font-weight:800;min-width:20px;height:20px;padding:0 5px;border-radius:10px;border:none;cursor:pointer;margin-right:6px">0</button>
       <span class="who" id="whoami"></span>
+      <button id="themeToggle" class="theme-toggle" type="button" onclick="toggleTheme()" title="Ativar modo escuro" aria-label="Ativar modo escuro">☾</button>
       <button class="btn ghost" style="padding:7px 14px" onclick="doLogout()">Sair</button>
     </div>
     <div class="brick"></div>
@@ -253,9 +331,23 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 
       <div id="dashSub-visao">
         <div class="kpis" id="dashKpis"></div>
-        <div class="card" style="margin-bottom:18px">
-          <h3 style="margin:0 0 4px">Receita e margem por canal <span class="muted" style="font-weight:400;text-transform:none;font-size:13px">(últimos 30 dias)</span></h3>
-          <canvas id="graficoCanalDash" height="90" style="margin-top:10px"></canvas>
+        <div class="card dash-chart-card">
+          <div class="dash-chart-head"><div><h3>Evolução financeira</h3><span class="dash-chart-sub">Receita e lucro bruto nos últimos 30 dias</span></div></div>
+          <div class="dash-chart-wrap dash-chart-wrap--wide"><canvas id="graficoEvolucaoDash"></canvas></div>
+        </div>
+        <div class="dash-chart-grid">
+          <div class="card dash-chart-card">
+            <div class="dash-chart-head"><div><h3>Pedidos por status</h3><span class="dash-chart-sub">Distribuição dos últimos 30 dias</span></div></div>
+            <div class="dash-chart-wrap"><canvas id="graficoStatusDash"></canvas></div>
+          </div>
+          <div class="card dash-chart-card">
+            <div class="dash-chart-head"><div><h3>Saúde do estoque</h3><span class="dash-chart-sub">Situação dos produtos ativos</span></div></div>
+            <div class="dash-chart-wrap"><canvas id="graficoEstoqueDash"></canvas></div>
+          </div>
+        </div>
+        <div class="card dash-chart-card">
+          <div class="dash-chart-head"><div><h3>Receita e margem por canal</h3><span class="dash-chart-sub">Desempenho dos últimos 30 dias</span></div></div>
+          <div class="dash-chart-wrap dash-chart-wrap--wide"><canvas id="graficoCanalDash"></canvas></div>
         </div>
         <div class="grid2" style="align-items:start">
           <div class="card" style="padding:0;overflow-x:auto">
@@ -1018,9 +1110,15 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
     <div class="page" id="p-config" style="display:none">
       <h2>Configurações</h2>
 
-      <div class="card" style="border-color:#E8C38B;background:linear-gradient(135deg,#FFF8EC,#FFFDF7)">
-        <h3 style="margin-bottom:4px">Modo Demo</h3>
-        <p class="muted">Carrega dados fictícios apenas nesta sessão para explorar dashboards, gráficos, relatórios e PDFs. Nenhuma informação da demonstração é salva no banco.</p>
+      <div class="card demo-card">
+        <div class="demo-card__content">
+          <div class="demo-card__icon" aria-hidden="true">D</div>
+          <div>
+            <span class="demo-card__eyebrow">Ambiente seguro</span>
+            <h3>Explorar com dados de demonstração</h3>
+            <p class="muted">Teste dashboards, gráficos, relatórios e PDFs sem alterar nenhuma informação real.</p>
+          </div>
+        </div>
         <footer class="actions"><button class="btn" id="btnDemo" onclick="alternarDemo()">Ativar Modo Demo</button></footer>
       </div>
 
@@ -1157,6 +1255,24 @@ const TABELAS = ['empresa','produtos','produto_variantes','compras','clientes','
 const $ = id => document.getElementById(id);
 let CURRENT_EMAIL = '';
 let LOGS_SISTEMA = [];
+
+function aplicarTema(tema){
+  document.documentElement.dataset.theme = tema;
+  localStorage.setItem('rapadura_tema',tema);
+  const botao = $('themeToggle');
+  if(!botao) return;
+  const escuro = tema === 'dark';
+  botao.textContent = escuro ? '☀' : '☾';
+  botao.title = escuro ? 'Ativar modo claro' : 'Ativar modo escuro';
+  botao.setAttribute('aria-label',botao.title);
+  if(typeof renderDash === 'function' && $('app')?.style.display === 'block') renderDash();
+}
+function toggleTheme(){
+  aplicarTema(document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark');
+}
+const temaSalvo = localStorage.getItem('rapadura_tema');
+const temaInicial = temaSalvo || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+aplicarTema(temaInicial);
 
 function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
 async function logEvento(tipo, descricao){
@@ -3414,10 +3530,59 @@ function renderDash(){
   document.querySelector('#tblBaixo tbody').innerHTML = baixos.map(p=>
     `<tr class="baixo"><td>${p.nome}</td><td class="num"><b>${p.qtd}</b></td><td class="num">${p.estoque_minimo}</td></tr>`
   ).join('') || '<tr><td colspan="3" class="muted">Nenhum alerta.</td></tr>';
+  renderGraficoEvolucaoDash(d30);
+  renderGraficoStatusDash(d30);
+  renderGraficoEstoqueDash();
   renderGraficoCanalDash(d30);
 }
 
-let CHART_CANAL_DASH = null;
+let CHART_CANAL_DASH = null, CHART_EVOLUCAO_DASH = null, CHART_STATUS_DASH = null, CHART_ESTOQUE_DASH = null;
+function dashChartTheme(){
+  const css = getComputedStyle(document.documentElement);
+  return {ink:css.getPropertyValue('--ink').trim(),soft:css.getPropertyValue('--ink-soft').trim(),line:css.getPropertyValue('--line').trim()};
+}
+function dashChartOptions({money=false,indexAxis='x'}={}){
+  const c=dashChartTheme();
+  return {responsive:true,maintainAspectRatio:false,indexAxis,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{position:'bottom',labels:{color:c.soft,usePointStyle:true,pointStyle:'circle',padding:18,boxWidth:8}},tooltip:{padding:10}},
+    scales:{x:{grid:{display:false},ticks:{color:c.soft}},y:{grid:{color:c.line},ticks:{color:c.soft,callback:money?v=>fmt(v):undefined},beginAtZero:true}}
+  };
+}
+function prepararGrafico(id,temDados,mensagem){
+  const canvas=$(id); if(!canvas) return null;
+  canvas.parentElement.querySelector('.chart-empty')?.remove();
+  canvas.style.display=temDados?'block':'none';
+  if(!temDados){const p=document.createElement('p');p.className='muted chart-empty';p.textContent=mensagem;p.style.cssText='display:grid;place-items:center;height:100%;text-align:center';canvas.after(p);}
+  return canvas;
+}
+function renderGraficoEvolucaoDash(d30){
+  const dias=[]; const porDia={};
+  for(let i=29;i>=0;i--){const d=new Date();d.setHours(12,0,0,0);d.setDate(d.getDate()-i);const k=d.toISOString().slice(0,10);dias.push(k);porDia[k]={receita:0,lucro:0};}
+  PEDIDOS.filter(p=>VENDIDO.includes(p.status) && new Date(p.data+'T12:00')>=d30).forEach(p=>{
+    if(!porDia[p.data]) return; const its=itensDe(p.id);
+    const receita=its.reduce((s,i)=>s+Number(i.qtd)*Number(i.preco_unit),0)-Number(p.desconto||0);
+    const custo=its.reduce((s,i)=>s+Number(i.qtd)*Number(i.custo_unit),0);
+    porDia[p.data].receita+=receita; porDia[p.data].lucro+=receita-custo-Number(p.taxas||0);
+  });
+  if(CHART_EVOLUCAO_DASH) CHART_EVOLUCAO_DASH.destroy();
+  const temDados=Object.values(porDia).some(d=>d.receita||d.lucro),ctx=prepararGrafico('graficoEvolucaoDash',temDados,'As vendas aparecerão aqui assim que houver movimentação.'); if(!ctx||!temDados)return;
+  const c=dashChartTheme(); CHART_EVOLUCAO_DASH=new Chart(ctx,{type:'line',data:{labels:dias.map(d=>new Date(d+'T12:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'short'})),datasets:[
+    {label:'Receita',data:dias.map(d=>porDia[d].receita),borderColor:'#e38a3d',backgroundColor:'rgba(227,138,61,.12)',fill:true,tension:.35,pointRadius:0,pointHoverRadius:4,borderWidth:2},
+    {label:'Lucro bruto',data:dias.map(d=>porDia[d].lucro),borderColor:'#49bd82',backgroundColor:'transparent',tension:.35,pointRadius:0,pointHoverRadius:4,borderWidth:2}
+  ]},options:dashChartOptions({money:true})});
+}
+function renderGraficoStatusDash(d30){
+  const ordem=['orcamento','pago','enviado','concluido','cancelado'],labels={orcamento:'Orçamento',pago:'Pago',enviado:'Enviado',concluido:'Concluído',cancelado:'Cancelado'},totais=Object.fromEntries(ordem.map(s=>[s,0]));
+  PEDIDOS.filter(p=>new Date(p.data+'T12:00')>=d30).forEach(p=>{if(p.status in totais)totais[p.status]++;});
+  if(CHART_STATUS_DASH) CHART_STATUS_DASH.destroy(); const dados=ordem.map(s=>totais[s]),ctx=prepararGrafico('graficoStatusDash',dados.some(Boolean),'Ainda não há pedidos neste período.');if(!ctx||!dados.some(Boolean))return;
+  const c=dashChartTheme(); CHART_STATUS_DASH=new Chart(ctx,{type:'doughnut',data:{labels:ordem.map(s=>labels[s]),datasets:[{data:dados,backgroundColor:['#d2a84a','#49bd82','#5a91d6','#8b6fd1','#ef6a6a'],borderColor:c.card||getComputedStyle(document.documentElement).getPropertyValue('--card').trim(),borderWidth:3,hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{color:c.soft,usePointStyle:true,pointStyle:'circle',padding:14,boxWidth:8}}}}});
+}
+function renderGraficoEstoqueDash(){
+  const totais={saudavel:0,atencao:0,baixo:0,zerado:0};
+  PRODUTOS.filter(p=>p.ativo).forEach(p=>{const qtd=Number(p.qtd||0),min=Number(p.estoque_minimo||0);if(qtd<=0)totais.zerado++;else if(min>0&&qtd<=min)totais.baixo++;else if(min>0&&qtd<=min*1.5)totais.atencao++;else totais.saudavel++;});
+  if(CHART_ESTOQUE_DASH) CHART_ESTOQUE_DASH.destroy();const dados=Object.values(totais),ctx=prepararGrafico('graficoEstoqueDash',dados.some(Boolean),'Cadastre produtos para acompanhar a saúde do estoque.');if(!ctx||!dados.some(Boolean))return;
+  const c=dashChartTheme();CHART_ESTOQUE_DASH=new Chart(ctx,{type:'doughnut',data:{labels:['Saudável','Atenção','Estoque baixo','Sem estoque'],datasets:[{data:dados,backgroundColor:['#49bd82','#e7b84f','#ef8b4b','#ef6a6a'],borderColor:getComputedStyle(document.documentElement).getPropertyValue('--card').trim(),borderWidth:3,hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'68%',plugins:{legend:{position:'bottom',labels:{color:c.soft,usePointStyle:true,pointStyle:'circle',padding:14,boxWidth:8}}}}});
+}
 function renderGraficoCanalDash(d30){
   const canais = {};
   PEDIDOS.filter(p=>VENDIDO.includes(p.status) && new Date(p.data+'T12:00')>=d30).forEach(p=>{
@@ -3428,28 +3593,20 @@ function renderGraficoCanalDash(d30){
     c.rec += rec; c.lucro += rec-custo-p.taxas;
   });
   const entradas = Object.entries(canais).sort((a,b)=>b[1].rec-a[1].rec);
-  const ctx = $('graficoCanalDash');
-  if(!ctx) return;
   if(CHART_CANAL_DASH) CHART_CANAL_DASH.destroy();
-  if(!entradas.length){
-    ctx.parentElement.querySelector('canvas + p')?.remove();
-    const p = document.createElement('p'); p.className='muted'; p.textContent='Sem vendas nos últimos 30 dias.'; p.style.marginTop='10px';
-    ctx.after(p);
-    return;
-  }
+  const ctx=prepararGrafico('graficoCanalDash',entradas.length,'Sem vendas nos últimos 30 dias.');
+  if(!ctx||!entradas.length) return;
   CHART_CANAL_DASH = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: entradas.map(([c])=>CANAL_LABEL[c]||c),
       datasets: [
-        { label:'Receita', data: entradas.map(([,d])=>d.rec.toFixed(2)), backgroundColor:'#C98A2B' },
-        { label:'Lucro bruto', data: entradas.map(([,d])=>d.lucro.toFixed(2)), backgroundColor:'#2B3241' }
+        { label:'Receita', data: entradas.map(([,d])=>d.rec.toFixed(2)), backgroundColor:'#e38a3d', borderRadius:6 },
+        { label:'Lucro bruto', data: entradas.map(([,d])=>d.lucro.toFixed(2)), backgroundColor:'#64748b', borderRadius:6 }
       ]
     },
     options: {
-      responsive:true,
-      plugins:{ legend:{position:'bottom'} },
-      scales:{ y:{ ticks:{ callback:v=>fmt(v) } } }
+      ...dashChartOptions({money:true}),
     }
   });
 }
