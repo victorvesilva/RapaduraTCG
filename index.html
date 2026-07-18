@@ -3243,22 +3243,30 @@ document.addEventListener('click', e=>{
   e.preventDefault(); e.stopImmediatePropagation(); toast('Ações de cadastro ficam desativadas no Modo Demo');
 },true);
 const CATEGORIA_LABEL = {embalagem:'Embalagem', frete_compra:'Frete (compra)', taxas_fixas:'Taxas fixas', marketing:'Marketing', aluguel:'Aluguel', ferramentas:'Ferramentas/assinaturas', outros:'Outros'};
+let STATUS_DESPESAS_FIXAS = new Set();
 
-async function gerarDespesasFixasPendentes(){
-  const {data:fixas, error} = await db.from('despesas_fixas').select('*').eq('ativa', true);
-  if(error || !fixas || !fixas.length) return;
+async function gerarDespesasFixasPendentes(apenasId=null){
+  const resultado={criadas:0,futuras:0,erros:[]};
+  let consulta=db.from('despesas_fixas').select('*').eq('ativa',true);
+  if(apenasId) consulta=consulta.eq('id',apenasId);
+  const {data:fixas,error}=await consulta;
+  if(error){resultado.erros.push('Não foi possível consultar as despesas fixas: '+error.message);return resultado;}
+  if(!fixas||!fixas.length)return resultado;
   const hoje = new Date();
   for(const f of fixas){
     const inicio = new Date(f.data_inicio+'T12:00');
+    if(Number.isNaN(inicio.getTime())){resultado.erros.push(`${f.nome}: data de início inválida.`);continue;}
     let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
     const limite = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    if(cursor>limite){resultado.futuras++;continue;}
     const competencias = [];
     while(cursor <= limite){
       competencias.push(cursor.toISOString().slice(0,7));
       cursor.setMonth(cursor.getMonth()+1);
     }
     if(!competencias.length) continue;
-    const {data:existentes} = await db.from('despesas').select('competencia').eq('despesa_fixa_id', f.id).in('competencia', competencias);
+    const {data:existentes,error:erroConsulta}=await db.from('despesas').select('competencia').eq('despesa_fixa_id',f.id).in('competencia',competencias);
+    if(erroConsulta){resultado.erros.push(`${f.nome}: ${erroConsulta.message}`);continue;}
     const jaExistem = new Set((existentes||[]).map(e=>e.competencia));
     const faltantes = competencias.filter(c=>!jaExistem.has(c));
     if(!faltantes.length) continue;
@@ -3268,12 +3276,20 @@ async function gerarDespesasFixasPendentes(){
       const dataStr = `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
       return { data:dataStr, categoria:f.categoria, descricao:f.nome, valor:f.valor, despesa_fixa_id:f.id, competencia:comp, criado_por:'sistema (despesa fixa)' };
     });
-    await db.from('despesas').insert(rows); // se colidir por concorrência entre PCs, o índice único ignora a duplicata
+    const {error:erroInsert}=await db.from('despesas').insert(rows);
+    if(erroInsert&&erroInsert.code!=='23505')resultado.erros.push(`${f.nome}: ${erroInsert.message}`);
+    else resultado.criadas+=rows.length;
   }
+  return resultado;
 }
 async function carregarDespesasFixas(){
   const {data,error} = await db.from('despesas_fixas').select('*').order('nome');
-  if(!error) DESPESAS_FIXAS = data;
+  if(error){toast('Erro ao carregar despesas fixas: '+error.message);return;}
+  DESPESAS_FIXAS=data||[];
+  const h=new Date(),competencia=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}`;
+  const {data:lancamentos,error:erroLancamentos}=await db.from('despesas').select('despesa_fixa_id').eq('competencia',competencia).not('despesa_fixa_id','is',null);
+  if(erroLancamentos){STATUS_DESPESAS_FIXAS=new Set();return;}
+  STATUS_DESPESAS_FIXAS=new Set((lancamentos||[]).map(d=>d.despesa_fixa_id));
 }
 
 const DIAS_ALERTA_VENCIMENTO = 5;
@@ -3300,7 +3316,10 @@ function renderAlertaDespesasVencendo(){
 }
 
 async function renderFinanceiro(){
-  if(!MODO_DEMO) await gerarDespesasFixasPendentes();
+  if(!MODO_DEMO){
+    const geracao=await gerarDespesasFixasPendentes();
+    if(geracao.erros.length) toast('Erro ao gerar despesas fixas: '+geracao.erros.join(' | '));
+  }
   renderAlertaDespesasVencendo();
   const [ini,fim] = periodoRange($('fi_periodo').value);
   const iniStr = ini.toISOString().slice(0,10), fimStr = fim.toISOString().slice(0,10);
@@ -3463,17 +3482,37 @@ async function abrirDespesaFixa(){
   $('mDespesaFixa').classList.add('show');
 }
 function renderListaDespesasFixas(){
-  $('listaDespesasFixas').innerHTML = DESPESAS_FIXAS.length ? DESPESAS_FIXAS.map(f=>`
+  const h=new Date(),mesAtual=new Date(h.getFullYear(),h.getMonth(),1);
+  $('listaDespesasFixas').innerHTML = DESPESAS_FIXAS.length ? DESPESAS_FIXAS.map(f=>{
+    const inicio=new Date(f.data_inicio+'T12:00'),inicioMes=new Date(inicio.getFullYear(),inicio.getMonth(),1);
+    const gerada=STATUS_DESPESAS_FIXAS.has(f.id);
+    const status=!f.ativa
+      ? '<span class="tag" style="background:#F5DCDC;color:var(--warn)">inativa</span>'
+      : inicioMes>mesAtual
+        ? `<span class="tag">inicia em ${inicio.toLocaleDateString('pt-BR')}</span>`
+        : gerada
+          ? '<span class="tag" style="background:#DCEEE3;color:var(--ok)">mês atual gerado</span>'
+          : '<span class="tag" style="background:#F5DCDC;color:var(--warn)">lançamento pendente</span>';
+    return `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
       <div>
         <b>${f.nome}</b> <span class="muted" style="font-size:13px">— ${CATEGORIA_LABEL[f.categoria]} · ${fmt(f.valor)}/mês · dia ${f.dia_referencia}</span>
-        ${!f.ativa?' <span class="tag" style="background:#F5DCDC;color:var(--warn)">inativa</span>':''}
+        ${status}
       </div>
       <div style="display:flex;gap:6px">
+        ${f.ativa&&inicioMes<=mesAtual&&!gerada?`<button class="mini" onclick="gerarDespesaFixaAgora('${f.id}')">Gerar agora</button>`:''}
         <button class="mini" onclick="editarDespesaFixa('${f.id}')">Editar</button>
         <button class="mini" onclick="alternarDespesaFixa('${f.id}')">${f.ativa?'Desativar':'Reativar'}</button>
       </div>
-    </div>`).join('') : '<p class="muted">Nenhuma despesa fixa cadastrada ainda.</p>';
+    </div>`;}).join('') : '<p class="muted">Nenhuma despesa fixa cadastrada ainda.</p>';
+}
+async function gerarDespesaFixaAgora(id){
+  const resultado=await gerarDespesasFixasPendentes(id);
+  if(resultado.erros.length){toast('Falha ao gerar: '+resultado.erros.join(' | '));}
+  else if(resultado.futuras){toast('A cobrança começa em uma competência futura.');}
+  else if(resultado.criadas){toast('Lançamento mensal gerado.');}
+  else toast('O lançamento deste mês já existe.');
+  await carregarDespesasFixas();renderListaDespesasFixas();await renderFinanceiro();
 }
 function editarDespesaFixa(id){
   const f = DESPESAS_FIXAS.find(x=>x.id===id);
@@ -3496,18 +3535,22 @@ async function salvarDespesaFixa(){
   const id = $('df_id').value;
   const nome = $('df_nome').value.trim();
   const valor = Number($('df_valor').value||0);
-  if(!nome || !valor || valor<=0){ $('dfErr').textContent='Preencha nome e valor.'; return; }
+  if(!nome || !valor || valor<=0 || !$('df_data_inicio').value){ $('dfErr').textContent='Preencha nome, valor e data de início.'; return; }
   const payload = { nome, categoria:$('df_categoria').value, valor,
     dia_referencia: parseInt($('df_dia').value||1), data_inicio: $('df_data_inicio').value };
   if(!id) payload.criado_por = CURRENT_EMAIL;
-  const q = id ? db.from('despesas_fixas').update(payload).eq('id',id) : db.from('despesas_fixas').insert(payload);
-  const {error} = await q;
+  const q=id?db.from('despesas_fixas').update(payload).eq('id',id).select('id').single():db.from('despesas_fixas').insert(payload).select('id').single();
+  const {data:salva,error}=await q;
   if(error){ $('dfErr').textContent=error.message; return; }
-  toast(id?'Despesa fixa atualizada':'Despesa fixa criada — será gerada automaticamente todo mês');
+  const resultado=await gerarDespesasFixasPendentes(salva.id);
+  if(resultado.erros.length){$('dfErr').textContent='Regra salva, mas o lançamento falhou: '+resultado.erros.join(' | ');toast('Despesa fixa salva com pendência');}
+  else if(resultado.futuras)toast('Despesa fixa salva — cobrança inicia futuramente');
+  else if(resultado.criadas)toast(id?'Despesa fixa atualizada e lançamento gerado':'Despesa fixa criada e lançamento do mês gerado');
+  else toast(id?'Despesa fixa atualizada':'Despesa fixa criada — lançamento do mês já existente');
   await carregarDespesasFixas();
   renderListaDespesasFixas();
-  limparFormDespesaFixa();
-  renderFinanceiro();
+  if(!resultado.erros.length)limparFormDespesaFixa();
+  await renderFinanceiro();
 }
 async function alternarDespesaFixa(id){
   const f = DESPESAS_FIXAS.find(x=>x.id===id);
@@ -4172,61 +4215,4 @@ function renderCartasSet(){
   const paginacao = $('colecoesPaginacao');
   const botao = $('btnCarregarMaisCartas');
   const temMais = CARTAS_SET.length<TOTAL_CARTAS_SET;
-  paginacao.style.display = CARTAS_SET.length ? 'block' : 'none';
-  botao.style.display = temMais ? '' : 'none';
-  $('colecoesInfo').textContent = busca
-    ? `${lista.length} encontrada(s) entre ${CARTAS_SET.length} carta(s) carregada(s) de ${TOTAL_CARTAS_SET}.`
-    : `${CARTAS_SET.length} de ${TOTAL_CARTAS_SET} carta(s) carregada(s).`;
-}
-function abrirAddCarta(cardId){
-  const c = CARTAS_SET.find(x=>x.id===cardId);
-  const usd = c.tcgplayer?.prices?.holofoil?.market || c.tcgplayer?.prices?.normal?.market || c.cardmarket?.prices?.averageSellPrice || null;
-  const brl = usd && CAMBIO_USD_BRL ? usd*CAMBIO_USD_BRL : null;
-  $('acErr').textContent='';
-  $('addCartaHeader').innerHTML = `<img src="${c.images.small}" style="width:64px;border-radius:6px">
-    <div><b>${c.name}</b><br><span class="muted">${c.set.name} · ${c.number}/${c.set.printedTotal||c.set.total}</span></div>`;
-  $('ac_qtd').value=1; $('ac_custo').value='';
-  $('ac_idioma').value='ENG';
-  $('ac_preco').value = brl? brl.toFixed(2) : '';
-  $('ac_ref').textContent = brl ? `(referência de mercado: ${fmt(brl)})` : '(sem referência de mercado disponível)';
-  $('mAddCarta').dataset.cardId = cardId;
-  $('mAddCarta').classList.add('show');
-}
-async function confirmarAddCarta(){
-  const c = CARTAS_SET.find(x=>x.id===$('mAddCarta').dataset.cardId);
-  const qtd = parseInt($('ac_qtd').value||0), custo = Number($('ac_custo').value||0), preco = Number($('ac_preco').value||0);
-  const idioma = $('ac_idioma').value;
-  if(qtd<1 || $('ac_custo').value===''){ $('acErr').textContent='Informe quantidade e custo válidos.'; return; }
-  const sku = 'CARTA-'+c.set.id.toUpperCase()+'-'+c.number.replace(/\W/g,'')+(idioma!=='ENG'?'-'+idioma:'');
-  let prod = PRODUTOS.find(p=>p.sku===sku);
-  if(!prod){
-    const {data,error} = await db.from('produtos').insert({
-      sku, tipo:'carta', nome:c.name, set_nome:c.set.name, numero_carta:c.number+'/'+(c.set.printedTotal||c.set.total),
-      imagem_url:c.images.large||c.images.small, preco_venda:preco, estoque_minimo:0, idioma, criado_por:CURRENT_EMAIL
-    }).select().single();
-    if(error){ $('acErr').textContent=error.message; return; }
-    prod = data;
-  } else if(preco !== prod.preco_venda){
-    await db.from('produtos').update({preco_venda:preco}).eq('id',prod.id);
-  }
-  const {error:e1} = await db.from('compras').insert({ produto_id:prod.id, qtd, custo_unit:custo, data:new Date().toISOString().slice(0,10), fornecedor:'Coleções', criado_por:CURRENT_EMAIL });
-  if(e1){ $('acErr').textContent=e1.message; return; }
-  await recalcularProdutoDoZero(prod.id);
-  await carregarEstoque();
-  fechar('mAddCarta'); toast(`${c.name} adicionado ao estoque`);
-}
-
-/* ---------- Conexão ---------- */
-async function checarConexao(){
-  const {error} = await db.from('empresa').select('id').limit(1);
-  const ok = !error;
-  $('connDot').classList.toggle('ok',ok);
-  $('connTxt').textContent = ok
-    ? 'Conectado ao banco de dados.'
-    : 'Sem acesso ao banco: '+error.message+' — verifique se o schema SQL foi executado.';
-}
-
-boot();
-</script>
-</body>
-</html>
+  paginacao
