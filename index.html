@@ -314,6 +314,7 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
         🔍 Buscar <span style="font-size:11px;opacity:.6;border:1px solid var(--line);border-radius:4px;padding:0 4px">Ctrl K</span>
       </button>
       <button id="sininhoAlerta" onclick="go('dash')" title="Estoque baixo" style="display:none;align-items:center;justify-content:center;background:var(--warn);color:#fff;font-size:11px;font-weight:800;min-width:20px;height:20px;padding:0 5px;border-radius:10px;border:none;cursor:pointer;margin-right:6px">0</button>
+      <button id="sininhoCompras" onclick="go('compras')" title="Entregas de compras para confirmar" style="display:none;align-items:center;justify-content:center;background:var(--gold);color:#fff;font-size:11px;font-weight:800;min-width:24px;height:24px;padding:0 7px;border-radius:12px;border:none;cursor:pointer;margin-right:6px">0</button>
       <span class="who" id="whoami"></span>
       <button id="themeToggle" class="theme-toggle" type="button" onclick="toggleTheme()" title="Ativar modo escuro" aria-label="Ativar modo escuro">☾</button>
       <button class="btn ghost" style="padding:7px 14px" onclick="doLogout()">Sair</button>
@@ -580,6 +581,7 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
         <button class="btn" onclick="abrirCompra()">Registrar compra</button>
       </div>
       <div class="kpis" id="comprasKpis"></div>
+      <div id="alertasEntregaCompras"></div>
       <div class="card" style="padding:14px">
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <input id="fcmp_busca" placeholder="Buscar produto, SKU ou fornecedor…" style="flex:2;min-width:220px" oninput="renderComprasPage()">
@@ -587,11 +589,11 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
           <select id="fcmp_periodo" style="flex:1;min-width:150px" onchange="renderComprasPage()">
             <option value="mes">Este mês</option><option value="30">Últimos 30 dias</option><option value="ano">Este ano</option><option value="tudo">Todo o período</option>
           </select>
-          <select id="fcmp_status" style="flex:1;min-width:140px" onchange="renderComprasPage()"><option value="ativas">Ativas</option><option value="estornadas">Estornadas</option><option value="todas">Todas</option></select>
+          <select id="fcmp_status" style="flex:1;min-width:140px" onchange="renderComprasPage()"><option value="ativas">Ativas</option><option value="andamento">Em andamento</option><option value="aguardando">Aguardando</option><option value="atrasado">Atrasadas</option><option value="recebido">Recebidas</option><option value="estornadas">Estornadas</option><option value="todas">Todas</option></select>
         </div>
       </div>
       <div class="card" style="padding:0;overflow-x:auto">
-        <table class="tbl" id="tblComprasGeral"><thead><tr><th>Data</th><th>Produto</th><th>Fornecedor</th><th class="num">Qtd</th><th class="num">Custo unit.</th><th class="num">Total</th><th>Status</th><th>Nota fiscal</th><th></th></tr></thead><tbody></tbody></table>
+        <table class="tbl" id="tblComprasGeral"><thead><tr><th>Pedido</th><th>Entrega prevista</th><th>Produto</th><th>Fornecedor</th><th class="num">Qtd</th><th class="num">Total</th><th>Status</th><th>Nota fiscal</th><th></th></tr></thead><tbody></tbody></table>
         <div id="comprasVazio" class="soon" style="display:none;border:none">Nenhuma compra encontrada para os filtros selecionados.</div>
       </div>
       <p class="muted" id="comprasResumo"></p>
@@ -777,7 +779,7 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
     <!-- MODAL COMPRA -->
     <div class="overlay" id="mCompra">
       <div class="modal">
-        <h3>Registrar compra (entrada de estoque)</h3>
+        <h3>Novo pedido de compra</h3>
         <label>Produto</label>
         <select id="co_produto" onchange="onCompraProdutoChange()"></select>
         <div id="co_variante_wrapper" style="display:none">
@@ -790,11 +792,13 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
         </div>
         <div class="grid2">
           <div><label>Data</label><input id="co_data" type="date"></div>
-          <div><label>Fornecedor</label>
-            <div style="display:flex;gap:6px">
-              <select id="co_fornecedor_sel" style="flex:1"></select>
-              <button class="btn ghost" type="button" style="padding:0 12px" onclick="abrirFornecedor(null,true)" title="Novo fornecedor">+</button>
-            </div>
+          <div><label>Entrega prevista</label><input id="co_entrega_prevista" type="date"></div>
+        </div>
+        <div>
+          <label>Fornecedor</label>
+          <div style="display:flex;gap:6px">
+            <select id="co_fornecedor_sel" style="flex:1"></select>
+            <button class="btn ghost" type="button" style="padding:0 12px" onclick="abrirFornecedor(null,true)" title="Novo fornecedor">+</button>
           </div>
         </div>
         <p class="muted" id="coPreview" style="margin-top:12px"></p>
@@ -802,9 +806,24 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
         <input id="co_nf" type="file" accept=".pdf,image/*">
         <div class="msg-err" id="coErr"></div>
         <footer class="actions">
-          <button class="btn" onclick="salvarCompra()">Confirmar entrada</button>
+          <button class="btn" onclick="salvarCompra()">Salvar pedido</button>
           <button class="btn ghost" onclick="fechar('mCompra')">Cancelar</button>
         </footer>
+      </div>
+    </div>
+
+    <div class="overlay" id="mEditarCompra">
+      <div class="modal">
+        <h3>Editar pedido de compra</h3>
+        <input type="hidden" id="ec_id">
+        <div id="ec_resumo" class="muted" style="margin:8px 0 14px"></div>
+        <div class="grid2">
+          <div><label>Entrega prevista</label><input id="ec_entrega_prevista" type="date"></div>
+          <div><label>Status</label><select id="ec_status"><option value="andamento">Em andamento</option><option value="aguardando">Aguardando entrega</option><option value="atrasado">Atrasado</option><option value="recebido">Recebido</option><option value="cancelado">Cancelado</option></select></div>
+        </div>
+        <label>Observações</label><textarea id="ec_observacoes" rows="3" placeholder="Informações sobre entrega, transportadora ou contato com o fornecedor"></textarea>
+        <div class="msg-err" id="ecErr"></div>
+        <footer class="actions"><button class="btn" onclick="salvarEdicaoCompra()">Salvar alterações</button><button class="btn ghost" onclick="fechar('mEditarCompra')">Cancelar</button></footer>
       </div>
     </div>
 
@@ -1358,6 +1377,7 @@ async function showApp(session){
     renderDashSeguro();
     gerarDespesasFixasPendentes(); // roda em segundo plano, não bloqueia a tela inicial
     checarConexao();
+    verificarAlertasEntregaGlobais();
     if(falhas.length) toast(`${falhas.length} conjunto(s) de dados não puderam ser carregados. Tente atualizar.`);
   }catch(error){
     renderDashSeguro();
@@ -2099,7 +2119,7 @@ async function trocarNotaFiscal(compraId){
 async function carregarHistoricoCompras(produtoId){
   const {data,error} = await db.from('compras').select('*').eq('produto_id',produtoId).order('data',{ascending:false});
   if(error){ return; }
-  const ativas = data.filter(c=>!c.estornada);
+  const ativas = data.filter(c=>!c.estornada && (c.estoque_aplicado ?? true));
   if(!ativas.length){ $('prHistorico').innerHTML=''; return; }
   $('prHistorico').innerHTML = `<label style="margin-top:18px">Histórico de compras</label>
     <table class="tbl"><thead><tr><th>Data</th><th class="num">Qtd</th><th class="num">Custo unit.</th><th>Fornecedor</th><th></th></tr></thead>
@@ -2114,21 +2134,24 @@ async function carregarHistoricoCompras(produtoId){
     <p class="muted" style="font-size:12px;margin-top:4px">Estornar remove a entrada e recalcula qtd e custo médio do zero, a partir das compras restantes.</p>`;
 }
 async function estornarCompra(compraId){
-  if(!confirm('Estornar esta compra? A quantidade e o custo médio do produto serão recalculados sem ela.')) return;
+  if(!confirm('Estornar este pedido de compra? Se ele já tiver sido recebido, o estoque será recalculado.')) return;
   const {data:compra,error:e0} = await db.from('compras').select('*').eq('id',compraId).single();
   if(e0){ toast('Erro: '+e0.message); return; }
-  const {error:e1} = await db.from('compras').update({estornada:true, estornada_em:new Date().toISOString(), estornada_por:CURRENT_EMAIL}).eq('id',compraId);
+  const {error:e1} = await db.from('compras').update({estornada:true,status_compra:'cancelado',estornada_em:new Date().toISOString(),estornada_por:CURRENT_EMAIL,atualizado_em:new Date().toISOString()}).eq('id',compraId);
   if(e1){ toast('Erro ao estornar: '+e1.message); return; }
-  await recalcularProdutoDoZero(compra.produto_id);
+  if(compra.estoque_aplicado){
+    if(compra.variante_id) await recalcularVarianteDoZero(compra.variante_id);
+    else await recalcularProdutoDoZero(compra.produto_id);
+  }
   await logEvento('compra_estornada', `Compra de ${compra.qtd}un a ${fmt(compra.custo_unit)} estornada`);
-  toast('Compra estornada e produto recalculado');
+  toast(compra.estoque_aplicado?'Compra estornada e estoque recalculado':'Pedido de compra cancelado');
   await carregarEstoque();
   carregarHistoricoCompras(compra.produto_id);
   if($('p-compras')?.style.display==='block') await carregarComprasPage();
 }
 async function recalcularProdutoDoZero(produtoId){
   // soma apenas compras não estornadas; NÃO considera vendas (a baixa de venda já é refletida na qtd atual via pedidos)
-  const {data:compras} = await db.from('compras').select('*').eq('produto_id',produtoId).eq('estornada',false);
+  const {data:compras} = await db.from('compras').select('*').eq('produto_id',produtoId).eq('estornada',false).eq('estoque_aplicado',true);
   const {data:vendidos} = await db.from('pedido_itens').select('qtd, pedido_id').eq('produto_id',produtoId);
   const {data:pedidosBaixados} = await db.from('pedidos').select('id').eq('estoque_baixado',true);
   const idsBaixados = new Set((pedidosBaixados||[]).map(p=>p.id));
@@ -2138,6 +2161,11 @@ async function recalcularProdutoDoZero(produtoId){
   const custoMedio = qtdComprada>0 ? custoTotal/qtdComprada : 0;
   const qtdFinal = Math.max(0, qtdComprada - qtdVendida);
   await db.from('produtos').update({qtd:qtdFinal, custo_medio:custoMedio.toFixed(2), atualizado_em:new Date().toISOString()}).eq('id',produtoId);
+}
+async function recalcularVarianteDoZero(varianteId){
+  const {data:compras}=await db.from('compras').select('qtd,custo_unit').eq('variante_id',varianteId).eq('estornada',false).eq('estoque_aplicado',true);
+  const qtd=(compras||[]).reduce((s,c)=>s+Number(c.qtd),0),custoTotal=(compras||[]).reduce((s,c)=>s+Number(c.qtd)*Number(c.custo_unit),0),custoMedio=qtd?custoTotal/qtd:0;
+  await db.from('produto_variantes').update({qtd,custo_medio:custoMedio.toFixed(2)}).eq('id',varianteId);
 }
 async function excluirProduto(){
   const id = $('pr_id').value;
@@ -2340,7 +2368,9 @@ function abrirCompra(prodId){
   preencherSelectFornecedores();
   $('co_qtd').value=1; $('co_custo').value='';
   $('co_nf').value='';
-  $('co_data').value = new Date().toISOString().slice(0,10);
+  $('co_data').value = dataLocalCompra(new Date());
+  const prevista=new Date();prevista.setDate(prevista.getDate()+7);
+  $('co_entrega_prevista').value=dataLocalCompra(prevista);
   $('mCompra').classList.add('show');
   previewCompra();
 }
@@ -2356,7 +2386,7 @@ function previewCompra(){
   if(!p || !qtd || !custo){ $('coPreview').textContent=''; return; }
   const novoQtd = p.qtd+qtd;
   const novoCusto = (p.qtd*p.custo_medio + qtd*custo)/novoQtd;
-  $('coPreview').innerHTML = `Após a entrada: <b>${novoQtd} un.</b> · novo custo médio <b>${fmt(novoCusto)}</b> (atual: ${fmt(p.custo_medio)})`;
+  $('coPreview').innerHTML = `Quando a entrega for confirmada: <b>${novoQtd} un.</b> · novo custo médio <b>${fmt(novoCusto)}</b> (atual: ${fmt(p.custo_medio)})`;
 }
 ['co_produto','co_qtd','co_custo'].forEach(id=>{
   document.addEventListener('input', e=>{ if(e.target.id===id) previewCompra(); });
@@ -2394,6 +2424,14 @@ async function buscarTodasCompras(){
   }
   return todas;
 }
+async function verificarAlertasEntregaGlobais(){
+  const botao=$('sininhoCompras');if(!botao)return;
+  const hoje=dataLocalCompra(new Date());
+  const {data,error}=await db.from('compras').select('id').eq('estornada',false).eq('estoque_aplicado',false).lte('entrega_prevista',hoje).in('status_compra',['andamento','aguardando','atrasado']);
+  if(error){botao.style.display='none';return;}
+  const total=(data||[]).length;botao.textContent=total;botao.style.display=total?'inline-flex':'none';
+  if(total)toast(`${total} entrega(s) de compras aguardando confirmação.`);
+}
 async function carregarComprasPage(){
   const tbody=document.querySelector('#tblComprasGeral tbody');
   if(tbody)tbody.innerHTML='<tr><td colspan="9" class="muted">Carregando compras…</td></tr>';
@@ -2404,6 +2442,7 @@ async function carregarComprasPage(){
     sel.innerHTML='<option value="">Todos os fornecedores</option>'+FORNECEDORES.map(f=>`<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('');
     sel.value=valor;
     renderComprasPage();
+    verificarAlertasEntregaGlobais();
   }catch(error){
     if(tbody)tbody.innerHTML=`<tr><td colspan="9" class="msg-err">Erro ao carregar compras: ${escapeHtml(error.message)}</td></tr>`;
   }
@@ -2415,27 +2454,65 @@ function periodoCompraValido(data,periodo){
   if(periodo==='ano')return d>=new Date(h.getFullYear(),0,1);
   return d>=new Date(h.getFullYear(),h.getMonth(),1);
 }
+function dataLocalCompra(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
 function renderComprasPage(){
   if(!$('tblComprasGeral'))return;
   const termo=($('fcmp_busca').value||'').trim().toLowerCase(),fornecedor=$('fcmp_fornecedor').value,periodo=$('fcmp_periodo').value,status=$('fcmp_status').value;
   const lista=COMPRAS_GERAL.filter(c=>{
     const p=PRODUTOS.find(x=>x.id===c.produto_id),f=FORNECEDORES.find(x=>x.id===c.fornecedor_id),texto=[p?.nome,p?.sku,f?.nome,c.fornecedor].join(' ').toLowerCase();
-    return (!termo||texto.includes(termo))&&(!fornecedor||c.fornecedor_id===fornecedor)&&periodoCompraValido(c.data,periodo)&&(status==='todas'||(status==='estornadas'?c.estornada:!c.estornada));
+    const st=statusEfetivoCompra(c);
+    return (!termo||texto.includes(termo))&&(!fornecedor||c.fornecedor_id===fornecedor)&&periodoCompraValido(c.data,periodo)&&(status==='todas'||(status==='ativas'?!c.estornada:status==='estornadas'?c.estornada:st===status));
   });
-  const ativas=lista.filter(c=>!c.estornada),total=ativas.reduce((s,c)=>s+Number(c.qtd)*Number(c.custo_unit),0),qtd=ativas.reduce((s,c)=>s+Number(c.qtd),0),fornecedores=new Set(ativas.map(c=>c.fornecedor_id||c.fornecedor).filter(Boolean)).size;
-  $('comprasKpis').innerHTML=[['Compras',ativas.length],['Unidades recebidas',qtd],['Valor investido',fmt(total)],['Custo médio por compra',fmt(ativas.length?total/ativas.length:0)],['Fornecedores',fornecedores]].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
+  const ativas=lista.filter(c=>!c.estornada),recebidas=ativas.filter(c=>statusEfetivoCompra(c)==='recebido'),total=ativas.reduce((s,c)=>s+Number(c.qtd)*Number(c.custo_unit),0),qtd=recebidas.reduce((s,c)=>s+Number(c.qtd),0),andamento=ativas.filter(c=>['andamento','aguardando'].includes(statusEfetivoCompra(c))).length,atrasadas=ativas.filter(c=>statusEfetivoCompra(c)==='atrasado').length;
+  $('comprasKpis').innerHTML=[['Pedidos',ativas.length],['Em andamento',andamento],['Atrasados',atrasadas],['Unidades recebidas',qtd],['Valor dos pedidos',fmt(total)]].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
   document.querySelector('#tblComprasGeral tbody').innerHTML=lista.map(c=>{
     const p=PRODUTOS.find(x=>x.id===c.produto_id),v=VARIANTES.find(x=>x.id===c.variante_id),f=FORNECEDORES.find(x=>x.id===c.fornecedor_id),nome=p?.nome||'Produto removido';
-    return `<tr><td>${new Date(c.data+'T12:00').toLocaleDateString('pt-BR')}</td><td><b>${escapeHtml(nome)}</b>${v?`<br><span class="muted">${escapeHtml(v.nome)}</span>`:''}${p?.sku?`<br><span class="muted">${escapeHtml(p.sku)}</span>`:''}</td><td>${escapeHtml(f?.nome||c.fornecedor||'—')}</td><td class="num">${c.qtd}</td><td class="num">${fmt(c.custo_unit)}</td><td class="num"><b>${fmt(Number(c.qtd)*Number(c.custo_unit))}</b></td><td><span class="st ${c.estornada?'st-cancelado':'st-pago'}">${c.estornada?'Estornada':'Recebida'}</span></td><td>${c.nf_link?`<button class="mini" onclick="verNotaFiscal('${c.nf_link}')">Ver NF</button>`:`<button class="mini" onclick="trocarNotaFiscal('${c.id}')">Anexar</button>`}</td><td>${c.estornada?'':`<button class="mini" style="color:var(--warn)" onclick="estornarCompra('${c.id}')">Estornar</button>`}</td></tr>`;
+    const st=statusEfetivoCompra(c),aparencia={andamento:'st-enviado',aguardando:'st-orcamento',atrasado:'st-cancelado',recebido:'st-pago',cancelado:'st-cancelado',estornada:'st-cancelado'}[st],rotulo={andamento:'Em andamento',aguardando:'Aguardando',atrasado:'Atrasado',recebido:'Recebido',cancelado:'Cancelado',estornada:'Estornada'}[st];
+    return `<tr><td>${new Date(c.data+'T12:00').toLocaleDateString('pt-BR')}</td><td>${c.entrega_prevista?new Date(c.entrega_prevista+'T12:00').toLocaleDateString('pt-BR'):'—'}</td><td><b>${escapeHtml(nome)}</b>${v?`<br><span class="muted">${escapeHtml(v.nome)}</span>`:''}${p?.sku?`<br><span class="muted">${escapeHtml(p.sku)}</span>`:''}</td><td>${escapeHtml(f?.nome||c.fornecedor||'—')}</td><td class="num">${c.qtd}</td><td class="num"><b>${fmt(Number(c.qtd)*Number(c.custo_unit))}</b></td><td><span class="st ${aparencia}">${rotulo}</span></td><td>${c.nf_link?`<button class="mini" onclick="verNotaFiscal('${c.nf_link}')">Ver NF</button>`:`<button class="mini" onclick="trocarNotaFiscal('${c.id}')">Anexar</button>`}</td><td style="white-space:nowrap"><button class="mini" onclick="abrirEdicaoCompra('${c.id}')">Editar</button>${!c.estornada?` <button class="mini" style="color:var(--warn)" onclick="estornarCompra('${c.id}')">Estornar</button>`:''}</td></tr>`;
   }).join('');
   $('comprasVazio').style.display=lista.length?'none':'block';
   $('comprasResumo').textContent=lista.length?`${lista.length} registro(s) · ${qtd} unidade(s) ativa(s) · ${fmt(total)}`:'';
+  renderAlertasEntregasCompras();
+}
+function statusEfetivoCompra(c){return c.estornada?'estornada':(c.status_compra||'recebido');}
+function renderAlertasEntregasCompras(){
+  const el=$('alertasEntregaCompras');if(!el)return;
+  const hoje=new Date();hoje.setHours(0,0,0,0);
+  const pendentes=COMPRAS_GERAL.filter(c=>!c.estornada&&c.entrega_prevista&&['andamento','aguardando','atrasado'].includes(statusEfetivoCompra(c))&&new Date(c.entrega_prevista+'T12:00')<=hoje);
+  if(!pendentes.length){el.innerHTML='';return;}
+  el.innerHTML=`<div class="card" style="border-left:4px solid var(--gold);margin-bottom:18px"><h3 style="margin:0 0 5px">Entrega prevista para confirmar</h3><p class="muted" style="margin-bottom:12px">Confirme se o pedido chegou. Se ainda não chegou, ele será marcado como atrasado.</p>${pendentes.map(c=>{const p=PRODUTOS.find(x=>x.id===c.produto_id);return `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid var(--line)"><div><b>${escapeHtml(p?.nome||'Produto')}</b><br><span class="muted">Previsto para ${new Date(c.entrega_prevista+'T12:00').toLocaleDateString('pt-BR')} · ${c.qtd} un.</span></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn" style="padding:7px 12px" onclick="confirmarEntregaCompra('${c.id}')">Confirmar entrega</button><button class="btn ghost" style="padding:7px 12px" onclick="marcarCompraAtrasada('${c.id}')">Ainda não chegou</button></div></div>`;}).join('')}</div>`;
+}
+function abrirEdicaoCompra(id){
+  const c=COMPRAS_GERAL.find(x=>x.id===id);if(!c)return;const p=PRODUTOS.find(x=>x.id===c.produto_id);
+  $('ec_id').value=id;$('ec_entrega_prevista').value=c.entrega_prevista||'';$('ec_status').value=statusEfetivoCompra(c)==='estornada'?'cancelado':statusEfetivoCompra(c);$('ec_observacoes').value=c.observacoes||'';$('ecErr').textContent='';
+  $('ec_resumo').textContent=`${p?.nome||'Produto'} · ${c.qtd} un. · ${fmt(c.custo_unit)} cada`;$('mEditarCompra').classList.add('show');
+}
+async function salvarEdicaoCompra(){
+  const id=$('ec_id').value,c=COMPRAS_GERAL.find(x=>x.id===id),status=$('ec_status').value;if(!c)return;
+  if(c.estoque_aplicado&&status!=='recebido'){$('ecErr').textContent='Uma compra já recebida não pode voltar de status. Use Estornar para desfazer a entrada.';return;}
+  if(status==='recebido'){fechar('mEditarCompra');await confirmarEntregaCompra(id);return;}
+  const {error}=await db.from('compras').update({entrega_prevista:$('ec_entrega_prevista').value||null,status_compra:status,observacoes:$('ec_observacoes').value.trim(),atualizado_em:new Date().toISOString()}).eq('id',id);
+  if(error){$('ecErr').textContent=error.message;return;}fechar('mEditarCompra');toast('Pedido de compra atualizado');await carregarComprasPage();
+}
+async function marcarCompraAtrasada(id){
+  const {error}=await db.from('compras').update({status_compra:'atrasado',atualizado_em:new Date().toISOString()}).eq('id',id).eq('estoque_aplicado',false);
+  if(error){toast('Erro: '+error.message);return;}toast('Pedido marcado como atrasado');await carregarComprasPage();
+}
+async function confirmarEntregaCompra(id){
+  const c=COMPRAS_GERAL.find(x=>x.id===id)||((await db.from('compras').select('*').eq('id',id).single()).data);if(!c)return;
+  if(c.estoque_aplicado){toast('Esta entrega já foi confirmada.');return;}
+  const {data:reserva,error:e0}=await db.from('compras').update({estoque_aplicado:true,status_compra:'recebido',entregue_em:new Date().toISOString(),atualizado_em:new Date().toISOString()}).eq('id',id).eq('estoque_aplicado',false).select('id');
+  if(e0||!reserva?.length){toast(e0?'Erro: '+e0.message:'Esta entrega já foi processada em outra sessão.');await carregarComprasPage();return;}
+  const aplicado=c.variante_id?await aplicarEntradaComRetry('produto_variantes',c.variante_id,c.qtd,c.custo_unit):await aplicarEntradaComRetry('produtos',c.produto_id,c.qtd,c.custo_unit);
+  if(!aplicado){await db.from('compras').update({estoque_aplicado:false,status_compra:'aguardando',entregue_em:null}).eq('id',id);toast('Não foi possível atualizar o estoque. O pedido voltou para aguardando.');return;}
+  await logEvento('compra_recebida',`Entrega confirmada: ${c.qtd}un a ${fmt(c.custo_unit)}`);toast('Entrega confirmada e estoque atualizado');await carregarEstoque();await carregarComprasPage();
 }
 
 async function salvarCompra(){
   const p = PRODUTOS.find(x=>x.id===$('co_produto').value);
   const qtd = parseInt($('co_qtd').value||0), custo = Number($('co_custo').value||0);
   if(!p || qtd<1 || custo<0 || $('co_custo').value===''){ $('coErr').textContent='Informe quantidade e custo unitário válidos.'; return; }
+  if(!$('co_entrega_prevista').value){$('coErr').textContent='Informe a data prevista de entrega.';return;}
   const fornecedorId = $('co_fornecedor_sel').value || null;
   const fornecedorNome = fornecedorId ? FORNECEDORES.find(f=>f.id===fornecedorId)?.nome || '' : '';
   const varianteId = $('co_variante_wrapper').style.display!=='none' ? ($('co_variante').value||null) : null;
@@ -2443,21 +2520,10 @@ async function salvarCompra(){
   const {data:novaCompra, error:e1} = await db.from('compras').insert({
     produto_id:p.id, variante_id:varianteId, qtd, custo_unit:custo,
     data:$('co_data').value, fornecedor:fornecedorNome, fornecedor_id:fornecedorId,
+    entrega_prevista:$('co_entrega_prevista').value,status_compra:'andamento',estoque_aplicado:false,
     criado_por: CURRENT_EMAIL
   }).select().single();
   if(e1){ $('coErr').textContent=e1.message; return; }
-
-  // A compra já está registrada no histórico neste ponto. A partir daqui,
-  // qualquer falha em atualizar qtd/custo_medio precisa ser corrigida com
-  // retry — nunca falhar em silêncio, pois a compra não pode "sumir".
-  const atualizado = varianteId
-    ? await aplicarEntradaComRetry('produto_variantes', varianteId, qtd, custo)
-    : await aplicarEntradaComRetry('produtos', p.id, qtd, custo);
-
-  if(!atualizado){
-    $('coErr').textContent = 'Compra registrada, mas não foi possível atualizar o estoque após 3 tentativas (conflito de concorrência). Recarregue a página e confira o estoque deste item manualmente.';
-    return;
-  }
 
   const arquivoNF = $('co_nf').files[0];
   if(arquivoNF){
@@ -2466,9 +2532,7 @@ async function salvarCompra(){
     else toast('Compra registrada, mas a nota fiscal não foi anexada — anexe depois pelo histórico de compras.');
   }
 
-  if(varianteId) await carregarVariantes();
-  fechar('mCompra'); toast('Entrada registrada');
-  await carregarEstoque();
+  fechar('mCompra'); toast('Pedido de compra criado — aguardando entrega');
   if($('p-compras')?.style.display==='block') await carregarComprasPage();
 }
 
