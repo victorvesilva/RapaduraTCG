@@ -239,6 +239,15 @@ nav.tabs button.on{background:var(--ink);color:var(--card);box-shadow:none}
 .dash-chart-wrap{position:relative;height:245px}.dash-chart-wrap--wide{height:270px}
 .dash-chart-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
 .dash-chart-grid .dash-chart-card{min-width:0}
+.kpi .trend{display:inline-flex;align-items:center;gap:4px;margin-top:9px;padding:4px 7px;border-radius:999px;background:var(--surface-soft);color:var(--ink-soft);font-size:10px;font-weight:700;letter-spacing:0}
+.kpi .trend.up{background:rgba(73,189,130,.12);color:var(--ok)}.kpi .trend.down{background:rgba(239,106,106,.12);color:var(--warn)}
+.alerts-card{padding:0;overflow:hidden}.alerts-head{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:18px 20px;border-bottom:1px solid var(--line)}
+.alerts-head h3{margin:0}.alerts-count{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 8px;border-radius:999px;background:rgba(227,138,61,.14);color:var(--gold-deep);font-size:12px;font-weight:800}
+.alert-list{display:grid}.alert-item{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:13px;padding:13px 20px;border-top:1px solid var(--line)}.alert-item:first-child{border-top:0}
+.alert-dot{width:8px;height:8px;border-radius:50%;background:var(--gold)}.alert-dot.critical{background:var(--warn)}.alert-dot.ok{background:var(--ok)}
+.alert-item b{display:block;font-size:13px}.alert-item span{font-size:12px;color:var(--ink-soft)}.alert-action{border:0;background:transparent;color:var(--gold-deep);font-size:12px;font-weight:800}
+.stock-intel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;padding:0;background:var(--line);overflow:hidden}.stock-insight{padding:19px 20px;background:var(--card)}
+.stock-insight .value{margin:5px 0 3px;color:var(--ink);font-family:'Space Grotesk',sans-serif;font-size:23px;font-weight:700;letter-spacing:-.05em}.stock-insight .label{color:var(--ink-soft);font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}.stock-insight p{font-size:12px}
 
 html[data-theme="dark"]{
   color-scheme:dark;
@@ -271,7 +280,7 @@ html[data-theme="dark"] [style*="background:#fff"],html[data-theme="dark"] [styl
 html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
 @media(max-width:720px){.demo-card{align-items:stretch;flex-direction:column;gap:17px}.demo-card footer.actions,.demo-card .btn{width:100%}}
 @media(max-width:780px){.dash-chart-grid{grid-template-columns:1fr}.dash-chart-card{min-height:285px}.dash-chart-wrap,.dash-chart-wrap--wide{height:225px}}
-@media(max-width:640px){.theme-toggle{width:36px;height:36px}.top-inner{gap:8px}.top-inner>button[title^="Buscar"]{padding:7px!important;font-size:0!important}.top-inner>button[title^="Buscar"] span{display:none}.demo-card{padding:17px}.demo-card__icon{display:none}}
+@media(max-width:640px){.theme-toggle{width:36px;height:36px}.top-inner{gap:8px}.top-inner>button[title^="Buscar"]{padding:7px!important;font-size:0!important}.top-inner>button[title^="Buscar"] span{display:none}.demo-card{padding:17px}.demo-card__icon{display:none}.stock-intel{grid-template-columns:1fr}.alert-item{grid-template-columns:10px 1fr}.alert-action{grid-column:2;text-align:left;padding:0}.alerts-head{padding:16px}.alert-item{padding:13px 16px}}
 </style>
 </head>
 <body>
@@ -331,6 +340,7 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
 
       <div id="dashSub-visao">
         <div class="kpis" id="dashKpis"></div>
+        <div class="card alerts-card" id="centralAlertasDash" style="margin-bottom:18px"></div>
         <div class="card dash-chart-card">
           <div class="dash-chart-head"><div><h3>Evolução financeira</h3><span class="dash-chart-sub">Receita e lucro bruto nos últimos 30 dias</span></div></div>
           <div class="dash-chart-wrap dash-chart-wrap--wide"><canvas id="graficoEvolucaoDash"></canvas></div>
@@ -349,6 +359,7 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
           <div class="dash-chart-head"><div><h3>Receita e margem por canal</h3><span class="dash-chart-sub">Desempenho dos últimos 30 dias</span></div></div>
           <div class="dash-chart-wrap dash-chart-wrap--wide"><canvas id="graficoCanalDash"></canvas></div>
         </div>
+        <div class="card stock-intel" id="estoqueInteligenciaDash"></div>
         <div class="grid2" style="align-items:start">
           <div class="card" style="padding:0;overflow-x:auto">
             <h3 style="padding:16px 16px 0">Top produtos (30 dias)</h3>
@@ -1252,6 +1263,7 @@ const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const TABELAS = ['empresa','produtos','produto_variantes','compras','clientes','fornecedores','pedidos','pedido_itens','despesas_fixas','despesas','historico_precos','metas','log_eventos'];
+const TABELAS_EVOLUCAO = ['estoque_movimentos','contas_financeiras'];
 const $ = id => document.getElementById(id);
 let CURRENT_EMAIL = '';
 let LOGS_SISTEMA = [];
@@ -1657,8 +1669,9 @@ async function salvarEmpresa(){
 async function exportBackup(){
   try{
     const dump = { app:'rapadura-tcg', versao:1, exportado_em:new Date().toISOString(), tabelas:{} };
-    for(const t of TABELAS){
+    for(const t of [...TABELAS,...TABELAS_EVOLUCAO]){
       const {data,error} = await db.from(t).select('*');
+      if(error && TABELAS_EVOLUCAO.includes(t)) continue; // migração ainda não executada
       if(error) throw new Error(t+': '+error.message);
       dump.tabelas[t] = data;
     }
@@ -1678,14 +1691,16 @@ async function importBackup(ev){
     const dump = JSON.parse(await file.text());
     if(dump.app!=='rapadura-tcg') throw new Error('Arquivo não é um backup válido.');
     // ordem inversa para apagar filhos antes dos pais
-    for(const t of ['pedido_itens','pedidos','clientes','compras','produto_variantes','produtos','fornecedores','despesas','despesas_fixas','historico_precos','metas','log_eventos']){
+    for(const t of ['estoque_movimentos','contas_financeiras','pedido_itens','pedidos','clientes','compras','produto_variantes','produtos','fornecedores','despesas','despesas_fixas','historico_precos','metas','log_eventos']){
       const {error} = await db.from(t).delete().not('id','is',null);
+      if(error && TABELAS_EVOLUCAO.includes(t)) continue;
       if(error) throw new Error('limpar '+t+': '+error.message);
     }
-    for(const t of ['produtos','produto_variantes','fornecedores','compras','clientes','pedidos','pedido_itens','despesas_fixas','despesas','historico_precos','metas','log_eventos','empresa']){
+    for(const t of ['produtos','produto_variantes','fornecedores','compras','clientes','pedidos','pedido_itens','despesas_fixas','despesas','historico_precos','metas','log_eventos','empresa','estoque_movimentos','contas_financeiras']){
       const rows = dump.tabelas[t]||[];
       if(!rows.length) continue;
       const {error} = await db.from(t).upsert(rows);
+      if(error && TABELAS_EVOLUCAO.includes(t)) continue;
       if(error) throw new Error('restaurar '+t+': '+error.message);
     }
     toast('Backup restaurado');
@@ -3505,17 +3520,24 @@ async function alternarDespesaFixa(id){
 /* ---------- Dashboard ---------- */
 function renderDash(){
   const h=new Date(), ini=new Date(h.getFullYear(),h.getMonth(),1);
+  const iniAnt=new Date(h.getFullYear(),h.getMonth()-1,1),fimAnt=new Date(h.getFullYear(),h.getMonth(),1);
   const d30 = new Date(Date.now()-30*864e5);
   const mes = PEDIDOS.filter(p=>VENDIDO.includes(p.status) && new Date(p.data+'T12:00')>=ini);
+  const mesAnt = PEDIDOS.filter(p=>{const d=new Date(p.data+'T12:00');return VENDIDO.includes(p.status)&&d>=iniAnt&&d<fimAnt;});
   const recMes = mes.reduce((s,p)=>s+itensDe(p.id).reduce((a,i)=>a+i.qtd*i.preco_unit,0)-p.desconto,0);
   const lucroMes = mes.reduce((s,p)=>s+itensDe(p.id).reduce((a,i)=>a+i.qtd*(i.preco_unit-i.custo_unit),0)-p.desconto-p.taxas,0);
   const ticket = mes.length? recMes/mes.length : 0;
+  const recAnt=mesAnt.reduce((s,p)=>s+itensDe(p.id).reduce((a,i)=>a+i.qtd*i.preco_unit,0)-Number(p.desconto||0),0);
+  const lucroAnt=mesAnt.reduce((s,p)=>s+itensDe(p.id).reduce((a,i)=>a+i.qtd*(i.preco_unit-i.custo_unit),0)-Number(p.desconto||0)-Number(p.taxas||0),0);
+  const ticketAnt=mesAnt.length?recAnt/mesAnt.length:0;
   const estoqueCusto = PRODUTOS.reduce((s,p)=>s+p.qtd*p.custo_medio,0);
   const abertos = PEDIDOS.filter(p=>p.status==='orcamento').length;
-  $('dashKpis').innerHTML = [
-    ['Vendas no mês',mes.length],['Receita no mês',fmt(recMes)],['Lucro no mês',fmt(lucroMes)],
-    ['Ticket médio',fmt(ticket)],['Orçamentos abertos',abertos],['Capital em estoque',fmt(estoqueCusto)]
-  ].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
+  const variacao=(atual,anterior)=>anterior?((atual-anterior)/Math.abs(anterior))*100:null;
+  const kpis=[
+    ['Vendas no mês',mes.length,variacao(mes.length,mesAnt.length)],['Receita no mês',fmt(recMes),variacao(recMes,recAnt)],['Lucro no mês',fmt(lucroMes),variacao(lucroMes,lucroAnt)],
+    ['Ticket médio',fmt(ticket),variacao(ticket,ticketAnt)],['Orçamentos abertos',abertos,null],['Capital em estoque',fmt(estoqueCusto),null]
+  ];
+  $('dashKpis').innerHTML=kpis.map(([l,v,t])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div>${t===null?'':`<span class="trend ${t>=0?'up':'down'}">${t>=0?'↑':'↓'} ${Math.abs(t).toFixed(1).replace('.',',')}% vs. mês anterior</span>`}</div>`).join('');
   const vendas30 = {};
   PEDIDOS.filter(p=>VENDIDO.includes(p.status) && new Date(p.data+'T12:00')>=d30)
     .forEach(p=> itensDe(p.id).forEach(i=>{
@@ -3534,6 +3556,34 @@ function renderDash(){
   renderGraficoStatusDash(d30);
   renderGraficoEstoqueDash();
   renderGraficoCanalDash(d30);
+  renderCentralAlertasDash();
+  renderEstoqueInteligenciaDash();
+}
+
+function renderCentralAlertasDash(){
+  const el=$('centralAlertasDash');if(!el)return;
+  const hoje=new Date(),alertas=[];
+  const zerados=PRODUTOS.filter(p=>p.ativo&&Number(p.qtd||0)<=0);
+  const baixos=PRODUTOS.filter(p=>p.ativo&&Number(p.qtd||0)>0&&Number(p.estoque_minimo||0)>0&&Number(p.qtd)<=Number(p.estoque_minimo));
+  const parados=PEDIDOS.filter(p=>p.status==='orcamento'&&(hoje-new Date(p.data+'T12:00'))/864e5>=3);
+  const margemRuim=PEDIDOS.filter(p=>VENDIDO.includes(p.status)).filter(p=>{const its=itensDe(p.id),rec=its.reduce((s,i)=>s+i.qtd*i.preco_unit,0)-Number(p.desconto||0),custo=its.reduce((s,i)=>s+i.qtd*i.custo_unit,0)+Number(p.taxas||0);return rec>0&&(rec-custo)/rec<.15;});
+  if(zerados.length)alertas.push({nivel:'critical',titulo:`${zerados.length} produto(s) sem estoque`,texto:'Itens indisponíveis podem interromper novas vendas.',acao:'Ver estoque',go:'estoque'});
+  if(baixos.length)alertas.push({nivel:'warning',titulo:`${baixos.length} produto(s) abaixo do mínimo`,texto:'Considere iniciar uma reposição.',acao:'Revisar itens',go:'estoque'});
+  if(parados.length)alertas.push({nivel:'warning',titulo:`${parados.length} orçamento(s) sem avanço há 3 dias`,texto:'Uma retomada pode recuperar essas vendas.',acao:'Ver pedidos',go:'pedidos'});
+  if(margemRuim.length)alertas.push({nivel:'warning',titulo:`${margemRuim.length} venda(s) com margem abaixo de 15%`,texto:'Revise preços, taxas e descontos.',acao:'Ver financeiro',go:'financeiro'});
+  if(!alertas.length)alertas.push({nivel:'ok',titulo:'Operação em dia',texto:'Nenhum alerta crítico identificado neste momento.',acao:'',go:''});
+  el.innerHTML=`<div class="alerts-head"><div><h3>Central de atenção</h3><span class="dash-chart-sub">O que merece sua ação agora</span></div><span class="alerts-count">${alertas[0].nivel==='ok'?0:alertas.length}</span></div><div class="alert-list">${alertas.map(a=>`<div class="alert-item"><i class="alert-dot ${a.nivel}"></i><div><b>${a.titulo}</b><span>${a.texto}</span></div>${a.acao?`<button class="alert-action" onclick="go('${a.go}')">${a.acao} →</button>`:''}</div>`).join('')}</div>`;
+}
+function renderEstoqueInteligenciaDash(){
+  const el=$('estoqueInteligenciaDash');if(!el)return;
+  const d60=new Date(Date.now()-60*864e5),d90=new Date(Date.now()-90*864e5),vendidos60=new Set(),receita90={};
+  PEDIDOS.filter(p=>VENDIDO.includes(p.status)&&new Date(p.data+'T12:00')>=d60).forEach(p=>itensDe(p.id).forEach(i=>vendidos60.add(i.descricao)));
+  PEDIDOS.filter(p=>VENDIDO.includes(p.status)&&new Date(p.data+'T12:00')>=d90).forEach(p=>itensDe(p.id).forEach(i=>receita90[i.descricao]=(receita90[i.descricao]||0)+i.qtd*i.preco_unit));
+  const semGiro=PRODUTOS.filter(p=>p.ativo&&Number(p.qtd||0)>0&&!vendidos60.has(p.nome));
+  const capitalParado=semGiro.reduce((s,p)=>s+Number(p.qtd||0)*Number(p.custo_medio||0),0);
+  const ranking=Object.entries(receita90).sort((a,b)=>b[1]-a[1]),total=ranking.reduce((s,[,v])=>s+v,0);let acum=0,classeA=0;
+  ranking.forEach(([,v])=>{if(total&&acum/total<.8){classeA++;acum+=v;}});
+  el.innerHTML=`<div class="stock-insight"><div class="label">Produtos sem giro</div><div class="value">${semGiro.length}</div><p class="muted">Sem venda nos últimos 60 dias</p></div><div class="stock-insight"><div class="label">Capital sem giro</div><div class="value">${fmt(capitalParado)}</div><p class="muted">Custo imobilizado nesses produtos</p></div><div class="stock-insight"><div class="label">Curva A</div><div class="value">${classeA}</div><p class="muted">Produtos que concentram cerca de 80% da receita</p></div>`;
 }
 
 let CHART_CANAL_DASH = null, CHART_EVOLUCAO_DASH = null, CHART_STATUS_DASH = null, CHART_ESTOQUE_DASH = null;
