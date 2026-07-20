@@ -314,7 +314,6 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
         🔍 Buscar <span style="font-size:11px;opacity:.6;border:1px solid var(--line);border-radius:4px;padding:0 4px">Ctrl K</span>
       </button>
       <button id="sininhoAlerta" onclick="go('dash')" title="Estoque baixo" style="display:none;align-items:center;justify-content:center;background:var(--warn);color:#fff;font-size:11px;font-weight:800;min-width:20px;height:20px;padding:0 5px;border-radius:10px;border:none;cursor:pointer;margin-right:6px">0</button>
-      <button id="sininhoCompras" onclick="go('compras')" title="Entregas de compras para confirmar" style="display:none;align-items:center;justify-content:center;background:var(--gold);color:#fff;font-size:11px;font-weight:800;min-width:24px;height:24px;padding:0 7px;border-radius:12px;border:none;cursor:pointer;margin-right:6px">0</button>
       <span class="who" id="whoami"></span>
       <button id="themeToggle" class="theme-toggle" type="button" onclick="toggleTheme()" title="Ativar modo escuro" aria-label="Ativar modo escuro">☾</button>
       <button class="btn ghost" style="padding:7px 14px" onclick="doLogout()">Sair</button>
@@ -323,7 +322,6 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
     <nav class="tabs" id="tabs">
       <button data-p="dash" class="on" onclick="go('dash')">Dashboard</button>
       <button data-p="estoque" onclick="go('estoque')">Estoque</button>
-      <button data-p="compras" onclick="go('compras')">Compras</button>
       <button data-p="colecoes" onclick="go('colecoes')">Coleções</button>
       <button data-p="pedidos" onclick="go('pedidos')">Pedidos</button>
       <button data-p="clientes" onclick="go('clientes')">Clientes</button>
@@ -575,30 +573,6 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
       <p class="muted" id="estoqueTotais"></p>
     </div>
 
-    <div class="page" id="p-compras" style="display:none">
-      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
-        <div style="flex:1"><h2 style="margin:0">Compras</h2><p class="muted" style="margin-top:4px">Entradas de produtos, custos e documentos fiscais em um só lugar.</p></div>
-        <button class="btn" onclick="abrirCompra()">Registrar compra</button>
-      </div>
-      <div class="kpis" id="comprasKpis"></div>
-      <div id="alertasEntregaCompras"></div>
-      <div class="card" style="padding:14px">
-        <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <input id="fcmp_busca" placeholder="Buscar produto, SKU ou fornecedor…" style="flex:2;min-width:220px" oninput="renderComprasPage()">
-          <select id="fcmp_fornecedor" style="flex:1;min-width:170px" onchange="renderComprasPage()"><option value="">Todos os fornecedores</option></select>
-          <select id="fcmp_periodo" style="flex:1;min-width:150px" onchange="renderComprasPage()">
-            <option value="mes">Este mês</option><option value="30">Últimos 30 dias</option><option value="ano">Este ano</option><option value="tudo">Todo o período</option>
-          </select>
-          <select id="fcmp_status" style="flex:1;min-width:140px" onchange="renderComprasPage()"><option value="ativas">Ativas</option><option value="andamento">Em andamento</option><option value="aguardando">Aguardando</option><option value="atrasado">Atrasadas</option><option value="recebido">Recebidas</option><option value="estornadas">Estornadas</option><option value="todas">Todas</option></select>
-        </div>
-      </div>
-      <div class="card" style="padding:0;overflow-x:auto">
-        <table class="tbl" id="tblComprasGeral"><thead><tr><th>Pedido</th><th>Entrega prevista</th><th>Produto</th><th>Fornecedor</th><th class="num">Qtd</th><th class="num">Total</th><th>Status</th><th>Nota fiscal</th><th></th></tr></thead><tbody></tbody></table>
-        <div id="comprasVazio" class="soon" style="display:none;border:none">Nenhuma compra encontrada para os filtros selecionados.</div>
-      </div>
-      <p class="muted" id="comprasResumo"></p>
-    </div>
-
     <div class="page" id="p-colecoes" style="display:none">
       <h2>Coleções</h2>
       <p class="muted" style="margin-bottom:16px">Navegue pelas cartas de um set e adicione ao estoque com um clique. Preço de referência convertido de USD para BRL — não é seu preço de venda, é ponto de partida.</p>
@@ -779,7 +753,7 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
     <!-- MODAL COMPRA -->
     <div class="overlay" id="mCompra">
       <div class="modal">
-        <h3>Novo pedido de compra</h3>
+        <h3>Registrar compra (entrada de estoque)</h3>
         <label>Produto</label>
         <select id="co_produto" onchange="onCompraProdutoChange()"></select>
         <div id="co_variante_wrapper" style="display:none">
@@ -792,13 +766,11 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
         </div>
         <div class="grid2">
           <div><label>Data</label><input id="co_data" type="date"></div>
-          <div><label>Entrega prevista</label><input id="co_entrega_prevista" type="date"></div>
-        </div>
-        <div>
-          <label>Fornecedor</label>
-          <div style="display:flex;gap:6px">
-            <select id="co_fornecedor_sel" style="flex:1"></select>
-            <button class="btn ghost" type="button" style="padding:0 12px" onclick="abrirFornecedor(null,true)" title="Novo fornecedor">+</button>
+          <div><label>Fornecedor</label>
+            <div style="display:flex;gap:6px">
+              <select id="co_fornecedor_sel" style="flex:1"></select>
+              <button class="btn ghost" type="button" style="padding:0 12px" onclick="abrirFornecedor(null,true)" title="Novo fornecedor">+</button>
+            </div>
           </div>
         </div>
         <p class="muted" id="coPreview" style="margin-top:12px"></p>
@@ -806,24 +778,9 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
         <input id="co_nf" type="file" accept=".pdf,image/*">
         <div class="msg-err" id="coErr"></div>
         <footer class="actions">
-          <button class="btn" onclick="salvarCompra()">Salvar pedido</button>
+          <button class="btn" onclick="salvarCompra()">Confirmar entrada</button>
           <button class="btn ghost" onclick="fechar('mCompra')">Cancelar</button>
         </footer>
-      </div>
-    </div>
-
-    <div class="overlay" id="mEditarCompra">
-      <div class="modal">
-        <h3>Editar pedido de compra</h3>
-        <input type="hidden" id="ec_id">
-        <div id="ec_resumo" class="muted" style="margin:8px 0 14px"></div>
-        <div class="grid2">
-          <div><label>Entrega prevista</label><input id="ec_entrega_prevista" type="date"></div>
-          <div><label>Status</label><select id="ec_status"><option value="andamento">Em andamento</option><option value="aguardando">Aguardando entrega</option><option value="atrasado">Atrasado</option><option value="recebido">Recebido</option><option value="cancelado">Cancelado</option></select></div>
-        </div>
-        <label>Observações</label><textarea id="ec_observacoes" rows="3" placeholder="Informações sobre entrega, transportadora ou contato com o fornecedor"></textarea>
-        <div class="msg-err" id="ecErr"></div>
-        <footer class="actions"><button class="btn" onclick="salvarEdicaoCompra()">Salvar alterações</button><button class="btn ghost" onclick="fechar('mEditarCompra')">Cancelar</button></footer>
       </div>
     </div>
 
@@ -1305,8 +1262,7 @@ const SUPABASE_URL = "https://gqhwrwkuaegmydbiiprd.supabase.co";
 const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxaHdyd2t1YWVnbXlkYmlpcHJkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwMzE2NTUsImV4cCI6MjA5OTYwNzY1NX0.bL_oob4K4F9cVwA-_IyxNvBEjcjNE_EG6PQ_QNzY4TQ";
 const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
-const TABELAS = ['empresa','produtos','produto_variantes','compras','clientes','fornecedores','pedidos','pedido_itens','despesas_fixas','despesas','historico_precos','metas','log_eventos'];
-const TABELAS_EVOLUCAO = ['estoque_movimentos','contas_financeiras'];
+const TABELAS = ['empresa','produtos','produto_variantes','compras','clientes','fornecedores','pedidos','pedido_itens','contas_financeiras','estoque_movimentos','historico_precos','metas','log_eventos'];
 const $ = id => document.getElementById(id);
 let CURRENT_EMAIL = '';
 let LOGS_SISTEMA = [];
@@ -1335,76 +1291,32 @@ async function logEvento(tipo, descricao){
 }
 
 /* ---------- Sessão ---------- */
-function comTimeout(promise,ms,mensagem){
-  let timer;
-  return Promise.race([
-    promise,
-    new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error(mensagem)),ms);})
-  ]).finally(()=>clearTimeout(timer));
-}
 async function boot(){
-  try{
-    const {data:{session},error}=await comTimeout(db.auth.getSession(),12000,'O servidor demorou para responder.');
-    if(error) throw error;
-    session ? await showApp(session) : showLogin();
-  }catch(error){
-    showLogin();
-    $('loginErr').textContent='Não foi possível verificar a sessão: '+error.message+' Tente novamente.';
-  }
+  const {data:{session}} = await db.auth.getSession();
+  session ? showApp(session) : showLogin();
 }
 db.auth.onAuthStateChange((ev,session)=>{
   if(ev==='SIGNED_OUT') showLogin();
 });
 function showLogin(){ $('app').style.display='none'; $('login').style.display='flex'; }
-function renderDashSeguro(){
-  try{renderDash();return true;}
-  catch(error){console.error('Falha ao renderizar dashboard',error);toast('Dashboard indisponível temporariamente. As demais áreas continuam acessíveis.');return false;}
-}
 async function showApp(session){
   $('login').style.display='none'; $('app').style.display='block';
   $('whoami').textContent = session.user.email;
   CURRENT_EMAIL = session.user.email;
-  try{
-    popularSelectsTipos();
-    await comTimeout(carregarEmpresa(),15000,'Tempo excedido ao carregar a empresa.');
-    const cargas=await Promise.allSettled([
-      comTimeout(carregarEstoque(),15000,'Tempo excedido ao carregar o estoque.'),
-      comTimeout(carregarPedidos(),15000,'Tempo excedido ao carregar os pedidos.'),
-      comTimeout(carregarFornecedores(),15000,'Tempo excedido ao carregar os fornecedores.'),
-      comTimeout(carregarVariantes(),15000,'Tempo excedido ao carregar as variantes.')
-    ]);
-    const falhas=cargas.filter(r=>r.status==='rejected');
-    renderDashSeguro();
-    gerarDespesasFixasPendentes(); // roda em segundo plano, não bloqueia a tela inicial
-    checarConexao();
-    verificarAlertasEntregaGlobais();
-    if(falhas.length) toast(`${falhas.length} conjunto(s) de dados não puderam ser carregados. Tente atualizar.`);
-  }catch(error){
-    renderDashSeguro();
-    toast('Acesso realizado, mas houve falha ao carregar dados: '+error.message);
-  }
+  popularSelectsTipos();
+  await carregarEmpresa();
+  await Promise.all([carregarEstoque(), carregarPedidos(), carregarFornecedores(), carregarVariantes()]);
+  gerarDespesasFixasPendentes(); // roda em segundo plano, não bloqueia a tela inicial
+  renderDash();
+  checarConexao();
 }
 async function doLogin(e){
   e.preventDefault();
-  const btn=$('btnLogin'),textoOriginal=btn.textContent;
-  $('loginErr').textContent='';btn.disabled=true;btn.textContent='Entrando…';
-  try{
-    const {data,error}=await comTimeout(
-      db.auth.signInWithPassword({email:$('lemail').value.trim(),password:$('lpass').value}),
-      15000,
-      'O servidor de autenticação não respondeu em 15 segundos.'
-    );
-    if(error) throw error;
-    if(!data?.session) throw new Error('A autenticação não retornou uma sessão válida.');
-    btn.textContent='Carregando dados…';
-    await showApp(data.session);
-  }catch(error){
-    showLogin();
-    const mensagem=error.message==='Invalid login credentials'?'e-mail ou senha incorretos.':error.message;
-    $('loginErr').textContent='Falha no login: '+mensagem;
-  }finally{
-    btn.disabled=false;btn.textContent=textoOriginal;
-  }
+  $('loginErr').textContent=''; $('btnLogin').disabled=true;
+  const {data,error} = await db.auth.signInWithPassword({email:$('lemail').value.trim(),password:$('lpass').value});
+  $('btnLogin').disabled=false;
+  if(error){ $('loginErr').textContent = 'Falha no login: '+(error.message==='Invalid login credentials'?'e-mail ou senha incorretos.':error.message); return; }
+  showApp(data.session);
 }
 async function doLogout(){ await db.auth.signOut(); }
 
@@ -1416,7 +1328,6 @@ function go(p){
   el.style.animation='none'; void el.offsetWidth; el.style.animation='';
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
   if(p==='estoque'){ carregarEstoque(); carregarFornecedores(); }
-  if(p==='compras') carregarComprasPage();
   if(p==='clientes'){ carregarPedidos(); carregarFornecedores().then(renderFornecedores); }
   if(p==='pedidos'){ carregarEstoque(); carregarPedidos(); }
   if(p==='financeiro'){ Promise.all([carregarEstoque(),carregarPedidos()]).then(renderFinanceiro); }
@@ -1757,9 +1668,8 @@ async function salvarEmpresa(){
 async function exportBackup(){
   try{
     const dump = { app:'rapadura-tcg', versao:1, exportado_em:new Date().toISOString(), tabelas:{} };
-    for(const t of [...TABELAS,...TABELAS_EVOLUCAO]){
+    for(const t of TABELAS){
       const {data,error} = await db.from(t).select('*');
-      if(error && TABELAS_EVOLUCAO.includes(t)) continue; // migração ainda não executada
       if(error) throw new Error(t+': '+error.message);
       dump.tabelas[t] = data;
     }
@@ -1779,16 +1689,14 @@ async function importBackup(ev){
     const dump = JSON.parse(await file.text());
     if(dump.app!=='rapadura-tcg') throw new Error('Arquivo não é um backup válido.');
     // ordem inversa para apagar filhos antes dos pais
-    for(const t of ['estoque_movimentos','contas_financeiras','pedido_itens','pedidos','clientes','compras','produto_variantes','produtos','fornecedores','despesas','despesas_fixas','historico_precos','metas','log_eventos']){
+    for(const t of ['pedido_itens','pedidos','clientes','compras','estoque_movimentos','produto_variantes','produtos','fornecedores','contas_financeiras','historico_precos','metas','log_eventos']){
       const {error} = await db.from(t).delete().not('id','is',null);
-      if(error && TABELAS_EVOLUCAO.includes(t)) continue;
       if(error) throw new Error('limpar '+t+': '+error.message);
     }
-    for(const t of ['produtos','produto_variantes','fornecedores','compras','clientes','pedidos','pedido_itens','despesas_fixas','despesas','historico_precos','metas','log_eventos','empresa','estoque_movimentos','contas_financeiras']){
+    for(const t of ['produtos','produto_variantes','fornecedores','compras','estoque_movimentos','clientes','pedidos','pedido_itens','contas_financeiras','historico_precos','metas','log_eventos','empresa']){
       const rows = dump.tabelas[t]||[];
       if(!rows.length) continue;
       const {error} = await db.from(t).upsert(rows);
-      if(error && TABELAS_EVOLUCAO.includes(t)) continue;
       if(error) throw new Error('restaurar '+t+': '+error.message);
     }
     toast('Backup restaurado');
@@ -1798,7 +1706,7 @@ async function importBackup(ev){
 
 /* ---------- Estoque ---------- */
 const TIPOS = {
-  pack:'Pack unitário', blister3:'Blister triplo', blister4:'Blister quádruplo',
+  pack:'Pack unitário', bb:'Booster Box', blister3:'Blister triplo', blister4:'Blister quádruplo',
   etb:'ETB', tpc:'TPC', mini_bb:'Mini booster box', carta:'Carta avulsa'
 };
 let PRODUTOS = [];
@@ -2111,7 +2019,6 @@ async function trocarNotaFiscal(compraId){
     toast('Nota fiscal anexada');
     const compraAtual = (await db.from('compras').select('produto_id').eq('id',compraId).single()).data;
     if(compraAtual) carregarHistoricoCompras(compraAtual.produto_id);
-    if($('p-compras')?.style.display==='block') carregarComprasPage();
   };
   input.click();
 }
@@ -2119,7 +2026,7 @@ async function trocarNotaFiscal(compraId){
 async function carregarHistoricoCompras(produtoId){
   const {data,error} = await db.from('compras').select('*').eq('produto_id',produtoId).order('data',{ascending:false});
   if(error){ return; }
-  const ativas = data.filter(c=>!c.estornada && (c.estoque_aplicado ?? true));
+  const ativas = data.filter(c=>!c.estornada);
   if(!ativas.length){ $('prHistorico').innerHTML=''; return; }
   $('prHistorico').innerHTML = `<label style="margin-top:18px">Histórico de compras</label>
     <table class="tbl"><thead><tr><th>Data</th><th class="num">Qtd</th><th class="num">Custo unit.</th><th>Fornecedor</th><th></th></tr></thead>
@@ -2134,24 +2041,28 @@ async function carregarHistoricoCompras(produtoId){
     <p class="muted" style="font-size:12px;margin-top:4px">Estornar remove a entrada e recalcula qtd e custo médio do zero, a partir das compras restantes.</p>`;
 }
 async function estornarCompra(compraId){
-  if(!confirm('Estornar este pedido de compra? Se ele já tiver sido recebido, o estoque será recalculado.')) return;
+  if(!confirm('Estornar esta compra? A quantidade e o custo médio do produto serão recalculados sem ela.')) return;
   const {data:compra,error:e0} = await db.from('compras').select('*').eq('id',compraId).single();
   if(e0){ toast('Erro: '+e0.message); return; }
-  const {error:e1} = await db.from('compras').update({estornada:true,status_compra:'cancelado',estornada_em:new Date().toISOString(),estornada_por:CURRENT_EMAIL,atualizado_em:new Date().toISOString()}).eq('id',compraId);
+  const {error:e1} = await db.from('compras').update({estornada:true, estornada_em:new Date().toISOString(), estornada_por:CURRENT_EMAIL}).eq('id',compraId);
   if(e1){ toast('Erro ao estornar: '+e1.message); return; }
-  if(compra.estoque_aplicado){
-    if(compra.variante_id) await recalcularVarianteDoZero(compra.variante_id);
-    else await recalcularProdutoDoZero(compra.produto_id);
-  }
+  const qtdAntes = PRODUTOS.find(p=>p.id===compra.produto_id)?.qtd ?? 0;
+  await recalcularProdutoDoZero(compra.produto_id);
+  const {data:prodDepois} = await db.from('produtos').select('qtd').eq('id',compra.produto_id).single();
+  db.from('estoque_movimentos').insert({
+    produto_id: compra.produto_id, tipo:'cancelamento', quantidade:(prodDepois?.qtd??qtdAntes)-qtdAntes,
+    estoque_anterior: qtdAntes, estoque_posterior: prodDepois?.qtd??qtdAntes,
+    referencia_tipo:'compra', referencia_id: compraId,
+    observacao:'Estorno de compra — recálculo total do produto', usuario: CURRENT_EMAIL
+  }); // log best-effort
   await logEvento('compra_estornada', `Compra de ${compra.qtd}un a ${fmt(compra.custo_unit)} estornada`);
-  toast(compra.estoque_aplicado?'Compra estornada e estoque recalculado':'Pedido de compra cancelado');
+  toast('Compra estornada e produto recalculado');
   await carregarEstoque();
   carregarHistoricoCompras(compra.produto_id);
-  if($('p-compras')?.style.display==='block') await carregarComprasPage();
 }
 async function recalcularProdutoDoZero(produtoId){
   // soma apenas compras não estornadas; NÃO considera vendas (a baixa de venda já é refletida na qtd atual via pedidos)
-  const {data:compras} = await db.from('compras').select('*').eq('produto_id',produtoId).eq('estornada',false).eq('estoque_aplicado',true);
+  const {data:compras} = await db.from('compras').select('*').eq('produto_id',produtoId).eq('estornada',false);
   const {data:vendidos} = await db.from('pedido_itens').select('qtd, pedido_id').eq('produto_id',produtoId);
   const {data:pedidosBaixados} = await db.from('pedidos').select('id').eq('estoque_baixado',true);
   const idsBaixados = new Set((pedidosBaixados||[]).map(p=>p.id));
@@ -2161,11 +2072,6 @@ async function recalcularProdutoDoZero(produtoId){
   const custoMedio = qtdComprada>0 ? custoTotal/qtdComprada : 0;
   const qtdFinal = Math.max(0, qtdComprada - qtdVendida);
   await db.from('produtos').update({qtd:qtdFinal, custo_medio:custoMedio.toFixed(2), atualizado_em:new Date().toISOString()}).eq('id',produtoId);
-}
-async function recalcularVarianteDoZero(varianteId){
-  const {data:compras}=await db.from('compras').select('qtd,custo_unit').eq('variante_id',varianteId).eq('estornada',false).eq('estoque_aplicado',true);
-  const qtd=(compras||[]).reduce((s,c)=>s+Number(c.qtd),0),custoTotal=(compras||[]).reduce((s,c)=>s+Number(c.qtd)*Number(c.custo_unit),0),custoMedio=qtd?custoTotal/qtd:0;
-  await db.from('produto_variantes').update({qtd,custo_medio:custoMedio.toFixed(2)}).eq('id',varianteId);
 }
 async function excluirProduto(){
   const id = $('pr_id').value;
@@ -2368,9 +2274,7 @@ function abrirCompra(prodId){
   preencherSelectFornecedores();
   $('co_qtd').value=1; $('co_custo').value='';
   $('co_nf').value='';
-  $('co_data').value = dataLocalCompra(new Date());
-  const prevista=new Date();prevista.setDate(prevista.getDate()+7);
-  $('co_entrega_prevista').value=dataLocalCompra(prevista);
+  $('co_data').value = new Date().toISOString().slice(0,10);
   $('mCompra').classList.add('show');
   previewCompra();
 }
@@ -2386,7 +2290,7 @@ function previewCompra(){
   if(!p || !qtd || !custo){ $('coPreview').textContent=''; return; }
   const novoQtd = p.qtd+qtd;
   const novoCusto = (p.qtd*p.custo_medio + qtd*custo)/novoQtd;
-  $('coPreview').innerHTML = `Quando a entrega for confirmada: <b>${novoQtd} un.</b> · novo custo médio <b>${fmt(novoCusto)}</b> (atual: ${fmt(p.custo_medio)})`;
+  $('coPreview').innerHTML = `Após a entrada: <b>${novoQtd} un.</b> · novo custo médio <b>${fmt(novoCusto)}</b> (atual: ${fmt(p.custo_medio)})`;
 }
 ['co_produto','co_qtd','co_custo'].forEach(id=>{
   document.addEventListener('input', e=>{ if(e.target.id===id) previewCompra(); });
@@ -2395,7 +2299,7 @@ function previewCompra(){
    Usado para baixa de estoque (venda) e estorno (cancelamento). Para delta
    negativo, reconfirma que há estoque suficiente a cada tentativa — o
    estoque pode ter mudado entre a leitura original e agora. */
-async function ajustarQtdComRetry(tabela, id, delta){
+async function ajustarQtdComRetry(tabela, id, delta, contexto={}){
   for(let tentativa=0; tentativa<3; tentativa++){
     const {data:atual, error:eLeitura} = await db.from(tabela).select('qtd').eq('id',id).single();
     if(eLeitura || !atual) return {ok:false, motivo:'leitura'};
@@ -2407,112 +2311,25 @@ async function ajustarQtdComRetry(tabela, id, delta){
       .eq('id',id).eq('qtd',qtdAtual)
       .select('id');
     if(eEscrita) return {ok:false, motivo:'escrita'};
-    if(linhas && linhas.length>0) return {ok:true};
+    if(linhas && linhas.length>0){
+      db.from('estoque_movimentos').insert({
+        produto_id: tabela==='produtos' ? id : null,
+        variante_id: tabela==='produto_variantes' ? id : null,
+        tipo: contexto.tipo||'ajuste', quantidade: delta,
+        estoque_anterior: qtdAtual, estoque_posterior: novaQtd,
+        referencia_tipo: contexto.referencia_tipo||null, referencia_id: contexto.referencia_id||null,
+        observacao: contexto.observacao||null, usuario: CURRENT_EMAIL
+      }); // log best-effort — não bloqueia o fluxo principal se falhar
+      return {ok:true};
+    }
   }
   return {ok:false, motivo:'conflito'};
-}
-
-/* ---------- Módulo geral de compras ---------- */
-let COMPRAS_GERAL=[];
-async function buscarTodasCompras(){
-  const todas=[];const pagina=1000;
-  for(let inicio=0;;inicio+=pagina){
-    const {data,error}=await db.from('compras').select('*').order('data',{ascending:false}).range(inicio,inicio+pagina-1);
-    if(error)throw error;
-    todas.push(...(data||[]));
-    if(!data||data.length<pagina)break;
-  }
-  return todas;
-}
-async function verificarAlertasEntregaGlobais(){
-  const botao=$('sininhoCompras');if(!botao)return;
-  const hoje=dataLocalCompra(new Date());
-  const {data,error}=await db.from('compras').select('id').eq('estornada',false).eq('estoque_aplicado',false).lte('entrega_prevista',hoje).in('status_compra',['andamento','aguardando','atrasado']);
-  if(error){botao.style.display='none';return;}
-  const total=(data||[]).length;botao.textContent=total;botao.style.display=total?'inline-flex':'none';
-  if(total)toast(`${total} entrega(s) de compras aguardando confirmação.`);
-}
-async function carregarComprasPage(){
-  const tbody=document.querySelector('#tblComprasGeral tbody');
-  if(tbody)tbody.innerHTML='<tr><td colspan="9" class="muted">Carregando compras…</td></tr>';
-  try{
-    await Promise.all([carregarEstoque(),carregarFornecedores(),carregarVariantes()]);
-    COMPRAS_GERAL=await buscarTodasCompras();
-    const sel=$('fcmp_fornecedor'),valor=sel.value;
-    sel.innerHTML='<option value="">Todos os fornecedores</option>'+FORNECEDORES.map(f=>`<option value="${f.id}">${escapeHtml(f.nome)}</option>`).join('');
-    sel.value=valor;
-    renderComprasPage();
-    verificarAlertasEntregaGlobais();
-  }catch(error){
-    if(tbody)tbody.innerHTML=`<tr><td colspan="9" class="msg-err">Erro ao carregar compras: ${escapeHtml(error.message)}</td></tr>`;
-  }
-}
-function periodoCompraValido(data,periodo){
-  if(periodo==='tudo')return true;
-  const d=new Date(data+'T12:00'),h=new Date();
-  if(periodo==='30')return d>=new Date(Date.now()-30*864e5);
-  if(periodo==='ano')return d>=new Date(h.getFullYear(),0,1);
-  return d>=new Date(h.getFullYear(),h.getMonth(),1);
-}
-function dataLocalCompra(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function renderComprasPage(){
-  if(!$('tblComprasGeral'))return;
-  const termo=($('fcmp_busca').value||'').trim().toLowerCase(),fornecedor=$('fcmp_fornecedor').value,periodo=$('fcmp_periodo').value,status=$('fcmp_status').value;
-  const lista=COMPRAS_GERAL.filter(c=>{
-    const p=PRODUTOS.find(x=>x.id===c.produto_id),f=FORNECEDORES.find(x=>x.id===c.fornecedor_id),texto=[p?.nome,p?.sku,f?.nome,c.fornecedor].join(' ').toLowerCase();
-    const st=statusEfetivoCompra(c);
-    return (!termo||texto.includes(termo))&&(!fornecedor||c.fornecedor_id===fornecedor)&&periodoCompraValido(c.data,periodo)&&(status==='todas'||(status==='ativas'?!c.estornada:status==='estornadas'?c.estornada:st===status));
-  });
-  const ativas=lista.filter(c=>!c.estornada),recebidas=ativas.filter(c=>statusEfetivoCompra(c)==='recebido'),total=ativas.reduce((s,c)=>s+Number(c.qtd)*Number(c.custo_unit),0),qtd=recebidas.reduce((s,c)=>s+Number(c.qtd),0),andamento=ativas.filter(c=>['andamento','aguardando'].includes(statusEfetivoCompra(c))).length,atrasadas=ativas.filter(c=>statusEfetivoCompra(c)==='atrasado').length;
-  $('comprasKpis').innerHTML=[['Pedidos',ativas.length],['Em andamento',andamento],['Atrasados',atrasadas],['Unidades recebidas',qtd],['Valor dos pedidos',fmt(total)]].map(([l,v])=>`<div class="kpi"><div class="l">${l}</div><div class="v">${v}</div></div>`).join('');
-  document.querySelector('#tblComprasGeral tbody').innerHTML=lista.map(c=>{
-    const p=PRODUTOS.find(x=>x.id===c.produto_id),v=VARIANTES.find(x=>x.id===c.variante_id),f=FORNECEDORES.find(x=>x.id===c.fornecedor_id),nome=p?.nome||'Produto removido';
-    const st=statusEfetivoCompra(c),aparencia={andamento:'st-enviado',aguardando:'st-orcamento',atrasado:'st-cancelado',recebido:'st-pago',cancelado:'st-cancelado',estornada:'st-cancelado'}[st],rotulo={andamento:'Em andamento',aguardando:'Aguardando',atrasado:'Atrasado',recebido:'Recebido',cancelado:'Cancelado',estornada:'Estornada'}[st];
-    return `<tr><td>${new Date(c.data+'T12:00').toLocaleDateString('pt-BR')}</td><td>${c.entrega_prevista?new Date(c.entrega_prevista+'T12:00').toLocaleDateString('pt-BR'):'—'}</td><td><b>${escapeHtml(nome)}</b>${v?`<br><span class="muted">${escapeHtml(v.nome)}</span>`:''}${p?.sku?`<br><span class="muted">${escapeHtml(p.sku)}</span>`:''}</td><td>${escapeHtml(f?.nome||c.fornecedor||'—')}</td><td class="num">${c.qtd}</td><td class="num"><b>${fmt(Number(c.qtd)*Number(c.custo_unit))}</b></td><td><span class="st ${aparencia}">${rotulo}</span></td><td>${c.nf_link?`<button class="mini" onclick="verNotaFiscal('${c.nf_link}')">Ver NF</button>`:`<button class="mini" onclick="trocarNotaFiscal('${c.id}')">Anexar</button>`}</td><td style="white-space:nowrap"><button class="mini" onclick="abrirEdicaoCompra('${c.id}')">Editar</button>${!c.estornada?` <button class="mini" style="color:var(--warn)" onclick="estornarCompra('${c.id}')">Estornar</button>`:''}</td></tr>`;
-  }).join('');
-  $('comprasVazio').style.display=lista.length?'none':'block';
-  $('comprasResumo').textContent=lista.length?`${lista.length} registro(s) · ${qtd} unidade(s) ativa(s) · ${fmt(total)}`:'';
-  renderAlertasEntregasCompras();
-}
-function statusEfetivoCompra(c){return c.estornada?'estornada':(c.status_compra||'recebido');}
-function renderAlertasEntregasCompras(){
-  const el=$('alertasEntregaCompras');if(!el)return;
-  const hoje=new Date();hoje.setHours(0,0,0,0);
-  const pendentes=COMPRAS_GERAL.filter(c=>!c.estornada&&c.entrega_prevista&&['andamento','aguardando','atrasado'].includes(statusEfetivoCompra(c))&&new Date(c.entrega_prevista+'T12:00')<=hoje);
-  if(!pendentes.length){el.innerHTML='';return;}
-  el.innerHTML=`<div class="card" style="border-left:4px solid var(--gold);margin-bottom:18px"><h3 style="margin:0 0 5px">Entrega prevista para confirmar</h3><p class="muted" style="margin-bottom:12px">Confirme se o pedido chegou. Se ainda não chegou, ele será marcado como atrasado.</p>${pendentes.map(c=>{const p=PRODUTOS.find(x=>x.id===c.produto_id);return `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 0;border-top:1px solid var(--line)"><div><b>${escapeHtml(p?.nome||'Produto')}</b><br><span class="muted">Previsto para ${new Date(c.entrega_prevista+'T12:00').toLocaleDateString('pt-BR')} · ${c.qtd} un.</span></div><div style="display:flex;gap:7px;flex-wrap:wrap"><button class="btn" style="padding:7px 12px" onclick="confirmarEntregaCompra('${c.id}')">Confirmar entrega</button><button class="btn ghost" style="padding:7px 12px" onclick="marcarCompraAtrasada('${c.id}')">Ainda não chegou</button></div></div>`;}).join('')}</div>`;
-}
-function abrirEdicaoCompra(id){
-  const c=COMPRAS_GERAL.find(x=>x.id===id);if(!c)return;const p=PRODUTOS.find(x=>x.id===c.produto_id);
-  $('ec_id').value=id;$('ec_entrega_prevista').value=c.entrega_prevista||'';$('ec_status').value=statusEfetivoCompra(c)==='estornada'?'cancelado':statusEfetivoCompra(c);$('ec_observacoes').value=c.observacoes||'';$('ecErr').textContent='';
-  $('ec_resumo').textContent=`${p?.nome||'Produto'} · ${c.qtd} un. · ${fmt(c.custo_unit)} cada`;$('mEditarCompra').classList.add('show');
-}
-async function salvarEdicaoCompra(){
-  const id=$('ec_id').value,c=COMPRAS_GERAL.find(x=>x.id===id),status=$('ec_status').value;if(!c)return;
-  if(c.estoque_aplicado&&status!=='recebido'){$('ecErr').textContent='Uma compra já recebida não pode voltar de status. Use Estornar para desfazer a entrada.';return;}
-  if(status==='recebido'){fechar('mEditarCompra');await confirmarEntregaCompra(id);return;}
-  const {error}=await db.from('compras').update({entrega_prevista:$('ec_entrega_prevista').value||null,status_compra:status,observacoes:$('ec_observacoes').value.trim(),atualizado_em:new Date().toISOString()}).eq('id',id);
-  if(error){$('ecErr').textContent=error.message;return;}fechar('mEditarCompra');toast('Pedido de compra atualizado');await carregarComprasPage();
-}
-async function marcarCompraAtrasada(id){
-  const {error}=await db.from('compras').update({status_compra:'atrasado',atualizado_em:new Date().toISOString()}).eq('id',id).eq('estoque_aplicado',false);
-  if(error){toast('Erro: '+error.message);return;}toast('Pedido marcado como atrasado');await carregarComprasPage();
-}
-async function confirmarEntregaCompra(id){
-  const c=COMPRAS_GERAL.find(x=>x.id===id)||((await db.from('compras').select('*').eq('id',id).single()).data);if(!c)return;
-  if(c.estoque_aplicado){toast('Esta entrega já foi confirmada.');return;}
-  const {data:reserva,error:e0}=await db.from('compras').update({estoque_aplicado:true,status_compra:'recebido',entregue_em:new Date().toISOString(),atualizado_em:new Date().toISOString()}).eq('id',id).eq('estoque_aplicado',false).select('id');
-  if(e0||!reserva?.length){toast(e0?'Erro: '+e0.message:'Esta entrega já foi processada em outra sessão.');await carregarComprasPage();return;}
-  const aplicado=c.variante_id?await aplicarEntradaComRetry('produto_variantes',c.variante_id,c.qtd,c.custo_unit):await aplicarEntradaComRetry('produtos',c.produto_id,c.qtd,c.custo_unit);
-  if(!aplicado){await db.from('compras').update({estoque_aplicado:false,status_compra:'aguardando',entregue_em:null}).eq('id',id);toast('Não foi possível atualizar o estoque. O pedido voltou para aguardando.');return;}
-  await logEvento('compra_recebida',`Entrega confirmada: ${c.qtd}un a ${fmt(c.custo_unit)}`);toast('Entrega confirmada e estoque atualizado');await carregarEstoque();await carregarComprasPage();
 }
 
 async function salvarCompra(){
   const p = PRODUTOS.find(x=>x.id===$('co_produto').value);
   const qtd = parseInt($('co_qtd').value||0), custo = Number($('co_custo').value||0);
   if(!p || qtd<1 || custo<0 || $('co_custo').value===''){ $('coErr').textContent='Informe quantidade e custo unitário válidos.'; return; }
-  if(!$('co_entrega_prevista').value){$('coErr').textContent='Informe a data prevista de entrega.';return;}
   const fornecedorId = $('co_fornecedor_sel').value || null;
   const fornecedorNome = fornecedorId ? FORNECEDORES.find(f=>f.id===fornecedorId)?.nome || '' : '';
   const varianteId = $('co_variante_wrapper').style.display!=='none' ? ($('co_variante').value||null) : null;
@@ -2520,10 +2337,21 @@ async function salvarCompra(){
   const {data:novaCompra, error:e1} = await db.from('compras').insert({
     produto_id:p.id, variante_id:varianteId, qtd, custo_unit:custo,
     data:$('co_data').value, fornecedor:fornecedorNome, fornecedor_id:fornecedorId,
-    entrega_prevista:$('co_entrega_prevista').value,status_compra:'andamento',estoque_aplicado:false,
     criado_por: CURRENT_EMAIL
   }).select().single();
   if(e1){ $('coErr').textContent=e1.message; return; }
+
+  // A compra já está registrada no histórico neste ponto. A partir daqui,
+  // qualquer falha em atualizar qtd/custo_medio precisa ser corrigida com
+  // retry — nunca falhar em silêncio, pois a compra não pode "sumir".
+  const atualizado = varianteId
+    ? await aplicarEntradaComRetry('produto_variantes', varianteId, qtd, custo, {referencia_tipo:'compra', referencia_id:novaCompra.id})
+    : await aplicarEntradaComRetry('produtos', p.id, qtd, custo, {referencia_tipo:'compra', referencia_id:novaCompra.id});
+
+  if(!atualizado){
+    $('coErr').textContent = 'Compra registrada, mas não foi possível atualizar o estoque após 3 tentativas (conflito de concorrência). Recarregue a página e confira o estoque deste item manualmente.';
+    return;
+  }
 
   const arquivoNF = $('co_nf').files[0];
   if(arquivoNF){
@@ -2532,15 +2360,16 @@ async function salvarCompra(){
     else toast('Compra registrada, mas a nota fiscal não foi anexada — anexe depois pelo histórico de compras.');
   }
 
-  fechar('mCompra'); toast('Pedido de compra criado — aguardando entrega');
-  if($('p-compras')?.style.display==='block') await carregarComprasPage();
+  if(varianteId) await carregarVariantes();
+  fechar('mCompra'); toast('Entrada registrada');
+  carregarEstoque();
 }
 
 /* Atualiza qtd/custo_medio com proteção contra concorrência: relê o registro
    atual do banco antes de cada tentativa e só considera sucesso se alguma
    linha foi de fato afetada. Até 3 tentativas — cobre o caso de duas compras
    quase simultâneas no mesmo produto/variante. */
-async function aplicarEntradaComRetry(tabela, id, qtd, custo){
+async function aplicarEntradaComRetry(tabela, id, qtd, custo, contexto={}){
   for(let tentativa=0; tentativa<3; tentativa++){
     const {data:atual, error:eLeitura} = await db.from(tabela).select('qtd,custo_medio').eq('id',id).single();
     if(eLeitura || !atual) return false;
@@ -2552,7 +2381,17 @@ async function aplicarEntradaComRetry(tabela, id, qtd, custo){
       .eq('id',id).eq('qtd',qtdAtual)
       .select('id');
     if(eEscrita) return false;
-    if(linhas && linhas.length>0) return true; // sucesso — a condição bateu e a linha foi atualizada
+    if(linhas && linhas.length>0){
+      db.from('estoque_movimentos').insert({
+        produto_id: tabela==='produtos' ? id : null,
+        variante_id: tabela==='produto_variantes' ? id : null,
+        tipo: 'compra', quantidade: qtd,
+        estoque_anterior: qtdAtual, estoque_posterior: novaQtd, custo_unitario: custo,
+        referencia_tipo: contexto.referencia_tipo||'compra', referencia_id: contexto.referencia_id||null,
+        usuario: CURRENT_EMAIL
+      }); // log best-effort
+      return true; // sucesso — a condição bateu e a linha foi atualizada
+    }
     // 0 linhas afetadas = outro processo alterou qtd entre a leitura e a escrita — tenta de novo
   }
   return false;
@@ -3214,7 +3053,7 @@ async function registrarPagamento(id){
     }
     for(const i of itensDe(id).filter(x=>x.produto_id)){
       const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd);
+      const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd, {tipo:'venda', referencia_tipo:'pedido', referencia_id:id});
       if(!r.ok){
         $('pgErr').textContent = r.motivo==='insuficiente'
           ? `Estoque de ${prod?.nome||'item'} mudou e ficou insuficiente — pagamento não confirmado.`
@@ -3257,7 +3096,7 @@ async function mudarStatus(id, novo){
     }
     for(const i of itensDe(id).filter(x=>x.produto_id)){
       const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd);
+      const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd, {tipo:'venda', referencia_tipo:'pedido', referencia_id:id});
       if(!r.ok){
         toast(r.motivo==='insuficiente'
           ? `Estoque de ${prod?.nome||'item'} mudou e ficou insuficiente — pedido não pode ser pago.`
@@ -3272,7 +3111,7 @@ async function mudarStatus(id, novo){
     for(const i of itensDe(id).filter(x=>x.produto_id)){
       const prod = PRODUTOS.find(x=>x.id===i.produto_id);
       if(prod){
-        const r = await ajustarQtdComRetry('produtos', i.produto_id, i.qtd);
+        const r = await ajustarQtdComRetry('produtos', i.produto_id, i.qtd, {tipo:'cancelamento', referencia_tipo:'pedido', referencia_id:id});
         if(!r.ok) toast(`Aviso: não foi possível estornar ${prod.nome} ao estoque automaticamente — ajuste manualmente.`);
       }
     }
@@ -3410,8 +3249,8 @@ function iniciarDemo(){
     PEDIDOS.push({id,numero:990-i,cliente_id:cliente.id,data:dataDemo(dias),status:i%4===0?'enviado':'concluido',canal:['instagram','whatsapp','direto'][i%3],desconto:i%3===0?5:0,frete:0,taxas:Math.round(preco*.055),valor_pago:preco});
     ITENS.push({pedido_id:id,descricao:prod.nome,qtd:i%5===0?2:1,preco_unit:preco,custo_unit:custo});
   });
-  DESPESAS=[{id:'demo-d1',data:dataDemo(4),categoria:'marketing',descricao:'Campanha de anúncios',valor:120},{id:'demo-d2',data:dataDemo(10),categoria:'embalagem',descricao:'Materiais de envio',valor:86.5}];
-  [22,47,76,108,142].forEach((dias,i)=>DESPESAS.push({id:'demo-dh'+i,data:dataDemo(dias),categoria:['marketing','embalagem','ferramentas'][i%3],descricao:['Anúncios de coleção','Caixas e sleeves','Assinatura de gestão'][i%3],valor:[95,64,49][i%3]}));
+  DESPESAS=[{id:'demo-d1',vencimento:dataDemo(4),categoria:'marketing',descricao:'Campanha de anúncios',valor:120},{id:'demo-d2',vencimento:dataDemo(10),categoria:'embalagem',descricao:'Materiais de envio',valor:86.5}];
+  [22,47,76,108,142].forEach((dias,i)=>DESPESAS.push({id:'demo-dh'+i,vencimento:dataDemo(dias),categoria:['marketing','embalagem','ferramentas'][i%3],descricao:['Anúncios de coleção','Caixas e sleeves','Assinatura de gestão'][i%3],valor:[95,64,49][i%3]}));
   MODO_DEMO=true; document.body.classList.add('modo-demo'); $('btnDemo').textContent='Encerrar Modo Demo'; $('whoami').textContent='DEMO · dados fictícios';
   renderEstoque(); renderPedidos(); renderClientes(); renderFornecedores(); renderDash(); go('dash'); goDashSub('relatorios'); toast('Modo Demo ativado — nenhum dado será gravado');
 }
@@ -3428,53 +3267,43 @@ document.addEventListener('click', e=>{
   e.preventDefault(); e.stopImmediatePropagation(); toast('Ações de cadastro ficam desativadas no Modo Demo');
 },true);
 const CATEGORIA_LABEL = {embalagem:'Embalagem', frete_compra:'Frete (compra)', taxas_fixas:'Taxas fixas', marketing:'Marketing', aluguel:'Aluguel', ferramentas:'Ferramentas/assinaturas', outros:'Outros'};
-let STATUS_DESPESAS_FIXAS = new Set();
 
-async function gerarDespesasFixasPendentes(apenasId=null){
-  const resultado={criadas:0,futuras:0,erros:[]};
-  let consulta=db.from('despesas_fixas').select('*').eq('ativa',true);
-  if(apenasId) consulta=consulta.eq('id',apenasId);
-  const {data:fixas,error}=await consulta;
-  if(error){resultado.erros.push('Não foi possível consultar as despesas fixas: '+error.message);return resultado;}
-  if(!fixas||!fixas.length)return resultado;
+async function gerarDespesasFixasPendentes(){
+  const {data:fixas, error} = await db.from('contas_financeiras').select('*')
+    .eq('natureza','pagar').neq('recorrencia','nenhuma').eq('ativa', true);
+  if(error || !fixas || !fixas.length) return;
   const hoje = new Date();
   for(const f of fixas){
     const inicio = new Date(f.data_inicio+'T12:00');
-    if(Number.isNaN(inicio.getTime())){resultado.erros.push(`${f.nome}: data de início inválida.`);continue;}
     let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
     const limite = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
-    if(cursor>limite){resultado.futuras++;continue;}
     const competencias = [];
     while(cursor <= limite){
       competencias.push(cursor.toISOString().slice(0,7));
       cursor.setMonth(cursor.getMonth()+1);
     }
     if(!competencias.length) continue;
-    const {data:existentes,error:erroConsulta}=await db.from('despesas').select('competencia').eq('despesa_fixa_id',f.id).in('competencia',competencias);
-    if(erroConsulta){resultado.erros.push(`${f.nome}: ${erroConsulta.message}`);continue;}
+    const {data:existentes} = await db.from('contas_financeiras').select('competencia')
+      .eq('referencia_tipo','despesa_fixa').eq('referencia_id', f.id).in('competencia', competencias);
     const jaExistem = new Set((existentes||[]).map(e=>e.competencia));
     const faltantes = competencias.filter(c=>!jaExistem.has(c));
     if(!faltantes.length) continue;
     const dia = Math.min(f.dia_referencia||1, 28);
     const rows = faltantes.map(comp=>{
       const [ano,mes] = comp.split('-').map(Number);
-      const dataStr = `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
-      return { data:dataStr, categoria:f.categoria, descricao:f.nome, valor:f.valor, despesa_fixa_id:f.id, competencia:comp, criado_por:'sistema (despesa fixa)' };
+      const vencStr = `${ano}-${String(mes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
+      return { natureza:'pagar', categoria:f.categoria, descricao:f.descricao, valor:f.valor,
+        vencimento:vencStr, status:'pendente', recorrencia:'nenhuma',
+        referencia_tipo:'despesa_fixa', referencia_id:f.id, competencia:comp,
+        criado_por:'sistema (despesa fixa)' };
     });
-    const {error:erroInsert}=await db.from('despesas').insert(rows);
-    if(erroInsert&&erroInsert.code!=='23505')resultado.erros.push(`${f.nome}: ${erroInsert.message}`);
-    else resultado.criadas+=rows.length;
+    await db.from('contas_financeiras').insert(rows); // se colidir por concorrência entre PCs, o índice único ignora a duplicata
   }
-  return resultado;
 }
 async function carregarDespesasFixas(){
-  const {data,error} = await db.from('despesas_fixas').select('*').order('nome');
-  if(error){toast('Erro ao carregar despesas fixas: '+error.message);return;}
-  DESPESAS_FIXAS=data||[];
-  const h=new Date(),competencia=`${h.getFullYear()}-${String(h.getMonth()+1).padStart(2,'0')}`;
-  const {data:lancamentos,error:erroLancamentos}=await db.from('despesas').select('despesa_fixa_id').eq('competencia',competencia).not('despesa_fixa_id','is',null);
-  if(erroLancamentos){STATUS_DESPESAS_FIXAS=new Set();return;}
-  STATUS_DESPESAS_FIXAS=new Set((lancamentos||[]).map(d=>d.despesa_fixa_id));
+  const {data,error} = await db.from('contas_financeiras').select('*')
+    .eq('natureza','pagar').neq('recorrencia','nenhuma').order('descricao');
+  if(!error) DESPESAS_FIXAS = data;
 }
 
 const DIAS_ALERTA_VENCIMENTO = 5;
@@ -3494,17 +3323,14 @@ function renderAlertaDespesasVencendo(){
   el.innerHTML = `<div class="card" style="border-left:4px solid var(--warn);margin-bottom:16px">
     <h3 style="margin:0 0 8px;font-size:15px">⏰ Despesas fixas vencendo</h3>
     ${vencendo.map(f=>`<p style="margin:4px 0;font-size:14px">
-      <b>${f.nome}</b> — ${fmt(f.valor)} — ${f.diasRestantes===0?'vence hoje':f.diasRestantes===1?'vence amanhã':'vence em '+f.diasRestantes+' dias'}
+      <b>${f.descricao}</b> — ${fmt(f.valor)} — ${f.diasRestantes===0?'vence hoje':f.diasRestantes===1?'vence amanhã':'vence em '+f.diasRestantes+' dias'}
       (${f.venc.toLocaleDateString('pt-BR')})
     </p>`).join('')}
   </div>`;
 }
 
 async function renderFinanceiro(){
-  if(!MODO_DEMO){
-    const geracao=await gerarDespesasFixasPendentes();
-    if(geracao.erros.length) toast('Erro ao gerar despesas fixas: '+geracao.erros.join(' | '));
-  }
+  if(!MODO_DEMO) await gerarDespesasFixasPendentes();
   renderAlertaDespesasVencendo();
   const [ini,fim] = periodoRange($('fi_periodo').value);
   const iniStr = ini.toISOString().slice(0,10), fimStr = fim.toISOString().slice(0,10);
@@ -3524,7 +3350,7 @@ async function renderFinanceiro(){
   });
   const lucro = receita-cmv-taxas;
   const estoqueCusto = PRODUTOS.reduce((s,p)=>s+p.qtd*p.custo_medio,0);
-  const {data:despesasPeriodo} = MODO_DEMO ? {data:DESPESAS.filter(d=>d.data>=iniStr && d.data<fimStr)} : await db.from('despesas').select('*').gte('data',iniStr).lt('data',fimStr).order('data',{ascending:false});
+  const {data:despesasPeriodo} = MODO_DEMO ? {data:DESPESAS.filter(d=>d.vencimento>=iniStr && d.vencimento<fimStr)} : await db.from('contas_financeiras').select('*').eq('natureza','pagar').eq('recorrencia','nenhuma').gte('vencimento',iniStr).lt('vencimento',fimStr).order('vencimento',{ascending:false});
   DESPESAS = despesasPeriodo || [];
   const totalDespesas = DESPESAS.reduce((s,d)=>s+Number(d.valor),0);
   const lucroLiquido = lucro - totalDespesas;
@@ -3548,8 +3374,8 @@ async function renderFinanceiro(){
     return `<tr><td>#${p.numero}</td><td>${nomeCliente(p.cliente_id)}</td><td>${new Date(p.data+'T12:00').toLocaleDateString('pt-BR')}</td><td><span class="st st-${p.status}">${ST_LABEL[p.status]}</span></td><td class="num">${fmt(saldo)}</td></tr>`;
   }).join('') || '<tr><td colspan="5" class="muted">Nada a receber no momento.</td></tr>';
   document.querySelector('#tblDespesas tbody').innerHTML = DESPESAS.map(d=>
-    `<tr><td>${new Date(d.data+'T12:00').toLocaleDateString('pt-BR')}</td><td>${CATEGORIA_LABEL[d.categoria]||d.categoria}</td>
-     <td>${d.descricao||'—'}${d.despesa_fixa_id?' <span class="tag">fixa</span>':''}</td>
+    `<tr><td>${new Date(d.vencimento+'T12:00').toLocaleDateString('pt-BR')}</td><td>${CATEGORIA_LABEL[d.categoria]||d.categoria}</td>
+     <td>${d.descricao||'—'}${d.referencia_tipo==='despesa_fixa'?' <span class="tag">fixa</span>':''}</td>
      <td class="num">${fmt(d.valor)}</td>
      <td><button class="mini" onclick="abrirDespesa('${d.id}')">Editar</button></td></tr>`
   ).join('');
@@ -3627,7 +3453,7 @@ function abrirDespesa(id){
   $('mDespesaTitulo').textContent = d? 'Editar despesa' : 'Lançar despesa';
   $('de_id').value = d?.id||'';
   $('de_categoria').value = d?.categoria||'outros';
-  $('de_data').value = d?.data || new Date().toISOString().slice(0,10);
+  $('de_data').value = d?.vencimento || new Date().toISOString().slice(0,10);
   $('de_descricao').value = d?.descricao||'';
   $('de_valor').value = d?.valor??'';
   $('btnExcluirDespesa').style.display = d? 'inline-block':'none';
@@ -3637,10 +3463,12 @@ async function salvarDespesa(){
   const id = $('de_id').value;
   const valor = Number($('de_valor').value||0);
   if(!valor || valor<=0){ $('deErr').textContent='Informe um valor válido.'; return; }
-  const payload = { categoria:$('de_categoria').value, data:$('de_data').value,
-    descricao:$('de_descricao').value.trim(), valor };
+  const dataVal = $('de_data').value;
+  const payload = { categoria:$('de_categoria').value, vencimento:dataVal,
+    descricao:$('de_descricao').value.trim(), valor, natureza:'pagar', recorrencia:'nenhuma',
+    status:'pago', pagamento_em:dataVal };
   if(!id) payload.criado_por = CURRENT_EMAIL;
-  const q = id ? db.from('despesas').update(payload).eq('id',id) : db.from('despesas').insert(payload);
+  const q = id ? db.from('contas_financeiras').update(payload).eq('id',id) : db.from('contas_financeiras').insert(payload);
   const {error} = await q;
   if(error){ $('deErr').textContent=error.message; return; }
   fechar('mDespesa'); toast(id?'Despesa atualizada':'Despesa lançada');
@@ -3649,11 +3477,11 @@ async function salvarDespesa(){
 async function excluirDespesa(){
   const id = $('de_id').value;
   const d = DESPESAS.find(x=>x.id===id);
-  const aviso = d.despesa_fixa_id
+  const aviso = d.referencia_tipo==='despesa_fixa'
     ? 'Esta despesa foi gerada automaticamente por uma despesa fixa. Excluí-la fará com que ela seja gerada de novo no próximo carregamento, a menos que você desative a despesa fixa correspondente. Continuar?'
     : 'Excluir esta despesa?';
   if(!confirm(aviso)) return;
-  const {error} = await db.from('despesas').delete().eq('id',id);
+  const {error} = await db.from('contas_financeiras').delete().eq('id',id);
   if(error){ toast('Erro: '+error.message); return; }
   fechar('mDespesa'); toast('Despesa excluída');
   renderFinanceiro();
@@ -3667,37 +3495,17 @@ async function abrirDespesaFixa(){
   $('mDespesaFixa').classList.add('show');
 }
 function renderListaDespesasFixas(){
-  const h=new Date(),mesAtual=new Date(h.getFullYear(),h.getMonth(),1);
-  $('listaDespesasFixas').innerHTML = DESPESAS_FIXAS.length ? DESPESAS_FIXAS.map(f=>{
-    const inicio=new Date(f.data_inicio+'T12:00'),inicioMes=new Date(inicio.getFullYear(),inicio.getMonth(),1);
-    const gerada=STATUS_DESPESAS_FIXAS.has(f.id);
-    const status=!f.ativa
-      ? '<span class="tag" style="background:#F5DCDC;color:var(--warn)">inativa</span>'
-      : inicioMes>mesAtual
-        ? `<span class="tag">inicia em ${inicio.toLocaleDateString('pt-BR')}</span>`
-        : gerada
-          ? '<span class="tag" style="background:#DCEEE3;color:var(--ok)">mês atual gerado</span>'
-          : '<span class="tag" style="background:#F5DCDC;color:var(--warn)">lançamento pendente</span>';
-    return `
+  $('listaDespesasFixas').innerHTML = DESPESAS_FIXAS.length ? DESPESAS_FIXAS.map(f=>`
     <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
       <div>
-        <b>${f.nome}</b> <span class="muted" style="font-size:13px">— ${CATEGORIA_LABEL[f.categoria]} · ${fmt(f.valor)}/mês · dia ${f.dia_referencia}</span>
-        ${status}
+        <b>${f.descricao}</b> <span class="muted" style="font-size:13px">— ${CATEGORIA_LABEL[f.categoria]} · ${fmt(f.valor)}/mês · dia ${f.dia_referencia}</span>
+        ${!f.ativa?' <span class="tag" style="background:#F5DCDC;color:var(--warn)">inativa</span>':''}
       </div>
       <div style="display:flex;gap:6px">
-        ${f.ativa&&inicioMes<=mesAtual&&!gerada?`<button class="mini" onclick="gerarDespesaFixaAgora('${f.id}')">Gerar agora</button>`:''}
         <button class="mini" onclick="editarDespesaFixa('${f.id}')">Editar</button>
         <button class="mini" onclick="alternarDespesaFixa('${f.id}')">${f.ativa?'Desativar':'Reativar'}</button>
       </div>
-    </div>`;}).join('') : '<p class="muted">Nenhuma despesa fixa cadastrada ainda.</p>';
-}
-async function gerarDespesaFixaAgora(id){
-  const resultado=await gerarDespesasFixasPendentes(id);
-  if(resultado.erros.length){toast('Falha ao gerar: '+resultado.erros.join(' | '));}
-  else if(resultado.futuras){toast('A cobrança começa em uma competência futura.');}
-  else if(resultado.criadas){toast('Lançamento mensal gerado.');}
-  else toast('O lançamento deste mês já existe.');
-  await carregarDespesasFixas();renderListaDespesasFixas();await renderFinanceiro();
+    </div>`).join('') : '<p class="muted">Nenhuma despesa fixa cadastrada ainda.</p>';
 }
 function editarDespesaFixa(id){
   const f = DESPESAS_FIXAS.find(x=>x.id===id);
@@ -3705,7 +3513,7 @@ function editarDespesaFixa(id){
   $('df_id').value = f.id;
   $('df_categoria').value = f.categoria;
   $('df_dia').value = f.dia_referencia;
-  $('df_nome').value = f.nome;
+  $('df_nome').value = f.descricao;
   $('df_valor').value = f.valor;
   $('df_data_inicio').value = f.data_inicio;
 }
@@ -3720,26 +3528,24 @@ async function salvarDespesaFixa(){
   const id = $('df_id').value;
   const nome = $('df_nome').value.trim();
   const valor = Number($('df_valor').value||0);
-  if(!nome || !valor || valor<=0 || !$('df_data_inicio').value){ $('dfErr').textContent='Preencha nome, valor e data de início.'; return; }
-  const payload = { nome, categoria:$('df_categoria').value, valor,
-    dia_referencia: parseInt($('df_dia').value||1), data_inicio: $('df_data_inicio').value };
+  if(!nome || !valor || valor<=0){ $('dfErr').textContent='Preencha nome e valor.'; return; }
+  const dataInicio = $('df_data_inicio').value;
+  const payload = { descricao:nome, categoria:$('df_categoria').value, valor,
+    dia_referencia: parseInt($('df_dia').value||1), data_inicio: dataInicio,
+    natureza:'pagar', recorrencia:'mensal', vencimento: dataInicio };
   if(!id) payload.criado_por = CURRENT_EMAIL;
-  const q=id?db.from('despesas_fixas').update(payload).eq('id',id).select('id').single():db.from('despesas_fixas').insert(payload).select('id').single();
-  const {data:salva,error}=await q;
+  const q = id ? db.from('contas_financeiras').update(payload).eq('id',id) : db.from('contas_financeiras').insert(payload);
+  const {error} = await q;
   if(error){ $('dfErr').textContent=error.message; return; }
-  const resultado=await gerarDespesasFixasPendentes(salva.id);
-  if(resultado.erros.length){$('dfErr').textContent='Regra salva, mas o lançamento falhou: '+resultado.erros.join(' | ');toast('Despesa fixa salva com pendência');}
-  else if(resultado.futuras)toast('Despesa fixa salva — cobrança inicia futuramente');
-  else if(resultado.criadas)toast(id?'Despesa fixa atualizada e lançamento gerado':'Despesa fixa criada e lançamento do mês gerado');
-  else toast(id?'Despesa fixa atualizada':'Despesa fixa criada — lançamento do mês já existente');
+  toast(id?'Despesa fixa atualizada':'Despesa fixa criada — será gerada automaticamente todo mês');
   await carregarDespesasFixas();
   renderListaDespesasFixas();
-  if(!resultado.erros.length)limparFormDespesaFixa();
-  await renderFinanceiro();
+  limparFormDespesaFixa();
+  renderFinanceiro();
 }
 async function alternarDespesaFixa(id){
   const f = DESPESAS_FIXAS.find(x=>x.id===id);
-  const {error} = await db.from('despesas_fixas').update({ativa:!f.ativa}).eq('id',id);
+  const {error} = await db.from('contas_financeiras').update({ativa:!f.ativa}).eq('id',id);
   if(error){ toast('Erro: '+error.message); return; }
   await carregarDespesasFixas();
   renderListaDespesasFixas();
@@ -3981,14 +3787,14 @@ function renderRelatorioVendas(){
 async function renderRelatorioDespesas(){
   const de = $('rd_de').value, ate = $('rd_ate').value;
   let data, error;
-  if(MODO_DEMO){ data=DESPESAS.filter(d=>(!de||d.data>=de)&&(!ate||d.data<=ate)).sort((a,b)=>b.data.localeCompare(a.data)); }
-  else { let q = db.from('despesas').select('*').order('data',{ascending:false}); if(de) q = q.gte('data',de); if(ate) q = q.lte('data',ate); ({data,error} = await q); }
+  if(MODO_DEMO){ data=DESPESAS.filter(d=>(!de||d.vencimento>=de)&&(!ate||d.vencimento<=ate)).sort((a,b)=>b.vencimento.localeCompare(a.vencimento)); }
+  else { let q = db.from('contas_financeiras').select('*').eq('natureza','pagar').eq('recorrencia','nenhuma').order('vencimento',{ascending:false}); if(de) q = q.gte('vencimento',de); if(ate) q = q.lte('vencimento',ate); ({data,error} = await q); }
   if(error){ document.querySelector('#tblRelDespesas tbody').innerHTML = '<tr><td colspan="4" class="muted">Erro ao carregar.</td></tr>'; return; }
   const lista = data||[];
   let tot=0;
   document.querySelector('#tblRelDespesas tbody').innerHTML = lista.map(d=>{
     tot+=Number(d.valor);
-    return `<tr><td>${new Date(d.data+'T12:00').toLocaleDateString('pt-BR')}</td><td>${CATEGORIA_LABEL[d.categoria]||d.categoria}</td><td>${d.descricao||'—'}</td><td class="num">${fmt(d.valor)}</td></tr>`;
+    return `<tr><td>${new Date(d.vencimento+'T12:00').toLocaleDateString('pt-BR')}</td><td>${CATEGORIA_LABEL[d.categoria]||d.categoria}</td><td>${d.descricao||'—'}</td><td class="num">${fmt(d.valor)}</td></tr>`;
   }).join('') || '<tr><td colspan="4" class="muted">Nenhuma despesa no período.</td></tr>';
   $('relDespesasTotais').textContent = lista.length ? `${lista.length} despesa(s) · Total: ${fmt(tot)}` : '';
 }
