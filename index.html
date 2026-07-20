@@ -1799,7 +1799,8 @@ async function importBackup(ev){
 /* ---------- Estoque ---------- */
 const TIPOS = {
   pack:'Pack unitário', blister3:'Blister triplo', blister4:'Blister quádruplo',
-  etb:'ETB', tpc:'TPC', mini_bb:'Mini booster box', carta:'Carta avulsa'
+  etb:'ETB', tpc:'TPC', mini_bb:'Mini booster box', booster_box:'Booster Box',
+  carta:'Carta avulsa'
 };
 let PRODUTOS = [];
 let CATEGORIA_ESTOQUE = 'lacrados';
@@ -2194,7 +2195,7 @@ function onTipoProdutoChange(){
 }
 
 // A — geração automática de SKU
-const TIPO_PREFIXO = { pack:'PACK', blister3:'BL3', blister4:'BL4', etb:'ETB', tpc:'TPC', mini_bb:'MBOX', carta:'CARTA' };
+const TIPO_PREFIXO = { pack:'PACK', blister3:'BL3', blister4:'BL4', etb:'ETB', tpc:'TPC', mini_bb:'MBOX', booster_box:'BB', carta:'CARTA' };
 function gerarSkuAuto(){
   const tipo = $('pr_tipo').value;
   const set = $('pr_set_nome').value.trim();
