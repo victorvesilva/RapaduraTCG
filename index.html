@@ -628,6 +628,15 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
           <div><label>Quantidade</label><input id="ac_qtd" type="number" min="1" value="1"></div>
           <div><label>Custo unitário (R$)</label><input id="ac_custo" type="number" step="0.01" min="0"></div>
         </div>
+        <label>Condição <span style="font-weight:400;text-transform:none" id="ac_cond_desc"></span></label>
+        <select id="ac_condicao" onchange="onCondicaoChange()">
+          <option value="M">M — Mint (100%)</option>
+          <option value="NM" selected>NM — Near Mint (95%)</option>
+          <option value="LP">LP — Lightly Played (80%)</option>
+          <option value="MP">MP — Moderately Played (65%)</option>
+          <option value="HP">HP — Heavily Played (40%)</option>
+          <option value="DMG">DMG — Damaged (20%)</option>
+        </select>
         <label>Preço de venda (R$) <span style="font-weight:400;text-transform:none" id="ac_ref"></span></label>
         <input id="ac_preco" type="number" step="0.01" min="0">
         <label>Idioma / edição</label>
@@ -636,7 +645,7 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
           <option value="PT-BR">🇧🇷 Português (BR)</option>
           <option value="JAP">🇯🇵 Japonês</option>
         </select>
-        <p class="muted" style="margin-top:10px">Cria o produto (se novo) e já registra a primeira entrada de compra.</p>
+        <p class="muted" style="margin-top:10px">Cria o produto (se novo), a variante da condição selecionada e registra o pedido de compra (aguardando confirmação de entrega).</p>
         <div class="msg-err" id="acErr"></div>
         <footer class="actions">
           <button class="btn" onclick="confirmarAddCarta()">Adicionar ao estoque</button>
@@ -1802,6 +1811,14 @@ const TIPOS = {
   etb:'ETB', tpc:'TPC', mini_bb:'Mini booster box', booster_box:'Booster Box',
   carta:'Carta avulsa'
 };
+const CONDICOES_CARTA = {
+  M:{label:'M — Mint', fator:1.00},
+  NM:{label:'NM — Near Mint', fator:0.95},
+  LP:{label:'LP — Lightly Played', fator:0.80},
+  MP:{label:'MP — Moderately Played', fator:0.65},
+  HP:{label:'HP — Heavily Played', fator:0.40},
+  DMG:{label:'DMG — Damaged', fator:0.20}
+};
 let PRODUTOS = [];
 let CATEGORIA_ESTOQUE = 'lacrados';
 const fmt = v => 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -2469,7 +2486,8 @@ function renderComprasPage(){
   document.querySelector('#tblComprasGeral tbody').innerHTML=lista.map(c=>{
     const p=PRODUTOS.find(x=>x.id===c.produto_id),v=VARIANTES.find(x=>x.id===c.variante_id),f=FORNECEDORES.find(x=>x.id===c.fornecedor_id),nome=p?.nome||'Produto removido';
     const st=statusEfetivoCompra(c),aparencia={andamento:'st-enviado',aguardando:'st-orcamento',atrasado:'st-cancelado',recebido:'st-pago',cancelado:'st-cancelado',estornada:'st-cancelado'}[st],rotulo={andamento:'Em andamento',aguardando:'Aguardando',atrasado:'Atrasado',recebido:'Recebido',cancelado:'Cancelado',estornada:'Estornada'}[st];
-    return `<tr><td>${new Date(c.data+'T12:00').toLocaleDateString('pt-BR')}</td><td>${c.entrega_prevista?new Date(c.entrega_prevista+'T12:00').toLocaleDateString('pt-BR'):'—'}</td><td><b>${escapeHtml(nome)}</b>${v?`<br><span class="muted">${escapeHtml(v.nome)}</span>`:''}${p?.sku?`<br><span class="muted">${escapeHtml(p.sku)}</span>`:''}</td><td>${escapeHtml(f?.nome||c.fornecedor||'—')}</td><td class="num">${c.qtd}</td><td class="num"><b>${fmt(Number(c.qtd)*Number(c.custo_unit))}</b></td><td><span class="st ${aparencia}">${rotulo}</span></td><td>${c.nf_link?`<button class="mini" onclick="verNotaFiscal('${c.nf_link}')">Ver NF</button>`:`<button class="mini" onclick="trocarNotaFiscal('${c.id}')">Anexar</button>`}</td><td style="white-space:nowrap"><button class="mini" onclick="abrirEdicaoCompra('${c.id}')">Editar</button>${!c.estornada?` <button class="mini" style="color:var(--warn)" onclick="estornarCompra('${c.id}')">Estornar</button>`:''}</td></tr>`;
+    const podeConfirmar=!c.estornada&&!c.estoque_aplicado&&['andamento','aguardando','atrasado'].includes(st);
+    return `<tr><td>${new Date(c.data+'T12:00').toLocaleDateString('pt-BR')}</td><td>${c.entrega_prevista?new Date(c.entrega_prevista+'T12:00').toLocaleDateString('pt-BR'):'—'}</td><td><b>${escapeHtml(nome)}</b>${v?`<br><span class="muted">${escapeHtml(v.nome)}</span>`:''}${p?.sku?`<br><span class="muted">${escapeHtml(p.sku)}</span>`:''}</td><td>${escapeHtml(f?.nome||c.fornecedor||'—')}</td><td class="num">${c.qtd}</td><td class="num"><b>${fmt(Number(c.qtd)*Number(c.custo_unit))}</b></td><td><span class="st ${aparencia}">${rotulo}</span></td><td>${c.nf_link?`<button class="mini" onclick="verNotaFiscal('${c.nf_link}')">Ver NF</button>`:`<button class="mini" onclick="trocarNotaFiscal('${c.id}')">Anexar</button>`}</td><td style="white-space:nowrap">${podeConfirmar?`<button class="mini" style="color:var(--gold)" onclick="confirmarEntregaCompra('${c.id}')">Confirmar entrega</button> `:''}<button class="mini" onclick="abrirEdicaoCompra('${c.id}')">Editar</button>${!c.estornada?` <button class="mini" style="color:var(--warn)" onclick="estornarCompra('${c.id}')">Estornar</button>`:''}</td></tr>`;
   }).join('');
   $('comprasVazio').style.display=lista.length?'none':'block';
   $('comprasResumo').textContent=lista.length?`${lista.length} registro(s) · ${qtd} unidade(s) ativa(s) · ${fmt(total)}`:'';
@@ -4416,15 +4434,26 @@ function abrirAddCarta(cardId){
     <div><b>${c.name}</b><br><span class="muted">${c.set.name} · ${c.number}/${c.set.printedTotal||c.set.total}</span></div>`;
   $('ac_qtd').value=1; $('ac_custo').value='';
   $('ac_idioma').value='ENG';
-  $('ac_preco').value = brl? brl.toFixed(2) : '';
-  $('ac_ref').textContent = brl ? `(referência de mercado: ${fmt(brl)})` : '(sem referência de mercado disponível)';
+  $('ac_condicao').value='NM';
+  $('mAddCarta').dataset.refBrl = brl || '';
+  $('ac_ref').textContent = brl ? `(referência de mercado M: ${fmt(brl)})` : '(sem referência de mercado disponível)';
+  onCondicaoChange();
   $('mAddCarta').dataset.cardId = cardId;
   $('mAddCarta').classList.add('show');
+}
+function onCondicaoChange(){
+  const cond = $('ac_condicao').value;
+  const fator = CONDICOES_CARTA[cond]?.fator ?? 1;
+  $('ac_cond_desc').textContent = `(${(fator*100).toFixed(0)}% do valor Mint)`;
+  const refBrl = Number($('mAddCarta').dataset.refBrl||0);
+  if(refBrl) $('ac_preco').value = (refBrl*fator).toFixed(2);
 }
 async function confirmarAddCarta(){
   const c = CARTAS_SET.find(x=>x.id===$('mAddCarta').dataset.cardId);
   const qtd = parseInt($('ac_qtd').value||0), custo = Number($('ac_custo').value||0), preco = Number($('ac_preco').value||0);
   const idioma = $('ac_idioma').value;
+  const condicao = $('ac_condicao').value;
+  const nomeVariante = CONDICOES_CARTA[condicao]?.label || condicao;
   if(qtd<1 || $('ac_custo').value===''){ $('acErr').textContent='Informe quantidade e custo válidos.'; return; }
   const sku = 'CARTA-'+c.set.id.toUpperCase()+'-'+c.number.replace(/\W/g,'')+(idioma!=='ENG'?'-'+idioma:'');
   let prod = PRODUTOS.find(p=>p.sku===sku);
@@ -4435,14 +4464,28 @@ async function confirmarAddCarta(){
     }).select().single();
     if(error){ $('acErr').textContent=error.message; return; }
     prod = data;
-  } else if(preco !== prod.preco_venda){
-    await db.from('produtos').update({preco_venda:preco}).eq('id',prod.id);
   }
-  const {error:e1} = await db.from('compras').insert({ produto_id:prod.id, qtd, custo_unit:custo, data:new Date().toISOString().slice(0,10), fornecedor:'Coleções', criado_por:CURRENT_EMAIL });
+  let {data:variante, error:vFindErr} = await db.from('produto_variantes').select('*').eq('produto_id',prod.id).eq('nome',nomeVariante).maybeSingle();
+  if(vFindErr){ $('acErr').textContent=vFindErr.message; return; }
+  if(!variante){
+    const {data:vData, error:vErr} = await db.from('produto_variantes').insert({
+      produto_id: prod.id, nome: nomeVariante, condicao: condicao, preco_venda: preco, criado_por: CURRENT_EMAIL
+    }).select().single();
+    if(vErr){ $('acErr').textContent=vErr.message; return; }
+    variante = vData;
+    VARIANTES.push(variante);
+  } else if(preco !== variante.preco_venda){
+    await db.from('produto_variantes').update({preco_venda:preco}).eq('id',variante.id);
+  }
+  const {error:e1} = await db.from('compras').insert({
+    produto_id:prod.id, variante_id:variante.id, qtd, custo_unit:custo,
+    data:new Date().toISOString().slice(0,10), fornecedor:'Coleções',
+    entrega_prevista:new Date().toISOString().slice(0,10), status_compra:'andamento', estoque_aplicado:false,
+    criado_por:CURRENT_EMAIL
+  });
   if(e1){ $('acErr').textContent=e1.message; return; }
-  await recalcularProdutoDoZero(prod.id);
-  await carregarEstoque();
-  fechar('mAddCarta'); toast(`${c.name} adicionado ao estoque`);
+  fechar('mAddCarta'); toast(`Pedido de compra criado para ${c.name} (${nomeVariante}) — aguardando entrega`);
+  if($('p-compras')?.style.display==='block') await carregarComprasPage();
 }
 
 /* ---------- Conexão ---------- */
