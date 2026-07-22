@@ -610,7 +610,18 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
           <select id="co_set_sel" style="flex:2;min-width:220px" onchange="carregarCartasDoSet()">
             <option value="">Carregando coleções…</option>
           </select>
-          <input id="co_cartas_busca" placeholder="Buscar carta no set…" style="flex:1;min-width:160px" oninput="renderCartasSet()">
+          <input id="co_cartas_busca" list="co_cartas_datalist" placeholder="Buscar carta no set…" style="flex:1;min-width:160px" oninput="renderCartasSet()">
+          <datalist id="co_cartas_datalist"></datalist>
+          <select id="co_raridade_sel" style="min-width:150px" onchange="renderCartasSet()">
+            <option value="">Todas as raridades</option>
+          </select>
+          <select id="co_ordem_sel" style="min-width:170px" onchange="renderCartasSet()">
+            <option value="numero">Ordem do set (nº)</option>
+            <option value="nome_az">Nome A → Z</option>
+            <option value="nome_za">Nome Z → A</option>
+            <option value="valor_desc">Valor: maior → menor</option>
+            <option value="valor_asc">Valor: menor → maior</option>
+          </select>
         </div>
       </div>
       <p class="muted" id="colCambioInfo"></p>
@@ -4424,31 +4435,48 @@ async function carregarCartasDoSet(){
   $('colecoesVazio').style.display='none';
   SET_ATUAL_NOME = $('co_set_sel').selectedOptions[0].textContent;
   $('co_cartas_busca').value = '';
+  $('co_raridade_sel').innerHTML = '<option value="">Todas as raridades</option>';
+  $('co_ordem_sel').value = 'numero';
   grid.innerHTML = Array.from({length:10}).map(()=>`<div class="colecao-card"><div class="skeleton" style="aspect-ratio:5/7"></div></div>`).join('');
   $('colecoesPaginacao').style.display='none';
   const cache = CACHE_CARTAS_SETS.get(setId);
-  if(cache){
-    CARTAS_SET = cache.cartas;
-    TOTAL_CARTAS_SET = cache.total;
-    PAGINA_CARTAS = cache.ultimaPagina;
+  const cachePersistido = !cache && cacheLer('rapadura_cartas_'+setId, CACHE_TTL_CARTAS);
+  if(cachePersistido) CACHE_CARTAS_SETS.set(setId, cachePersistido);
+  const partida = CACHE_CARTAS_SETS.get(setId);
+  if(partida){
+    CARTAS_SET = partida.cartas; TOTAL_CARTAS_SET = partida.total; PAGINA_CARTAS = partida.ultimaPagina;
     renderCartasSet();
-    return;
+  } else {
+    CARTAS_SET=[]; TOTAL_CARTAS_SET=0; PAGINA_CARTAS=0;
   }
-  const cachePersistido = cacheLer('rapadura_cartas_'+setId, CACHE_TTL_CARTAS);
-  if(cachePersistido){
-    CACHE_CARTAS_SETS.set(setId, cachePersistido);
-    CARTAS_SET = cachePersistido.cartas;
-    TOTAL_CARTAS_SET = cachePersistido.total;
-    PAGINA_CARTAS = cachePersistido.ultimaPagina;
-    renderCartasSet();
-    return;
+  // Raridade e ordenação por valor só ficam corretas com o set inteiro em mãos,
+  // então carregamos todas as páginas restantes automaticamente aqui.
+  await carregarRestanteDoSet(setId);
+}
+async function carregarRestanteDoSet(setId){
+  while(setId===SET_ATUAL_ID && CARTAS_SET.length<TOTAL_CARTAS_SET || (setId===SET_ATUAL_ID && !TOTAL_CARTAS_SET)){
+    const antes = CARTAS_SET.length;
+    await carregarPaginaDeCartas(PAGINA_CARTAS+1);
+    if(setId!==SET_ATUAL_ID) return;
+    if(!TOTAL_CARTAS_SET || CARTAS_SET.length>=TOTAL_CARTAS_SET) break;
+    if(CARTAS_SET.length===antes) break; // evita loop infinito se a API parar de devolver cartas novas
   }
-  CARTAS_SET=[]; TOTAL_CARTAS_SET=0; PAGINA_CARTAS=0;
-  await carregarPaginaDeCartas(1);
+  if(setId===SET_ATUAL_ID) popularFiltrosCartas();
 }
 async function carregarMaisCartas(){
   if(CARREGANDO_CARTAS || !SET_ATUAL_ID || CARTAS_SET.length>=TOTAL_CARTAS_SET) return;
   await carregarPaginaDeCartas(PAGINA_CARTAS+1);
+  popularFiltrosCartas();
+}
+function popularFiltrosCartas(){
+  const raridades = [...new Set(CARTAS_SET.map(c=>c.rarity).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  const raridadeAtual = $('co_raridade_sel').value;
+  $('co_raridade_sel').innerHTML = '<option value="">Todas as raridades</option>' +
+    raridades.map(r=>`<option value="${r}">${r}</option>`).join('');
+  if(raridades.includes(raridadeAtual)) $('co_raridade_sel').value = raridadeAtual;
+  const nomes = [...new Set(CARTAS_SET.map(c=>c.name))].sort((a,b)=>a.localeCompare(b,'pt-BR'));
+  $('co_cartas_datalist').innerHTML = nomes.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
+  renderCartasSet();
 }
 async function carregarPaginaDeCartas(pagina){
   const setId = SET_ATUAL_ID;
@@ -4460,7 +4488,7 @@ async function carregarPaginaDeCartas(pagina){
   try{
     const params = new URLSearchParams({
       q:`set.id:${setId}`, orderBy:'number', page:String(pagina), pageSize:String(TAMANHO_PAGINA_CARTAS),
-      select:'id,name,number,set,images,tcgplayer,cardmarket'
+      select:'id,name,number,set,images,tcgplayer,cardmarket,rarity'
     });
     const r = await fetch(`https://api.pokemontcg.io/v2/cards?${params}`, {headers:headersPokemonTCG()});
     if(!r.ok) throw new Error('HTTP '+r.status);
@@ -4504,18 +4532,31 @@ function compararNumeroCarta(a,b){
   if(na!==nb) return na-nb;
   return pa[3].localeCompare(pb[3]);
 }
+function precoBrlDaCarta(c){
+  const usd = c.tcgplayer?.prices?.holofoil?.market || c.tcgplayer?.prices?.normal?.market || c.cardmarket?.prices?.averageSellPrice || null;
+  return usd && CAMBIO_USD_BRL ? usd*CAMBIO_USD_BRL : null;
+}
 function renderCartasSet(){
   const busca = ($('co_cartas_busca').value||'').toLowerCase();
-  const lista = CARTAS_SET.filter(c=>!busca || c.name.toLowerCase().includes(busca)).slice().sort(compararNumeroCarta);
+  const raridade = $('co_raridade_sel')?.value||'';
+  const ordem = $('co_ordem_sel')?.value||'numero';
+  let lista = CARTAS_SET.filter(c=>
+    (!busca || c.name.toLowerCase().includes(busca)) &&
+    (!raridade || c.rarity===raridade)
+  ).slice();
+  if(ordem==='nome_az') lista.sort((a,b)=>a.name.localeCompare(b.name,'pt-BR'));
+  else if(ordem==='nome_za') lista.sort((a,b)=>b.name.localeCompare(a.name,'pt-BR'));
+  else if(ordem==='valor_desc') lista.sort((a,b)=>(precoBrlDaCarta(b)||-1)-(precoBrlDaCarta(a)||-1));
+  else if(ordem==='valor_asc') lista.sort((a,b)=>(precoBrlDaCarta(a)??Infinity)-(precoBrlDaCarta(b)??Infinity));
+  else lista.sort(compararNumeroCarta);
   const grid = $('colecoesGrid');
   grid.innerHTML = lista.map((c,i)=>{
-    const usd = c.tcgplayer?.prices?.holofoil?.market || c.tcgplayer?.prices?.normal?.market || c.cardmarket?.prices?.averageSellPrice || null;
-    const brl = usd && CAMBIO_USD_BRL ? usd*CAMBIO_USD_BRL : null;
+    const brl = precoBrlDaCarta(c);
     return `<div class="colecao-card" style="animation-delay:${Math.min(i*0.02,0.4)}s" onclick="abrirAddCarta('${c.id}')">
       <img src="${c.images.small}" loading="lazy" alt="${c.name}">
       <div class="cc-body">
         <div class="cc-name">${c.name}</div>
-        <div class="cc-num">${c.number}/${c.set.printedTotal||c.set.total}</div>
+        <div class="cc-num">${c.number}/${c.set.printedTotal||c.set.total}${c.rarity?' · '+c.rarity:''}</div>
         <div class="cc-price">${brl?fmt(brl):'sem preço ref.'}</div>
       </div></div>`;
   }).join('');
@@ -4524,7 +4565,7 @@ function renderCartasSet(){
   const temMais = CARTAS_SET.length<TOTAL_CARTAS_SET;
   paginacao.style.display = CARTAS_SET.length ? 'block' : 'none';
   botao.style.display = temMais ? '' : 'none';
-  $('colecoesInfo').textContent = busca
+  $('colecoesInfo').textContent = (busca||raridade)
     ? `${lista.length} encontrada(s) entre ${CARTAS_SET.length} carta(s) carregada(s) de ${TOTAL_CARTAS_SET}.`
     : `${CARTAS_SET.length} de ${TOTAL_CARTAS_SET} carta(s) carregada(s).`;
 }
