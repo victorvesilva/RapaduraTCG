@@ -157,7 +157,9 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
 .kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:16px}
 .kpi .v{font-size:24px;font-weight:800;margin-top:4px}
 .kpi .l{font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.05em}
-.item-row{display:grid;grid-template-columns:1fr 74px 110px 34px;gap:8px;margin-top:8px;align-items:center}
+.item-row{display:grid;grid-template-columns:1fr 130px 70px 100px 32px;gap:8px;margin-top:8px;align-items:center}
+.it-var{visibility:hidden}
+.it-var.ativo{visibility:visible}
 #printArea{display:none}
 @media print{
   body>*{display:none !important}
@@ -200,7 +202,7 @@ h1,h2,.brand{font-family:'Space Grotesk',sans-serif;font-weight:700}
 .stock-tabs{display:inline-flex;gap:5px;padding:5px;margin:0 0 16px;border:1px solid #e1e4e9;border-radius:13px;background:rgba(255,255,255,.7);box-shadow:0 5px 14px rgba(30,36,48,.05)}
 .stock-tabs button{border:0;border-radius:9px;padding:9px 12px;background:transparent;color:#6f7786;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;transition:background .2s,color .2s,box-shadow .2s}.stock-tabs button:hover{color:#3b4351;background:#f4f5f7}.stock-tabs button.on{background:#293240;color:#fff;box-shadow:0 3px 9px rgba(30,36,48,.18)}.stock-tabs span{display:inline-block;min-width:20px;margin-left:5px;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.16);font-size:11px}.stock-tabs button:not(.on) span{background:#eceef2;color:#697283}
 
-@media(max-width:640px){.top-inner{padding:11px 15px}.top-inner .brand{display:none}.top-inner .who{display:none}nav.tabs{padding:0 10px 9px}nav.tabs button{padding:8px 11px}main{padding:25px 14px 72px}.page h2{font-size:20px}.card{border-radius:14px;padding:17px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kpi{padding:14px}.kpi .v{font-size:20px}.grid2{gap:14px}.item-row{grid-template-columns:1fr 62px 92px 30px}.stock-tabs{display:flex;width:100%}.stock-tabs button{flex:1;padding:9px 8px;font-size:12px}}
+@media(max-width:640px){.top-inner{padding:11px 15px}.top-inner .brand{display:none}.top-inner .who{display:none}nav.tabs{padding:0 10px 9px}nav.tabs button{padding:8px 11px}main{padding:25px 14px 72px}.page h2{font-size:20px}.card{border-radius:14px;padding:17px}.kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.kpi{padding:14px}.kpi .v{font-size:20px}.grid2{gap:14px}.item-row{grid-template-columns:1fr 100px 58px 84px 28px}.stock-tabs{display:flex;width:100%}.stock-tabs button{flex:1;padding:9px 8px;font-size:12px}}
 .reports-hero{display:flex;align-items:center;justify-content:space-between;gap:24px;margin:0 0 20px;padding:25px 26px;border-radius:18px;color:#fff;background:linear-gradient(120deg,#283241,#394b5e 58%,#b9641d);box-shadow:0 16px 34px rgba(39,49,63,.2)}
 .reports-hero h3{margin:5px 0 4px;font-family:'Space Grotesk',sans-serif;font-size:23px;letter-spacing:-.04em}.reports-hero p{margin:0;color:#e0e5ea;font-size:14px}.reports-eyebrow{font-size:10px;font-weight:800;letter-spacing:.14em;color:#ffd09d}.reports-export{white-space:nowrap;background:#fff;color:#9e4b14;box-shadow:0 8px 20px rgba(0,0,0,.16)}.reports-export:hover{background:#fff5e9;color:#7b360b}
 #dashSub-relatorios .card{position:relative;overflow:hidden}#dashSub-relatorios .card>div:first-child h3{font-size:16px;letter-spacing:-.025em}
@@ -2447,6 +2449,22 @@ function previewCompra(){
    Usado para baixa de estoque (venda) e estorno (cancelamento). Para delta
    negativo, reconfirma que há estoque suficiente a cada tentativa — o
    estoque pode ter mudado entre a leitura original e agora. */
+/* Um item de pedido pode ser do produto "puro" (qtd/preço em produtos) ou de
+   uma variante específica (condição da carta: qtd/preço em produto_variantes).
+   Estes helpers centralizam essa ramificação pra não duplicar a lógica em
+   cada lugar que baixa/estorna estoque. */
+function estoqueDisponivelItem(i){
+  if(i.variante_id){ const v = VARIANTES.find(x=>x.id===i.variante_id); return v ? (v.qtd||0) : 0; }
+  const prod = PRODUTOS.find(x=>x.id===i.produto_id); return prod ? (prod.qtd||0) : 0;
+}
+function nomeItemPedido(i){
+  const prod = PRODUTOS.find(x=>x.id===i.produto_id);
+  const v = i.variante_id ? VARIANTES.find(x=>x.id===i.variante_id) : null;
+  return prod ? (prod.nome+(v?` (${v.nome})`:'')) : (i.descricao||'item');
+}
+function ajustarEstoqueItem(i, delta){
+  return ajustarQtdComRetry(i.variante_id?'produto_variantes':'produtos', i.variante_id||i.produto_id, delta);
+}
 async function ajustarQtdComRetry(tabela, id, delta){
   for(let tentativa=0; tentativa<3; tentativa++){
     const {data:atual, error:eLeitura} = await db.from(tabela).select('qtd').eq('id',id).single();
@@ -3081,7 +3099,7 @@ function abrirPedido(id){
   $('peItens').innerHTML = '';
   if(p){
     const its = itensDe(p.id);
-    its.forEach(i => addItemRow(i.produto_id, i.qtd, i.preco_unit));
+    its.forEach(i => addItemRow(i.produto_id, i.qtd, i.preco_unit, i.variante_id));
     if(!its.length) addItemRow();
   } else {
     addItemRow();
@@ -3089,8 +3107,12 @@ function abrirPedido(id){
   totPedido();
   $('mPedido').classList.add('show');
 }
-function addItemRow(presetProdId, presetQtd, presetPreco){
-  const emEstoque = PRODUTOS.filter(p=>p.ativo && p.qtd>0);
+function qtdDisponivelProduto(p){
+  const vs = variantesDoProduto(p.id);
+  return vs.length ? vs.reduce((s,v)=>s+(v.qtd||0),0) : (p.qtd||0);
+}
+function addItemRow(presetProdId, presetQtd, presetPreco, presetVarId){
+  const emEstoque = PRODUTOS.filter(p=>p.ativo && qtdDisponivelProduto(p)>0);
   // ao editar, garante que o produto do item já lançado apareça mesmo se qtd disponível hoje for baixa
   const preset = presetProdId ? PRODUTOS.find(x=>x.id===presetProdId) : null;
   const lista = preset && !emEstoque.some(x=>x.id===preset.id) ? [preset,...emEstoque] : emEstoque;
@@ -3098,26 +3120,50 @@ function addItemRow(presetProdId, presetQtd, presetPreco){
   row.className='item-row';
   row.innerHTML = `
     <select class="it-prod" onchange="itemProdChange(this)">
-      ${lista.map(p=>`<option value="${p.id}">${p.nome} (${p.qtd} disp.)</option>`).join('')}
+      ${lista.map(p=>`<option value="${p.id}">${p.nome} (${qtdDisponivelProduto(p)} disp.)</option>`).join('')}
     </select>
+    <select class="it-var" onchange="itemVarChange(this)"></select>
     <input class="it-qtd" type="number" min="1" value="${presetQtd||1}" oninput="totPedido()">
     <input class="it-preco" type="number" step="0.01" min="0" value="${presetPreco??''}" oninput="totPedido()">
     <button class="mini" onclick="this.parentElement.remove();totPedido()">✕</button>`;
   $('peItens').appendChild(row);
   if(presetProdId) row.querySelector('.it-prod').value = presetProdId;
-  if(presetPreco===undefined) itemProdChange(row.querySelector('.it-prod'));
+  if(presetPreco===undefined) itemProdChange(row.querySelector('.it-prod'), presetVarId);
+  else if(presetVarId){ popularSelectVariante(row, presetProdId, presetVarId); }
 }
-function itemProdChange(sel){
+function popularSelectVariante(row, produtoId, varIdSelecionar){
+  const selVar = row.querySelector('.it-var');
+  const vars = variantesDoProduto(produtoId);
+  if(!vars.length){ selVar.classList.remove('ativo'); selVar.innerHTML=''; return; }
+  selVar.classList.add('ativo');
+  selVar.innerHTML = vars.map(v=>`<option value="${v.id}">${v.nome} (${v.qtd||0} disp.)</option>`).join('');
+  if(varIdSelecionar && vars.some(v=>v.id===varIdSelecionar)) selVar.value = varIdSelecionar;
+}
+function itemProdChange(sel, presetVarId){
   const p = PRODUTOS.find(x=>x.id===sel.value);
-  sel.parentElement.querySelector('.it-preco').value = p? p.preco_venda : '';
+  const row = sel.parentElement;
+  popularSelectVariante(row, sel.value, presetVarId);
+  const selVar = row.querySelector('.it-var');
+  const v = selVar.classList.contains('ativo') ? VARIANTES.find(x=>x.id===selVar.value) : null;
+  row.querySelector('.it-preco').value = v ? v.preco_venda : (p? p.preco_venda : '');
+  totPedido();
+}
+function itemVarChange(selVar){
+  const v = VARIANTES.find(x=>x.id===selVar.value);
+  const row = selVar.parentElement;
+  if(v) row.querySelector('.it-preco').value = v.preco_venda;
   totPedido();
 }
 function lerItens(){
-  return [...document.querySelectorAll('#peItens .item-row')].map(r=>({
-    produto_id: r.querySelector('.it-prod').value,
-    qtd: parseInt(r.querySelector('.it-qtd').value||0),
-    preco_unit: Number(r.querySelector('.it-preco').value||0)
-  }));
+  return [...document.querySelectorAll('#peItens .item-row')].map(r=>{
+    const selVar = r.querySelector('.it-var');
+    return {
+      produto_id: r.querySelector('.it-prod').value,
+      variante_id: (selVar.classList.contains('ativo') && selVar.value) ? selVar.value : null,
+      qtd: parseInt(r.querySelector('.it-qtd').value||0),
+      preco_unit: Number(r.querySelector('.it-preco').value||0)
+    };
+  });
 }
 function totPedido(){
   const t = lerItens().reduce((s,i)=>s+i.qtd*i.preco_unit,0)
@@ -3128,12 +3174,15 @@ async function salvarPedido(){
   const id = $('pe_id').value;
   const itens = lerItens().filter(i=>i.qtd>0);
   if(!itens.length){ $('peErr').textContent='Adicione ao menos um item.'; return; }
-  // valida estoque disponível somando itens repetidos do mesmo produto
-  const porProduto = {};
-  itens.forEach(i=> porProduto[i.produto_id]=(porProduto[i.produto_id]||0)+i.qtd);
-  for(const [pid,q] of Object.entries(porProduto)){
-    const p = PRODUTOS.find(x=>x.id===pid);
-    if(!p || q>p.qtd){ $('peErr').textContent=`Estoque insuficiente de ${p?.nome||'produto'} (disponível: ${p?.qtd??0}).`; return; }
+  // valida estoque disponível somando itens repetidos do mesmo produto+variante
+  const porChave = {};
+  itens.forEach(i=>{ const chave=i.produto_id+'|'+(i.variante_id||''); porChave[chave]=(porChave[chave]||0)+i.qtd; });
+  for(const i of itens){
+    const chave = i.produto_id+'|'+(i.variante_id||'');
+    if(porChave[chave]===undefined) continue;
+    const disp = estoqueDisponivelItem(i);
+    if(disp < porChave[chave]){ $('peErr').textContent=`Estoque insuficiente de ${nomeItemPedido(i)} (disponível: ${disp}).`; return; }
+    delete porChave[chave];
   }
   if(!$('pe_cliente').value){ $('peErr').textContent='Selecione um cliente.'; $('pe_cliente_busca').focus(); return; }
   const payload = {
@@ -3161,9 +3210,10 @@ async function salvarPedido(){
   }
   const rows = itens.map(i=>{
     const p = PRODUTOS.find(x=>x.id===i.produto_id);
-    return { pedido_id:pedidoId, produto_id:i.produto_id,
-      descricao:p.nome+(p.set_nome?' — '+p.set_nome:''), qtd:i.qtd,
-      preco_unit:i.preco_unit, custo_unit:p.custo_medio };
+    const v = i.variante_id ? VARIANTES.find(x=>x.id===i.variante_id) : null;
+    return { pedido_id:pedidoId, produto_id:i.produto_id, variante_id:i.variante_id||null,
+      descricao:p.nome+(v?' — '+v.nome:'')+(p.set_nome?' — '+p.set_nome:''), qtd:i.qtd,
+      preco_unit:i.preco_unit, custo_unit: v ? (v.custo_medio||0) : p.custo_medio };
   });
   const {error:e2} = await db.from('pedido_itens').insert(rows);
   if(e2){ $('peErr').textContent=e2.message; return; }
@@ -3262,15 +3312,13 @@ async function registrarPagamento(id){
   if(p.status==='orcamento'){
     // primeiro pagamento: reserva itens (baixa de estoque), igual à transição para "pago"
     for(const i of itensDe(id).filter(x=>x.produto_id)){
-      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      if(!prod || prod.qtd < i.qtd){ $('pgErr').textContent='Estoque insuficiente de '+(prod?.nome||'item')+' — não é possível confirmar o pagamento.'; return; }
+      if(estoqueDisponivelItem(i) < i.qtd){ $('pgErr').textContent='Estoque insuficiente de '+nomeItemPedido(i)+' — não é possível confirmar o pagamento.'; return; }
     }
     for(const i of itensDe(id).filter(x=>x.produto_id)){
-      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd);
+      const r = await ajustarEstoqueItem(i, -i.qtd);
       if(!r.ok){
         $('pgErr').textContent = r.motivo==='insuficiente'
-          ? `Estoque de ${prod?.nome||'item'} mudou e ficou insuficiente — pagamento não confirmado.`
+          ? `Estoque de ${nomeItemPedido(i)} mudou e ficou insuficiente — pagamento não confirmado.`
           : 'Falha na baixa de estoque (conflito de concorrência) — tente novamente.';
         return;
       }
@@ -3289,7 +3337,7 @@ async function registrarPagamento(id){
   }
   fechar('mDetalhe');
   toast(novoValorPago>=total ? 'Pedido quitado' : `Pagamento de ${fmt(valor)} registrado — saldo ${fmt(total-novoValorPago)}`);
-  await carregarEstoque(); carregarPedidos();
+  await Promise.all([carregarEstoque(), carregarVariantes()]); carregarPedidos();
 }
 async function excluirPedido(id){
   const p = PEDIDOS.find(x=>x.id===id);
@@ -3305,15 +3353,13 @@ async function mudarStatus(id, novo){
   // baixa de estoque ao pagar; estorno ao cancelar pedido que já baixou
   if(novo==='pago' && !p.estoque_baixado){
     for(const i of itensDe(id).filter(x=>x.produto_id)){
-      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      if(!prod || prod.qtd < i.qtd){ toast('Estoque insuficiente de '+(prod?.nome||'item')+' — pedido não pode ser pago.'); return; }
+      if(estoqueDisponivelItem(i) < i.qtd){ toast('Estoque insuficiente de '+nomeItemPedido(i)+' — pedido não pode ser pago.'); return; }
     }
     for(const i of itensDe(id).filter(x=>x.produto_id)){
-      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd);
+      const r = await ajustarEstoqueItem(i, -i.qtd);
       if(!r.ok){
         toast(r.motivo==='insuficiente'
-          ? `Estoque de ${prod?.nome||'item'} mudou e ficou insuficiente — pedido não pode ser pago.`
+          ? `Estoque de ${nomeItemPedido(i)} mudou e ficou insuficiente — pedido não pode ser pago.`
           : 'Falha na baixa de estoque (conflito de concorrência) — tente novamente.');
         return;
       }
@@ -3323,11 +3369,8 @@ async function mudarStatus(id, novo){
   } else if(novo==='cancelado' && p.estoque_baixado){
     if(!confirm('Cancelar devolve os itens ao estoque. Confirmar?')) return;
     for(const i of itensDe(id).filter(x=>x.produto_id)){
-      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      if(prod){
-        const r = await ajustarQtdComRetry('produtos', i.produto_id, i.qtd);
-        if(!r.ok) toast(`Aviso: não foi possível estornar ${prod.nome} ao estoque automaticamente — ajuste manualmente.`);
-      }
+      const r = await ajustarEstoqueItem(i, i.qtd);
+      if(!r.ok) toast(`Aviso: não foi possível estornar ${nomeItemPedido(i)} ao estoque automaticamente — ajuste manualmente.`);
     }
     await db.from('pedidos').update({status:novo, estoque_baixado:false, atualizado_em:new Date().toISOString(), alterado_por:CURRENT_EMAIL}).eq('id',id);
   } else {
@@ -3336,7 +3379,7 @@ async function mudarStatus(id, novo){
     if(EMAILJS_AUTO && novo==='concluido') enviarEmailPedido('feedback', id);
   }
   fechar('mDetalhe'); toast('Pedido atualizado');
-  await carregarEstoque(); carregarPedidos();
+  await Promise.all([carregarEstoque(), carregarVariantes()]); carregarPedidos();
 }
 
 /* ---------- PDF ---------- */
@@ -3413,18 +3456,21 @@ async function duplicarPedido(id){
   const p = PEDIDOS.find(x=>x.id===id);
   const its = itensDe(id);
   if(!its.length){ toast('Pedido sem itens, nada para duplicar.'); return; }
-  const porProduto = {};
-  its.forEach(i=> porProduto[i.produto_id]=(porProduto[i.produto_id]||0)+i.qtd);
-  for(const [pid,q] of Object.entries(porProduto)){
-    const prod = PRODUTOS.find(x=>x.id===pid);
-    if(!prod || q>prod.qtd){ toast(`Estoque insuficiente de ${prod?.nome||'produto'} para duplicar (disponível: ${prod?.qtd??0}).`); return; }
+  const porChave = {};
+  its.forEach(i=>{ const chave=i.produto_id+'|'+(i.variante_id||''); porChave[chave]=(porChave[chave]||0)+i.qtd; });
+  for(const i of its){
+    const chave = i.produto_id+'|'+(i.variante_id||'');
+    if(porChave[chave]===undefined) continue; // já validado nesse loop
+    const disp = estoqueDisponivelItem(i);
+    if(disp < porChave[chave]){ toast(`Estoque insuficiente de ${nomeItemPedido(i)} para duplicar (disponível: ${disp}).`); return; }
+    delete porChave[chave]; // evita revalidar a mesma combinação produto+variante duas vezes
   }
   const {data:novo, error:e1} = await db.from('pedidos').insert({
     cliente_id:p.cliente_id, canal:p.canal, desconto:p.desconto, frete:p.frete, taxas:p.taxas,
     observacoes:p.observacoes, data:new Date().toISOString().slice(0,10), status:'orcamento', criado_por:CURRENT_EMAIL
   }).select().single();
   if(e1){ toast('Erro ao duplicar: '+e1.message); return; }
-  const rows = its.map(i=>({ pedido_id:novo.id, produto_id:i.produto_id, descricao:i.descricao, qtd:i.qtd, preco_unit:i.preco_unit, custo_unit:i.custo_unit }));
+  const rows = its.map(i=>({ pedido_id:novo.id, produto_id:i.produto_id, variante_id:i.variante_id||null, descricao:i.descricao, qtd:i.qtd, preco_unit:i.preco_unit, custo_unit:i.custo_unit }));
   const {error:e2} = await db.from('pedido_itens').insert(rows);
   if(e2){ toast('Erro ao duplicar itens: '+e2.message); return; }
   fechar('mDetalhe'); toast(`Pedido #${novo.numero} criado como cópia`);
@@ -4520,18 +4566,30 @@ async function buscarPaginaCartas(setId, pagina){
   const r = await fetchComRetry(`https://api.pokemontcg.io/v2/cards?${params}`, {headers:headersPokemonTCG()});
   const j = await r.json();
   if(setId!==SET_ATUAL_ID) return;
-  const cache = CACHE_CARTAS_SETS.get(setId) || {cartas:[], total:0, ultimaPagina:0, pageSize:TAMANHO_PAGINA_CARTAS};
+  const cache = CACHE_CARTAS_SETS.get(setId) || {cartas:[], total:0, ultimaPagina:0, pageSize:TAMANHO_PAGINA_CARTAS, faltando:[]};
   const ids = new Set(cache.cartas.map(c=>c.id));
   cache.cartas.push(...(j.data||[]).filter(c=>!ids.has(c.id)));
   cache.total = j.totalCount||cache.cartas.length;
-  cache.ultimaPagina = Math.max(cache.ultimaPagina,pagina);
   cache.pageSize = TAMANHO_PAGINA_CARTAS;
+  // A API às vezes devolve HTTP 200 com menos cartas do que deveria pra essa página
+  // (resposta truncada, não é erro de rede nem 5xx — o retry não pega isso). Se
+  // acontecer, NÃO avança "ultimaPagina": mantém essa página como pendente pra
+  // ser tentada de novo, em vez de deixar o app achar que já terminou e pular
+  // pra uma página seguinte que não existe.
+  const recebidos = (j.data||[]).length;
+  const esperados = Math.min(TAMANHO_PAGINA_CARTAS, Math.max(cache.total-(pagina-1)*TAMANHO_PAGINA_CARTAS, 0));
+  const truncada = recebidos < esperados;
+  if(!truncada) cache.ultimaPagina = Math.max(cache.ultimaPagina, pagina);
+  if(!cache.faltando) cache.faltando = [];
+  cache.faltando = cache.faltando.filter(p=>p!==pagina);
+  if(truncada && !cache.faltando.includes(pagina)) cache.faltando.push(pagina);
   CACHE_CARTAS_SETS.set(setId,cache);
   CARTAS_SET = cache.cartas;
   TOTAL_CARTAS_SET = cache.total;
   PAGINA_CARTAS = cache.ultimaPagina;
   cacheGravar('rapadura_cartas_'+setId, cache); // localStorage pode falhar em sets muito grandes (limite ~5MB); segue funcionando só sem persistência
   renderCartasSet();
+  if(truncada) throw new Error(`Página ${pagina} veio incompleta (${recebidos}/${esperados} cartas)`);
 }
 async function carregarMaisCartas(){
   if(CARREGANDO_CARTAS || !SET_ATUAL_ID) return;
@@ -4634,8 +4692,10 @@ async function carregarPaginaDeCartas(pagina){
         e.message==='Failed to fetch' ? 'sem conexão com pokemontcg.io (bloqueio de rede ou limite de requisições — configure uma API key em Configurações)'
         : e.message?.startsWith('HTTP 5') ? 'a API do pokemontcg.io está instável no momento (erro '+e.message.replace('HTTP ','')+'), e o TCGdex (fallback) também não encontrou esse set. Tente novamente em alguns segundos.'
         : e.message+' — o TCGdex (fallback) também não encontrou esse set.');
+      toast('Erro ao buscar cartas');
+    } else {
+      toast('Página incompleta — clique em "Carregar mais" pra tentar essa parte de novo.');
     }
-    toast('Erro ao buscar cartas');
   }finally{
     CARREGANDO_CARTAS = false;
     botao.disabled = false;
