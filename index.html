@@ -76,6 +76,16 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
 .overlay.show{display:flex}
 .modal{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:26px;width:100%;max-width:560px}
 .col-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:16px}
+.col-list{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+.col-list .colecao-card{display:flex;align-items:center;gap:12px;cursor:pointer}
+.col-list .colecao-card img{width:46px;aspect-ratio:5/7;flex-shrink:0}
+.col-list .colecao-card .cc-body{padding:8px 12px 8px 0;flex:1;display:flex;align-items:center;gap:14px;min-width:0}
+.col-list .colecao-card .cc-name{margin-bottom:0;flex:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.col-list .colecao-card .cc-num{flex:1;white-space:nowrap}
+.col-list .colecao-card .cc-price{flex:0 0 auto;text-align:right;min-width:80px}
+.view-toggle{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.view-toggle button{border:none;background:var(--card);padding:8px 12px;cursor:pointer;color:var(--ink-soft);font-size:13px}
+.view-toggle button.on{background:var(--gold);color:#fff}
 .colecao-card{background:var(--card);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden;cursor:pointer}
 .colecao-card img{width:100%;aspect-ratio:5/7;object-fit:cover;display:block;background:#F1E6CB}
 .colecao-card .cc-body{padding:9px 10px}
@@ -622,6 +632,10 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
             <option value="valor_desc">Valor: maior → menor</option>
             <option value="valor_asc">Valor: menor → maior</option>
           </select>
+          <div class="view-toggle">
+            <button type="button" id="btnViewGrid" class="on" onclick="mudarVisualizacaoCartas('grid')" title="Ver em imagens">🖼️ Imagens</button>
+            <button type="button" id="btnViewList" onclick="mudarVisualizacaoCartas('lista')" title="Ver em lista">☰ Lista</button>
+          </div>
         </div>
       </div>
       <p class="muted" id="colCambioInfo"></p>
@@ -1401,6 +1415,9 @@ async function showApp(session){
     gerarDespesasFixasPendentes(); // roda em segundo plano, não bloqueia a tela inicial
     checarConexao();
     verificarAlertasEntregaGlobais();
+    let ultimaPagina = null;
+    try{ ultimaPagina = localStorage.getItem('rapadura_ultima_pagina'); }catch(e){}
+    if(ultimaPagina && ultimaPagina!=='dash' && PAGINAS_VALIDAS.includes(ultimaPagina)) go(ultimaPagina);
     if(falhas.length) toast(`${falhas.length} conjunto(s) de dados não puderam ser carregados. Tente atualizar.`);
   }catch(error){
     renderDashSeguro();
@@ -1432,12 +1449,15 @@ async function doLogin(e){
 async function doLogout(){ await db.auth.signOut(); }
 
 /* ---------- Navegação ---------- */
+const PAGINAS_VALIDAS = ['dash','estoque','compras','colecoes','pedidos','clientes','financeiro','config'];
 function go(p){
+  if(!PAGINAS_VALIDAS.includes(p)) return; // guarda contra valor corrompido vindo do localStorage
   document.querySelectorAll('.page').forEach(x=>x.style.display='none');
   const el = $('p-'+p);
   el.style.display='block';
   el.style.animation='none'; void el.offsetWidth; el.style.animation='';
   document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));
+  try{ localStorage.setItem('rapadura_ultima_pagina', p); }catch(e){} // ambiente sem localStorage (ex: aba anônima bloqueada) não deve quebrar a navegação
   if(p==='estoque'){ carregarEstoque(); carregarFornecedores(); }
   if(p==='compras') carregarComprasPage();
   if(p==='clientes'){ carregarPedidos(); carregarFornecedores().then(renderFornecedores); }
@@ -4368,7 +4388,7 @@ async function exportarRelatorioCartasPDF(){
 }
 
 let SET_ATUAL_ID = '', PAGINA_CARTAS = 0, TOTAL_CARTAS_SET = 0, CARREGANDO_CARTAS = false;
-const TAMANHO_PAGINA_CARTAS = 48;
+const TAMANHO_PAGINA_CARTAS = 250; // máximo aceito pela API — cobre a maioria dos sets numa chamada só
 const CACHE_CARTAS_SETS = new Map();
 
 /* Cache persistente (sobrevive a recarregar a página) para reduzir chamadas repetidas ao pokemontcg.io */
@@ -4432,6 +4452,7 @@ async function carregarCartasDoSet(){
     return;
   }
   SET_ATUAL_ID = setId;
+  USANDO_FALLBACK_TCGDEX = false;
   $('colecoesVazio').style.display='none';
   SET_ATUAL_NOME = $('co_set_sel').selectedOptions[0].textContent;
   $('co_cartas_busca').value = '';
@@ -4442,7 +4463,15 @@ async function carregarCartasDoSet(){
   const cache = CACHE_CARTAS_SETS.get(setId);
   const cachePersistido = !cache && cacheLer('rapadura_cartas_'+setId, CACHE_TTL_CARTAS);
   if(cachePersistido) CACHE_CARTAS_SETS.set(setId, cachePersistido);
-  const partida = CACHE_CARTAS_SETS.get(setId);
+  let partida = CACHE_CARTAS_SETS.get(setId);
+  // Cache gerado com um TAMANHO_PAGINA_CARTAS diferente do atual tem "ultimaPagina"
+  // referindo a um número de página que não significa mais a mesma coisa — descarta
+  // em vez de confiar num contador que ficou obsoleto (foi assim que travou em 77/250).
+  if(partida && partida.pageSize!==TAMANHO_PAGINA_CARTAS){
+    CACHE_CARTAS_SETS.delete(setId);
+    try{ localStorage.removeItem('rapadura_cartas_'+setId); }catch(e){}
+    partida = null;
+  }
   if(partida){
     CARTAS_SET = partida.cartas; TOTAL_CARTAS_SET = partida.total; PAGINA_CARTAS = partida.ultimaPagina;
     renderCartasSet();
@@ -4454,17 +4483,75 @@ async function carregarCartasDoSet(){
   await carregarRestanteDoSet(setId);
 }
 async function carregarRestanteDoSet(setId){
-  while(setId===SET_ATUAL_ID && CARTAS_SET.length<TOTAL_CARTAS_SET || (setId===SET_ATUAL_ID && !TOTAL_CARTAS_SET)){
-    const antes = CARTAS_SET.length;
-    await carregarPaginaDeCartas(PAGINA_CARTAS+1);
-    if(setId!==SET_ATUAL_ID) return;
-    if(!TOTAL_CARTAS_SET || CARTAS_SET.length>=TOTAL_CARTAS_SET) break;
-    if(CARTAS_SET.length===antes) break; // evita loop infinito se a API parar de devolver cartas novas
+  if(setId!==SET_ATUAL_ID) return;
+  // Garante a página 1 carregada primeiro — é dela que vem o total de páginas do set.
+  if(!TOTAL_CARTAS_SET){
+    await carregarPaginaDeCartas(1);
+    if(setId!==SET_ATUAL_ID || !TOTAL_CARTAS_SET) { popularFiltrosCartas(); return; } // sem total: falhou (erro já mostrado) ou caiu no fallback TCGdex (já carrega tudo de uma vez)
   }
-  if(setId===SET_ATUAL_ID) popularFiltrosCartas();
+  const totalPaginas = Math.ceil(TOTAL_CARTAS_SET/TAMANHO_PAGINA_CARTAS);
+  const faltando = []; for(let p=PAGINA_CARTAS+1;p<=totalPaginas;p++) faltando.push(p);
+  const CONCORRENCIA = 4; // pedidos simultâneos — mais rápido, mas mais chance de rate limit/erro na API
+  const falharam = [];
+  for(let i=0;i<faltando.length;i+=CONCORRENCIA){
+    if(setId!==SET_ATUAL_ID) return;
+    const lote = faltando.slice(i,i+CONCORRENCIA);
+    const resultados = await Promise.allSettled(lote.map(p=>buscarPaginaCartas(setId,p)));
+    resultados.forEach((r,idx)=>{ if(r.status==='rejected') falharam.push(lote[idx]); });
+  }
+  // Uma segunda chance, sequencial e mais lenta, só pras páginas que falharam no paralelo.
+  for(const p of falharam.slice()){
+    if(setId!==SET_ATUAL_ID) return;
+    try{ await buscarPaginaCartas(setId,p); falharam.splice(falharam.indexOf(p),1); }catch(e){}
+  }
+  if(setId!==SET_ATUAL_ID) return;
+  const cacheFinal = CACHE_CARTAS_SETS.get(setId);
+  if(cacheFinal) cacheFinal.faltando = falharam.slice();
+  popularFiltrosCartas();
+  if(falharam.length) toast(`${falharam.length} página(s) de cartas não puderam ser carregadas (API instável). ${CARTAS_SET.length} de ${TOTAL_CARTAS_SET} cartas disponíveis — use "Carregar mais" pra tentar de novo.`);
+}
+/* Busca e mescla uma página no cache, sem tocar na UI de loading (usada tanto
+   no carregamento paralelo quanto pelo carregamento manual de página única). */
+async function buscarPaginaCartas(setId, pagina){
+  const params = new URLSearchParams({
+    q:`set.id:${setId}`, orderBy:'number', page:String(pagina), pageSize:String(TAMANHO_PAGINA_CARTAS),
+    select:'id,name,number,set,images,tcgplayer,cardmarket,rarity'
+  });
+  const r = await fetchComRetry(`https://api.pokemontcg.io/v2/cards?${params}`, {headers:headersPokemonTCG()});
+  const j = await r.json();
+  if(setId!==SET_ATUAL_ID) return;
+  const cache = CACHE_CARTAS_SETS.get(setId) || {cartas:[], total:0, ultimaPagina:0, pageSize:TAMANHO_PAGINA_CARTAS};
+  const ids = new Set(cache.cartas.map(c=>c.id));
+  cache.cartas.push(...(j.data||[]).filter(c=>!ids.has(c.id)));
+  cache.total = j.totalCount||cache.cartas.length;
+  cache.ultimaPagina = Math.max(cache.ultimaPagina,pagina);
+  cache.pageSize = TAMANHO_PAGINA_CARTAS;
+  CACHE_CARTAS_SETS.set(setId,cache);
+  CARTAS_SET = cache.cartas;
+  TOTAL_CARTAS_SET = cache.total;
+  PAGINA_CARTAS = cache.ultimaPagina;
+  cacheGravar('rapadura_cartas_'+setId, cache); // localStorage pode falhar em sets muito grandes (limite ~5MB); segue funcionando só sem persistência
+  renderCartasSet();
 }
 async function carregarMaisCartas(){
-  if(CARREGANDO_CARTAS || !SET_ATUAL_ID || CARTAS_SET.length>=TOTAL_CARTAS_SET) return;
+  if(CARREGANDO_CARTAS || !SET_ATUAL_ID) return;
+  const setId = SET_ATUAL_ID;
+  const cache = CACHE_CARTAS_SETS.get(setId);
+  const botao = $('btnCarregarMaisCartas');
+  if(cache?.faltando?.length){
+    // Prioriza páginas que faltaram por erro antes de avançar — senão elas ficam
+    // perdidas pra sempre (PAGINA_CARTAS já passou delas).
+    CARREGANDO_CARTAS = true; botao.disabled = true; botao.textContent = 'Carregando…';
+    const pagina = cache.faltando[0];
+    try{
+      await buscarPaginaCartas(setId, pagina);
+      cache.faltando = cache.faltando.filter(p=>p!==pagina);
+    }catch(e){ toast('Ainda instável — tente de novo em alguns segundos.'); }
+    finally{ CARREGANDO_CARTAS = false; botao.disabled = false; botao.textContent = 'Carregar mais cartas'; }
+    popularFiltrosCartas();
+    return;
+  }
+  if(CARTAS_SET.length>=TOTAL_CARTAS_SET) return;
   await carregarPaginaDeCartas(PAGINA_CARTAS+1);
   popularFiltrosCartas();
 }
@@ -4478,6 +4565,46 @@ function popularFiltrosCartas(){
   $('co_cartas_datalist').innerHTML = nomes.map(n=>`<option value="${n.replace(/"/g,'&quot;')}">`).join('');
   renderCartasSet();
 }
+async function fetchComRetry(url, opts, tentativas=3){
+  let ultimoErro;
+  for(let i=0;i<tentativas;i++){
+    try{
+      const r = await fetch(url, opts);
+      if(r.status>=500){ ultimoErro = new Error('HTTP '+r.status); }
+      else if(!r.ok){ throw new Error('HTTP '+r.status); } // erro do cliente (400/404/etc): não adianta tentar de novo
+      else return r;
+    }catch(e){ ultimoErro = e; }
+    if(i<tentativas-1) await new Promise(res=>setTimeout(res, 600*(i+1))); // 600ms, 1200ms
+  }
+  throw ultimoErro;
+}
+let USANDO_FALLBACK_TCGDEX = false;
+/* Fallback quando pokemontcg.io está fora do ar: TCGdex é gratuito, sem chave,
+   e cobre os mesmos sets modernos na maioria dos casos — mas não tem preço de
+   mercado (tcgplayer/cardmarket) nem raridade na listagem em lote, e o ID do
+   set pode não bater exatamente com o do pokemontcg.io em sets mais antigos
+   ou promocionais. Por isso é só um "melhor que nada", não um substituto real. */
+async function tentarFallbackTCGdex(setId){
+  try{
+    const r = await fetch(`https://api.tcgdex.net/v2/en/sets/${setId}`);
+    if(!r.ok) return false;
+    const j = await r.json();
+    if(!j?.cards?.length || setId!==SET_ATUAL_ID) return false;
+    const cartas = j.cards.map(c=>({
+      id:c.id, name:c.name, number:c.localId,
+      set:{id:j.id, name:j.name||SET_ATUAL_NOME, printedTotal:j.cardCount?.official, total:j.cardCount?.total},
+      images:{small:c.image?`${c.image}/low.webp`:'', large:c.image?`${c.image}/high.png`:''},
+      tcgplayer:null, cardmarket:null, rarity:null
+    }));
+    const cache = {cartas, total:cartas.length, ultimaPagina:1, pageSize:TAMANHO_PAGINA_CARTAS};
+    CACHE_CARTAS_SETS.set(setId, cache);
+    CARTAS_SET = cache.cartas; TOTAL_CARTAS_SET = cache.total; PAGINA_CARTAS = 1;
+    USANDO_FALLBACK_TCGDEX = true;
+    popularFiltrosCartas();
+    toast('pokemontcg.io indisponível — usando TCGdex como alternativa (sem preço de referência e sem filtro de raridade neste modo)');
+    return true;
+  }catch(e){ return false; }
+}
 async function carregarPaginaDeCartas(pagina){
   const setId = SET_ATUAL_ID;
   if(!setId || CARREGANDO_CARTAS) return;
@@ -4486,32 +4613,27 @@ async function carregarPaginaDeCartas(pagina){
   botao.disabled = true;
   botao.textContent = 'Carregando…';
   try{
-    const params = new URLSearchParams({
-      q:`set.id:${setId}`, orderBy:'number', page:String(pagina), pageSize:String(TAMANHO_PAGINA_CARTAS),
-      select:'id,name,number,set,images,tcgplayer,cardmarket,rarity'
-    });
-    const r = await fetch(`https://api.pokemontcg.io/v2/cards?${params}`, {headers:headersPokemonTCG()});
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    const j = await r.json();
-    if(setId!==SET_ATUAL_ID) return;
-    const cache = CACHE_CARTAS_SETS.get(setId) || {cartas:[], total:0, ultimaPagina:0};
-    const ids = new Set(cache.cartas.map(c=>c.id));
-    cache.cartas.push(...(j.data||[]).filter(c=>!ids.has(c.id)));
-    cache.total = j.totalCount||cache.cartas.length;
-    cache.ultimaPagina = Math.max(cache.ultimaPagina,pagina);
-    CACHE_CARTAS_SETS.set(setId,cache);
-    CARTAS_SET = cache.cartas;
-    TOTAL_CARTAS_SET = cache.total;
-    PAGINA_CARTAS = cache.ultimaPagina;
-    cacheGravar('rapadura_cartas_'+setId, cache); // localStorage pode falhar em sets muito grandes (limite ~5MB); segue funcionando só sem persistência
-    renderCartasSet();
+    // A API pokemontcg.io tem alta taxa de erro 500 mesmo em condições normais;
+    // tenta 3 vezes com espera crescente antes de considerar falha real (dentro de fetchComRetry).
+    await buscarPaginaCartas(setId, pagina);
   }catch(e){
     if(setId!==SET_ATUAL_ID) return;
+    // pokemontcg.io falhou de vez (mesmo após retry): só nesse caso, e só se ainda
+    // não temos nenhuma carta desse set, tenta o TCGdex como fonte alternativa.
+    // TCGdex não tem preço de mercado nem sempre usa o mesmo ID de set do
+    // pokemontcg.io, então isso não é garantia — é um "melhor que nada".
+    if(!CARTAS_SET.length && pagina===1){
+      const viaTcgdex = await tentarFallbackTCGdex(setId);
+      if(viaTcgdex) return;
+    }
     const grid = $('colecoesGrid');
     if(!CARTAS_SET.length){
       grid.innerHTML = '';
       $('colecoesVazio').style.display='block';
-      $('colecoesVazio').textContent = 'Erro ao buscar cartas: '+(e.message==='Failed to fetch' ? 'sem conexão com pokemontcg.io (bloqueio de rede ou limite de requisições — configure uma API key em Configurações)' : e.message);
+      $('colecoesVazio').textContent = 'Erro ao buscar cartas: '+(
+        e.message==='Failed to fetch' ? 'sem conexão com pokemontcg.io (bloqueio de rede ou limite de requisições — configure uma API key em Configurações)'
+        : e.message?.startsWith('HTTP 5') ? 'a API do pokemontcg.io está instável no momento (erro '+e.message.replace('HTTP ','')+'), e o TCGdex (fallback) também não encontrou esse set. Tente novamente em alguns segundos.'
+        : e.message+' — o TCGdex (fallback) também não encontrou esse set.');
     }
     toast('Erro ao buscar cartas');
   }finally{
@@ -4532,6 +4654,17 @@ function compararNumeroCarta(a,b){
   if(na!==nb) return na-nb;
   return pa[3].localeCompare(pb[3]);
 }
+let VISUALIZACAO_CARTAS = 'grid';
+try{ VISUALIZACAO_CARTAS = localStorage.getItem('rapadura_view_cartas')==='lista' ? 'lista' : 'grid'; }catch(e){}
+$('btnViewGrid')?.classList.toggle('on', VISUALIZACAO_CARTAS==='grid');
+$('btnViewList')?.classList.toggle('on', VISUALIZACAO_CARTAS==='lista');
+function mudarVisualizacaoCartas(modo){
+  VISUALIZACAO_CARTAS = modo;
+  $('btnViewGrid').classList.toggle('on', modo==='grid');
+  $('btnViewList').classList.toggle('on', modo==='lista');
+  try{ localStorage.setItem('rapadura_view_cartas', modo); }catch(e){}
+  renderCartasSet();
+}
 function precoBrlDaCarta(c){
   const usd = c.tcgplayer?.prices?.holofoil?.market || c.tcgplayer?.prices?.normal?.market || c.cardmarket?.prices?.averageSellPrice || null;
   return usd && CAMBIO_USD_BRL ? usd*CAMBIO_USD_BRL : null;
@@ -4550,6 +4683,7 @@ function renderCartasSet(){
   else if(ordem==='valor_asc') lista.sort((a,b)=>(precoBrlDaCarta(a)??Infinity)-(precoBrlDaCarta(b)??Infinity));
   else lista.sort(compararNumeroCarta);
   const grid = $('colecoesGrid');
+  grid.className = VISUALIZACAO_CARTAS==='lista' ? 'col-list' : 'col-grid';
   grid.innerHTML = lista.map((c,i)=>{
     const brl = precoBrlDaCarta(c);
     return `<div class="colecao-card" style="animation-delay:${Math.min(i*0.02,0.4)}s" onclick="abrirAddCarta('${c.id}')">
@@ -4568,6 +4702,7 @@ function renderCartasSet(){
   $('colecoesInfo').textContent = (busca||raridade)
     ? `${lista.length} encontrada(s) entre ${CARTAS_SET.length} carta(s) carregada(s) de ${TOTAL_CARTAS_SET}.`
     : `${CARTAS_SET.length} de ${TOTAL_CARTAS_SET} carta(s) carregada(s).`;
+  if(USANDO_FALLBACK_TCGDEX) $('colecoesInfo').textContent += ' ⚠ Fonte alternativa (TCGdex): sem preço de referência e sem raridade neste set.';
 }
 function abrirAddCarta(cardId){
   const c = CARTAS_SET.find(x=>x.id===cardId);
