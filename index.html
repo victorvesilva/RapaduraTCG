@@ -600,7 +600,10 @@ html[data-theme="dark"] [style*="background:#f" i]{border-color:var(--line)}
     </div>
 
     <div class="page" id="p-colecoes" style="display:none">
-      <h2>Coleções</h2>
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">
+        <h2>Coleções</h2>
+        <button class="btn" onclick="exportarRelatorioCartasPDF()">Relatório de cartas (PDF)</button>
+      </div>
       <p class="muted" style="margin-bottom:16px">Navegue pelas cartas de um set e adicione ao estoque com um clique. Preço de referência convertido de USD para BRL — não é seu preço de venda, é ponto de partida.</p>
       <div class="card" style="padding:14px">
         <div style="display:flex;gap:10px;flex-wrap:wrap">
@@ -4253,6 +4256,106 @@ function exportarRelatorioCompletoPDF(){
 }
 
 let SETS_CARREGADOS = false, CAMBIO_USD_BRL = null, CARTAS_SET = [], SET_ATUAL_NOME = '', POKEMONTCG_KEY = '';
+
+/* Carrega imagem remota como dataURL para embutir no PDF. Retorna null se falhar
+   (CORS, 404 ou timeout) — o relatório segue sem a miniatura daquela carta. */
+function carregarImagemParaPDF(url){
+  return new Promise(resolve=>{
+    if(!url) return resolve(null);
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    const timer = setTimeout(()=>resolve(null), 8000);
+    img.onload = ()=>{
+      clearTimeout(timer);
+      try{
+        const cv = document.createElement('canvas');
+        cv.width = 120; cv.height = Math.round(120 * (img.height/img.width));
+        cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        resolve({data:cv.toDataURL('image/jpeg',0.82), ratio:img.height/img.width});
+      }catch(e){ resolve(null); }
+    };
+    img.onerror = ()=>{ clearTimeout(timer); resolve(null); };
+    img.src = url;
+  });
+}
+
+async function exportarRelatorioCartasPDF(){
+  const cartas = PRODUTOS.filter(p=>p.tipo==='carta' && p.ativo!==false);
+  if(!cartas.length){ toast('Nenhuma carta cadastrada no estoque.'); return; }
+  toast('Gerando relatório… carregando imagens.');
+
+  // Agrupa por carta: soma a quantidade de todas as condições e o valor total.
+  const linhas = cartas.map(p=>{
+    const vars = variantesDoProduto(p.id);
+    let qtd, valor;
+    if(vars.length){
+      qtd = vars.reduce((s,v)=>s+Number(v.qtd||0),0);
+      valor = vars.reduce((s,v)=>s+Number(v.qtd||0)*Number(v.preco_venda||0),0);
+    } else {
+      qtd = Number(p.qtd||0);
+      valor = qtd*Number(p.preco_venda||0);
+    }
+    return {p, qtd, valor};
+  }).filter(l=>l.qtd>0)
+    .sort((a,b)=>(a.p.set_nome||'').localeCompare(b.p.set_nome||'','pt-BR')||
+                 (a.p.nome||'').localeCompare(b.p.nome||'','pt-BR'));
+
+  if(!linhas.length){ toast('Nenhuma carta com estoque disponível.'); return; }
+
+  const imagens = await Promise.all(linhas.map(l=>carregarImagemParaPDF(l.p.imagem_url)));
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4'});
+  const largura = doc.internal.pageSize.getWidth(), altura = doc.internal.pageSize.getHeight();
+
+  doc.setFillColor(40,50,65); doc.rect(0,0,largura,34,'F');
+  doc.setFillColor(207,122,34); doc.rect(0,0,largura,4,'F');
+  doc.setTextColor(255,255,255); doc.setFont('helvetica','bold'); doc.setFontSize(16);
+  doc.text(EMPRESA?.nome||'Rapadura TCG', 14, 17);
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(220,226,233);
+  doc.text('Relatório de cartas em estoque · gerado em '+new Date().toLocaleString('pt-BR'), 14, 25);
+
+  const totalQtd = linhas.reduce((s,l)=>s+l.qtd,0);
+  const totalValor = linhas.reduce((s,l)=>s+l.valor,0);
+
+  doc.autoTable({
+    head:[['','Carta','Coleção','Nº','Idioma','Qtd','Valor total']],
+    body: linhas.map(l=>['', l.p.nome||'—', l.p.set_nome||'—', l.p.numero_carta||'—',
+                         l.p.idioma||'ENG', String(l.qtd), fmt(l.valor)]),
+    startY: 42,
+    margin:{left:14,right:14,bottom:16},
+    styles:{fontSize:8,cellPadding:2.5,valign:'middle'},
+    headStyles:{fillColor:[40,50,65],textColor:255,fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[247,248,250]},
+    columnStyles:{
+      0:{cellWidth:16, minCellHeight:22},
+      1:{cellWidth:'auto'}, 2:{cellWidth:38}, 3:{cellWidth:20},
+      4:{cellWidth:16, halign:'center'},
+      5:{cellWidth:14, halign:'right'}, 6:{cellWidth:26, halign:'right'}
+    },
+    didDrawCell: d=>{
+      if(d.section!=='body' || d.column.index!==0) return;
+      const img = imagens[d.row.index];
+      if(!img) return;
+      const h = Math.min(d.cell.height-3, 20), w = h/(img.ratio||1.4);
+      try{ doc.addImage(img.data,'JPEG', d.cell.x+(d.cell.width-w)/2, d.cell.y+1.5, w, h); }catch(e){}
+    }
+  });
+
+  let y = doc.lastAutoTable.finalY + 8;
+  if(y > altura-24){ doc.addPage(); y = 20; }
+  doc.setFont('helvetica','bold'); doc.setFontSize(10); doc.setTextColor(40,50,65);
+  doc.text(`Total: ${linhas.length} cartas distintas · ${totalQtd} unidades · ${fmt(totalValor)}`, 14, y);
+
+  const paginas = doc.internal.getNumberOfPages();
+  for(let p=1;p<=paginas;p++){
+    doc.setPage(p); doc.setFont('helvetica','normal'); doc.setFontSize(7); doc.setTextColor(115,125,138);
+    doc.text(`Rapadura TCG · Página ${p} de ${paginas}`, largura-14, altura-8, {align:'right'});
+  }
+  doc.save(`relatorio-cartas-${new Date().toISOString().slice(0,10)}.pdf`);
+  toast('Relatório de cartas exportado');
+}
+
 let SET_ATUAL_ID = '', PAGINA_CARTAS = 0, TOTAL_CARTAS_SET = 0, CARREGANDO_CARTAS = false;
 const TAMANHO_PAGINA_CARTAS = 48;
 const CACHE_CARTAS_SETS = new Map();
