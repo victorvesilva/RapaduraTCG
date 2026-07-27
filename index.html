@@ -3332,12 +3332,20 @@ async function salvarPedido(){
   const id = $('pe_id').value;
   const itens = lerItens().filter(i=>i.qtd>0);
   if(!itens.length){ $('peErr').textContent='Adicione ao menos um item.'; return; }
+  // Na edição, os itens já registrados neste pedido continuam válidos mesmo
+  // que o estoque tenha mudado depois. Assim, remover uma carta não é bloqueado
+  // por outro item que já fazia parte do mesmo pedido.
+  const quantidadesOriginais = {};
+  if(id) itensDe(id).forEach(i=>{
+    quantidadesOriginais[i.produto_id]=(quantidadesOriginais[i.produto_id]||0)+Number(i.qtd||0);
+  });
   // valida estoque disponível somando itens repetidos do mesmo produto
   const porProduto = {};
   itens.forEach(i=> porProduto[i.produto_id]=(porProduto[i.produto_id]||0)+i.qtd);
   for(const [pid,q] of Object.entries(porProduto)){
     const p = PRODUTOS.find(x=>x.id===pid);
-    if(!p || q>p.qtd){ $('peErr').textContent=`Estoque insuficiente de ${p?.nome||'produto'} (disponível: ${p?.qtd??0}).`; return; }
+    const disponivelParaEdicao = Number(p?.qtd||0) + Number(quantidadesOriginais[pid]||0);
+    if(!p || q>disponivelParaEdicao){ $('peErr').textContent=`Estoque insuficiente de ${p?.nome||'produto'} (disponível para este pedido: ${disponivelParaEdicao}).`; return; }
   }
   if(!$('pe_cliente').value){ $('peErr').textContent='Selecione um cliente.'; $('pe_cliente_busca').focus(); return; }
   const payload = {
@@ -3549,13 +3557,13 @@ function imprimirPedido(id){
   const p = PEDIDOS.find(x=>x.id===id);
   const its = itensDe(id);
   const cli = CLIENTES.find(c=>c.id===p.cliente_id)||{};
-  const logo = document.querySelector('.top-inner img').src;
+  const logo = document.querySelector('#login img, .top-inner img')?.src || '';
   const sub = its.reduce((s,i)=>s+i.qtd*i.preco_unit,0);
   const total = totalPedido(p);
   const pago = Math.min(p.valor_pago||0, total);
   const saldo = Math.max(0, total-pago);
   $('printArea').innerHTML = `
-    <div class="ph"><img src="${logo}">
+    <div class="ph">${logo?`<img src="${logo}" alt="Rapadura TCG">`:''}
       <div><h2 style="margin:0">${EMPRESA.nome||'Rapadura TCG'}</h2>
       <div style="font-size:13px">${[EMPRESA.cnpj_cpf&&('CNPJ/CPF: '+EMPRESA.cnpj_cpf),EMPRESA.whatsapp,EMPRESA.email,enderecoCompleto(EMPRESA),EMPRESA.cidade_uf].filter(Boolean).join(' · ')}</div></div>
     </div>
@@ -3582,15 +3590,18 @@ function imprimirEtiqueta(id){
   const cli = CLIENTES.find(c=>c.id===p.cliente_id)||{};
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({unit:'mm', format:[100,150]});
+  const logo = document.querySelector('#login img, .top-inner img')?.src || '';
+  if(logo){ try{ doc.addImage(logo, 'JPEG', 8, 8, 18, 18); }catch(e){} }
+  const xRemetente = logo ? 30 : 8;
   let y = 12;
   doc.setFontSize(9); doc.setTextColor(110);
-  doc.text('Remetente:', 8, y); y+=5;
+  doc.text('Remetente:', xRemetente, y); y+=5;
   doc.setFontSize(11); doc.setTextColor(0); doc.setFont(undefined,'bold');
-  doc.text(EMPRESA.nome||'Rapadura TCG', 8, y); y+=5;
+  doc.text(EMPRESA.nome||'Rapadura TCG', xRemetente, y); y+=5;
   doc.setFont(undefined,'normal'); doc.setFontSize(9);
-  if(enderecoCompleto(EMPRESA)){ doc.text(enderecoCompleto(EMPRESA), 8, y); y+=4.5; }
-  if(EMPRESA.cidade_uf){ doc.text(EMPRESA.cidade_uf, 8, y); y+=4.5; }
-  if(EMPRESA.whatsapp){ doc.text(EMPRESA.whatsapp, 8, y); y+=4.5; }
+  if(enderecoCompleto(EMPRESA)){ doc.text(enderecoCompleto(EMPRESA), xRemetente, y); y+=4.5; }
+  if(EMPRESA.cidade_uf){ doc.text(EMPRESA.cidade_uf, xRemetente, y); y+=4.5; }
+  if(EMPRESA.whatsapp){ doc.text(EMPRESA.whatsapp, xRemetente, y); y+=4.5; }
   y+=4;
   doc.setLineWidth(0.4); doc.line(8,y,92,y); y+=8;
 
