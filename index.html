@@ -3562,7 +3562,15 @@ async function mudarStatus(id, novo){
 
 /* ---------- PDF ---------- */
 let EMPRESA = {};
-function imprimirPedido(id){
+function carregarImagemParaImpressao(url){
+  return new Promise(resolve=>{
+    if(!url){ resolve(); return; }
+    const imagem = new Image();
+    imagem.onload = imagem.onerror = ()=>resolve();
+    imagem.src = url;
+  });
+}
+async function imprimirPedido(id){
   const p = PEDIDOS.find(x=>x.id===id);
   const its = itensDe(id);
   const cli = CLIENTES.find(c=>c.id===p.cliente_id)||{};
@@ -3596,6 +3604,14 @@ function imprimirPedido(id){
     </table>
     ${p.observacoes?`<p style="font-size:13px"><b>Obs.:</b> ${p.observacoes}</p>`:''}
     ${EMPRESA.observacoes_pedido?`<p style="font-size:12px;margin-top:14px;border-top:1px solid #ccc;padding-top:8px">${EMPRESA.observacoes_pedido}</p>`:''}`;
+  // A caixa de impressão é aberta somente depois das fotos terminarem de
+  // carregar; sem essa espera, o navegador pode salvar o PDF antes delas.
+  const fotosDasCartas = its.map(i=>{
+    const produto = PRODUTOS.find(x=>x.id===i.produto_id);
+    return produto?.tipo==='carta' ? produto.imagem_url : null;
+  }).filter(Boolean);
+  await Promise.all(fotosDasCartas.map(carregarImagemParaImpressao));
+  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
   window.print();
 }
 
