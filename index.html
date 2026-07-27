@@ -154,6 +154,8 @@ footer.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
   #printArea{display:block !important;font-family:'Alegreya Sans',sans-serif;color:#000}
   #printArea .ph{display:flex;align-items:center;gap:14px;border-bottom:3px solid #C98A2B;padding-bottom:10px;margin-bottom:14px}
   #printArea .ph img{height:70px}
+  #printArea .pedido-item{display:flex;align-items:center;gap:8px}
+  #printArea .pedido-item img{width:32px;height:44px;object-fit:cover;border-radius:3px}
   #printArea table{width:100%;border-collapse:collapse;margin-top:12px}
   #printArea th,#printArea td{border:1px solid #999;padding:6px 8px;font-size:13px;text-align:left}
   #printArea th{background:#F6E9CE}
@@ -1108,7 +1110,7 @@ nav.tabs button.on{background:var(--ink);color:var(--bg-elevated);box-shadow:0 6
         <div id="peItens"></div>
         <button class="btn ghost" style="margin-top:10px;padding:7px 14px" onclick="addItemRow()">+ Adicionar item</button>
         <div class="grid2" style="margin-top:6px">
-          <div><label>Desconto (R$)</label><input id="pe_desconto" type="number" step="0.01" min="0" value="0" oninput="totPedido()"></div>
+          <div><label>Desconto (%)</label><input id="pe_desconto" type="number" step="0.01" min="0" max="100" value="0" oninput="totPedido()"><small class="muted" id="peDescontoInfo">R$ 0,00 de desconto</small></div>
           <div><label>Frete (R$)</label><input id="pe_frete" type="number" step="0.01" min="0" value="0" oninput="totPedido()"></div>
         </div>
         <div class="grid2">
@@ -3274,7 +3276,8 @@ function abrirPedido(id){
   $('pe_cliente_busca').value = clienteInicial?.nome || '';
   $('pe_cliente_sugestoes').style.display = 'none';
   $('pe_canal').value = p?.canal || 'direto';
-  $('pe_desconto').value = p?.desconto ?? 0;
+  const subtotalExistente = p ? itensDe(p.id).reduce((s,i)=>s+Number(i.qtd||0)*Number(i.preco_unit||0),0) : 0;
+  $('pe_desconto').value = subtotalExistente ? ((Number(p?.desconto||0)/subtotalExistente)*100).toFixed(2) : 0;
   $('pe_frete').value = p?.frete ?? 0;
   $('pe_taxas').value = p?.taxas ?? 0;
   $('pe_obs').value = p?.observacoes || '';
@@ -3323,10 +3326,16 @@ function lerItens(){
     preco_unit: Number(r.querySelector('.it-preco').value||0)
   }));
 }
+function valorDescontoPedido(subtotal){
+  const percentual = Math.max(0, Math.min(100, Number($('pe_desconto').value||0)));
+  return (subtotal===undefined ? lerItens().reduce((s,i)=>s+i.qtd*i.preco_unit,0) : subtotal) * percentual / 100;
+}
 function totPedido(){
-  const t = lerItens().reduce((s,i)=>s+i.qtd*i.preco_unit,0)
-    - Number($('pe_desconto').value||0) + Number($('pe_frete').value||0);
+  const subtotal = lerItens().reduce((s,i)=>s+i.qtd*i.preco_unit,0);
+  const desconto = valorDescontoPedido(subtotal);
+  const t = subtotal - desconto + Number($('pe_frete').value||0);
   $('peTotal').textContent = fmt(t);
+  $('peDescontoInfo').textContent = `${fmt(desconto)} de desconto`;
 }
 async function salvarPedido(){
   const id = $('pe_id').value;
@@ -3350,7 +3359,7 @@ async function salvarPedido(){
   if(!$('pe_cliente').value){ $('peErr').textContent='Selecione um cliente.'; $('pe_cliente_busca').focus(); return; }
   const payload = {
     cliente_id:$('pe_cliente').value, canal:$('pe_canal').value,
-    desconto:Number($('pe_desconto').value||0), frete:Number($('pe_frete').value||0),
+    desconto:valorDescontoPedido(), frete:Number($('pe_frete').value||0),
     taxas:Number($('pe_taxas').value||0), observacoes:$('pe_obs').value.trim(),
     data:$('pe_data').value,
     rastreio:$('pe_rastreio').value.trim(),
@@ -3572,7 +3581,12 @@ function imprimirPedido(id){
     <table>
       <thead><tr><th>Item</th><th>Qtd</th><th>Valor unit.</th><th>Subtotal</th></tr></thead>
       <tbody>
-        ${its.map(i=>`<tr><td>${i.descricao}</td><td>${i.qtd}</td><td>${fmt(i.preco_unit)}</td><td>${fmt(i.qtd*i.preco_unit)}</td></tr>`).join('')}
+        ${its.map(i=>{
+          const produto = PRODUTOS.find(x=>x.id===i.produto_id);
+          const foto = produto?.tipo==='carta' && produto.imagem_url
+            ? `<img src="${produto.imagem_url}" alt="">` : '';
+          return `<tr><td><div class="pedido-item">${foto}<span>${i.descricao}</span></div></td><td>${i.qtd}</td><td>${fmt(i.preco_unit)}</td><td>${fmt(i.qtd*i.preco_unit)}</td></tr>`;
+        }).join('')}
         <tr><td colspan="3">Subtotal</td><td>${fmt(sub)}</td></tr>
         <tr><td colspan="3">Desconto</td><td>− ${fmt(p.desconto)}</td></tr>
         <tr><td colspan="3">Frete</td><td>${fmt(p.frete)}</td></tr>
