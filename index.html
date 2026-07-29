@@ -1106,6 +1106,13 @@ nav.tabs button.on{background:var(--ink);color:var(--bg-elevated);box-shadow:0 6
               <option value="outro">Outro</option>
             </select></div>
         </div>
+        <label>Categoria dos itens</label>
+        <select id="pe_categoria_estoque" onchange="alterarCategoriaPedido()">
+          <option value="">Selecione antes de adicionar itens…</option>
+          <option value="lacrados">Produtos lacrados</option>
+          <option value="cartas">Cartas avulsas</option>
+        </select>
+        <p class="muted" style="font-size:12px;margin:5px 0 10px">A lista abaixo mostra somente itens com estoque da categoria selecionada.</p>
         <label>Itens</label>
         <div id="peItens"></div>
         <button class="btn ghost" style="margin-top:10px;padding:7px 14px" onclick="addItemRow()">+ Adicionar item</button>
@@ -3308,21 +3315,42 @@ function abrirPedido(id){
   $('pe_status_pagamento').value = p?.status_pagamento || 'pendente';
   $('pe_data').value = p?.data || new Date().toISOString().slice(0,10);
   $('peItens').innerHTML = '';
+  const tiposDoPedido = p ? [...new Set(itensDe(p.id).map(i=>PRODUTOS.find(x=>x.id===i.produto_id)?.tipo).filter(Boolean))] : [];
+  const categoriaInicial = tiposDoPedido.length
+    ? (tiposDoPedido.every(tipo=>tipo==='carta') ? 'cartas' : 'lacrados')
+    : '';
+  $('pe_categoria_estoque').value = categoriaInicial;
+  $('pe_categoria_estoque').dataset.categoriaAnterior = categoriaInicial;
   if(p){
     const its = itensDe(p.id);
     its.forEach(i => addItemRow(i.produto_id, i.qtd, i.preco_unit));
     if(!its.length) addItemRow();
-  } else {
-    addItemRow();
   }
   totPedido();
   $('mPedido').classList.add('show');
 }
-function addItemRow(presetProdId, presetQtd, presetPreco){
-  const emEstoque = PRODUTOS.filter(p=>p.ativo && p.qtd>0);
+function categoriaPedido(){ return $('pe_categoria_estoque').value; }
+function alterarCategoriaPedido(){
+  const categoria = categoriaPedido();
+  const seletor = $('pe_categoria_estoque');
+  const anterior = seletor.dataset.categoriaAnterior||'';
+  if(!categoria) return;
+  if($('peItens').children.length && categoria!==anterior && !confirm('Trocar a categoria remove os itens já adicionados ao pedido. Continuar?')){
+    seletor.value=anterior;
+    return;
+  }
+  if(categoria!==anterior) $('peItens').innerHTML='';
+  seletor.dataset.categoriaAnterior=categoria;
+  if(!$('peItens').children.length) addItemRow(undefined, undefined, undefined, true);
+}
+function addItemRow(presetProdId, presetQtd, presetPreco, silencioso=false){
+  const categoria = categoriaPedido();
+  if(!categoria){ if(!silencioso) toast('Selecione primeiro Produtos lacrados ou Cartas avulsas.'); return; }
+  const emEstoque = PRODUTOS.filter(p=>p.ativo && p.qtd>0 && (categoria==='cartas' ? p.tipo==='carta' : p.tipo!=='carta'));
   // ao editar, garante que o produto do item já lançado apareça mesmo se qtd disponível hoje for baixa
   const preset = presetProdId ? PRODUTOS.find(x=>x.id===presetProdId) : null;
   const lista = preset && !emEstoque.some(x=>x.id===preset.id) ? [preset,...emEstoque] : emEstoque;
+  if(!lista.length){ if(!silencioso) toast(categoria==='cartas'?'Não há cartas avulsas com estoque.':'Não há produtos lacrados com estoque.'); return; }
   const row = document.createElement('div');
   row.className='item-row';
   row.innerHTML = `
@@ -4644,9 +4672,16 @@ async function confirmarAddCarta(){
   } else if(preco !== prod.preco_venda){
     await db.from('produtos').update({preco_venda:preco}).eq('id',prod.id);
   }
-  const {error:e1} = await db.from('compras').insert({ produto_id:prod.id, qtd, custo_unit:custo, data:new Date().toISOString().slice(0,10), fornecedor:'Coleções', criado_por:CURRENT_EMAIL });
+  const {error:e1} = await db.from('compras').insert({ produto_id:prod.id, qtd, custo_unit:custo, data:new Date().toISOString().slice(0,10), fornecedor:'Coleções', status_compra:'recebido', estoque_aplicado:true, criado_por:CURRENT_EMAIL });
   if(e1){ $('acErr').textContent=e1.message; return; }
-  await recalcularProdutoDoZero(prod.id);
+  // Entrada vinda de Coleções precisa usar a mesma baixa/entrada protegida
+  // das compras manuais. O recálculo histórico podia deixar a nova carta em
+  // zero caso uma consulta anterior falhasse ou ainda estivesse desatualizada.
+  const estoqueAtualizado = await aplicarEntradaComRetry('produtos', prod.id, qtd, custo);
+  if(!estoqueAtualizado){
+    $('acErr').textContent='Carta cadastrada, mas não foi possível somar a quantidade ao estoque. Recarregue a página e tente novamente.';
+    return;
+  }
   await carregarEstoque();
   fechar('mAddCarta'); toast(`${c.name} adicionado ao estoque`);
 }
