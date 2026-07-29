@@ -2371,6 +2371,28 @@ async function ajustarQtdComRetry(tabela, id, delta){
   return {ok:false, motivo:'conflito'};
 }
 
+/* Agrupa itens repetidos e busca a quantidade diretamente no banco antes de
+   confirmar a venda. A lista PRODUTOS pode estar defasada enquanto o modal do
+   pedido permanece aberto. */
+async function validarEstoqueAtualDosItens(itens){
+  const agrupados = {};
+  itens.filter(i=>i.produto_id).forEach(i=>{
+    agrupados[i.produto_id]=(agrupados[i.produto_id]||0)+Number(i.qtd||0);
+  });
+  const ids = Object.keys(agrupados);
+  if(!ids.length) return {ok:true,itens:[]};
+  const {data,error} = await db.from('produtos').select('id,nome,qtd').in('id',ids);
+  if(error) return {ok:false,motivo:'consulta',erro:error.message};
+  const porId = new Map((data||[]).map(produto=>[produto.id,produto]));
+  for(const [produto_id,qtd] of Object.entries(agrupados)){
+    const produto = porId.get(produto_id);
+    if(!produto || Number(produto.qtd||0)<qtd){
+      return {ok:false,motivo:'insuficiente',produto,qtd};
+    }
+  }
+  return {ok:true,itens:ids.map(produto_id=>({produto_id,qtd:agrupados[produto_id],produto:porId.get(produto_id)}))};
+}
+
 async function salvarCompra(){
   const p = PRODUTOS.find(x=>x.id===$('co_produto').value);
   const qtd = parseInt($('co_qtd').value||0), custo = Number($('co_custo').value||0);
@@ -3482,12 +3504,15 @@ async function registrarPagamento(id){
 
   if(p.status==='orcamento'){
     // primeiro pagamento: reserva itens (baixa de estoque), igual à transição para "pago"
-    for(const i of itensDe(id).filter(x=>x.produto_id)){
-      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      if(!prod || prod.qtd < i.qtd){ $('pgErr').textContent='Estoque insuficiente de '+(prod?.nome||'item')+' — não é possível confirmar o pagamento.'; return; }
+    const validacao = await validarEstoqueAtualDosItens(itensDe(id));
+    if(!validacao.ok){
+      $('pgErr').textContent = validacao.motivo==='insuficiente'
+        ? `Estoque insuficiente de ${validacao.produto?.nome||'item'} — não é possível confirmar o pagamento.`
+        : 'Não foi possível consultar o estoque agora: '+(validacao.erro||'tente novamente.');
+      return;
     }
-    for(const i of itensDe(id).filter(x=>x.produto_id)){
-      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
+    for(const i of validacao.itens){
+      const prod = i.produto;
       const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd);
       if(!r.ok){
         $('pgErr').textContent = r.motivo==='insuficiente'
@@ -3525,12 +3550,15 @@ async function mudarStatus(id, novo){
   const p = PEDIDOS.find(x=>x.id===id);
   // baixa de estoque ao pagar; estorno ao cancelar pedido que já baixou
   if(novo==='pago' && !p.estoque_baixado){
-    for(const i of itensDe(id).filter(x=>x.produto_id)){
-      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
-      if(!prod || prod.qtd < i.qtd){ toast('Estoque insuficiente de '+(prod?.nome||'item')+' — pedido não pode ser pago.'); return; }
+    const validacao = await validarEstoqueAtualDosItens(itensDe(id));
+    if(!validacao.ok){
+      toast(validacao.motivo==='insuficiente'
+        ? `Estoque insuficiente de ${validacao.produto?.nome||'item'} — pedido não pode ser pago.`
+        : 'Não foi possível consultar o estoque agora: '+(validacao.erro||'tente novamente.'));
+      return;
     }
-    for(const i of itensDe(id).filter(x=>x.produto_id)){
-      const prod = PRODUTOS.find(x=>x.id===i.produto_id);
+    for(const i of validacao.itens){
+      const prod = i.produto;
       const r = await ajustarQtdComRetry('produtos', i.produto_id, -i.qtd);
       if(!r.ok){
         toast(r.motivo==='insuficiente'
